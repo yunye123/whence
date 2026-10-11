@@ -1,0 +1,19 @@
+/* W1-E: features/lod.css; original cascade position retained by styles/index.css. */
+@layer features {
+
+  /* 不占版面的部件：随档位补偿（连接点、尺寸手柄的命中区在屏幕上仍 ≥ 24） */
+  .field-card[data-lod="simple"] > .field-card__handle,
+  .field-card[data-lod="simple"] .field-card__resize-handle,
+  .field-card[data-lod="simple"] .field-card__play,
+  .field-card[data-lod="simple"] .field-card__duration,
+  .field-card[data-lod="simple"] .field-card__live,
+  .field-card[data-lod="simple"] .field-card__media-cta,
+  .field-card[data-lod="simple"] .field-card__media-placeholder,
+  .field-card[data-lod="simple"] .field-card__problem,
+  .field-card--frame[data-lod="simple"] .field-card__header,
+  .field-card--image[data-lod="simple"] .field-card__header h3:not(.sr-only) { zoom: var(--lod-k); }
+  .field-card[data-lod="simple"] .field-card__resize-handle { --resize-k: var(--z-tier); }
+  /* 卡内播放控件整层补偿（播放钮、位置线、时间一起放大，相对位置与完整档相同）；里面的播放钮不再单独补偿 */
+  .field-card[data-lod="simple"] .field-card__player { zoom: var(--lod-k); }
+  .field-card[data-lod="simple"] .field-card__player .field-card__play { zoom: 1; }
+}

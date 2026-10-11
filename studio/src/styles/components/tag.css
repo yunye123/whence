@@ -1,0 +1,77 @@
+/* 出处印（PLAN §2.5）。朱只画框和来源图标，位置字用墨；旧 size 映射到新变体。 */
+@layer components {
+  .tag {
+    box-sizing: border-box;
+    position: relative;
+    display: inline-flex;
+    align-items: stretch;
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 100%;
+    height: var(--stamp-h);
+    border: 1px solid var(--zhu);
+    border-radius: var(--radius-stamp);
+    color: var(--fg-1);
+    background: transparent;
+    font: 500 var(--fs-xs)/calc(var(--stamp-h) - 2px) var(--font-num);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  .tag__head {
+    box-sizing: border-box;
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: var(--stamp-head);
+    border-right: 1px solid var(--zhu);
+  }
+  .tag__icon { display: block; width: 9px; height: 9px; fill: var(--zhu); stroke: none; }
+  .tag__icon[data-provenance-icon="text"] { width: 7.5px; height: 10px; }
+  .tag__body {
+    display: block;
+    min-width: 0;
+    padding: 0 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tag--stamp-mini { height: calc(var(--stamp-h) - 2px); border: 0; gap: 6px; color: var(--fg-3); }
+  .tag--stamp-mini .tag__head { width: 8px; border: 0; color: var(--fg-3); }
+  .tag--stamp-mini .tag__icon { width: 8px; height: 8px; fill: var(--fg-3); }
+  .tag--stamp-mini .tag__body { padding: 0; }
+
+  .tag-static, .tag-btn { display: inline-flex; flex: 0 1 auto; min-width: 0; max-width: 100%; vertical-align: middle; }
+  .tag-btn { position: relative; padding: 0; border: 0; background: none; color: inherit; cursor: pointer; border-radius: var(--radius-stamp); }
+  /* 屏幕上的命中区至少 24×24；不放大视觉印框。z-tier 向下量化，扩展值保守覆盖真实缩放。 */
+  .tag-btn::before {
+    content: ''; position: absolute; left: 50%; top: 50%; width: 100%; height: 100%;
+    min-width: calc(24px / var(--z-tier, 1)); min-height: calc(24px / var(--z-tier, 1));
+    transform: translate(-50%, -50%);
+  }
+  .tag-btn:is(:hover, :active) .tag:not(.tag--gone) { background: var(--zhu-wash); }
+  .tag-btn:focus-visible { outline: none; box-shadow: var(--focus-shadow); }
+  .tag-btn[title]:is(:hover, :focus-visible)::after {
+    content: attr(title); position: absolute; z-index: 1; bottom: calc(100% + 8px); left: 0;
+    width: max-content; max-width: 32ch; padding: 5px 8px; border-radius: var(--radius-stamp);
+    color: var(--tip-fg); background: var(--tip-bg); font: var(--type-meta);
+    font-size: max(var(--fs-xs), calc(12px / var(--z-tier, 1)));
+    line-height: max(var(--lh-xs), calc(18px / var(--z-tier, 1)));
+    white-space: normal; text-align: left; pointer-events: none;
+  }
+  .tag--gone { border-color: var(--fg-3); border-style: dashed; color: var(--fg-3); }
+  .tag--gone .tag__head { border-color: var(--fg-3); border-right-style: dashed; color: var(--fg-3); }
+  .tag--gone .tag__icon { fill: var(--fg-3); }
+  .tag--stamp-mini.tag--gone .tag__head { border: 0; }
+  /* 固定行高的单行元信息可补字号；正文和视觉印框不随之放大。 */
+  .react-flow__node .tag { font-size: max(var(--fs-xs), calc(12px / var(--z-tier, 1))); }
+
+  @media (forced-colors: active) {
+    .tag { border-color: ButtonText; color: ButtonText; }
+    .tag__head { border-color: ButtonText; color: ButtonText; }
+    .tag__icon { fill: ButtonText; }
+    .tag--gone, .tag--gone .tag__head { border-color: GrayText; color: GrayText; }
+    .tag--gone .tag__icon { fill: GrayText; }
+    .tag-btn:focus-visible { outline: 2px solid Highlight; outline-offset: 2px; }
+  }
+}

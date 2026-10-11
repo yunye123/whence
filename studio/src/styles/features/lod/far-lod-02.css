@@ -1,0 +1,15 @@
+/* W1-E: features/lod.css; original cascade position retained by styles/index.css. */
+@layer features {
+
+  /* 视频：海报铺满，左上播放点，从 30% 处起的渐变上压白色标题（媒体覆盖层不随主题） */
+  .field-card .field-card__overview:is(.field-card__overview--video, .field-card__overview--image) { background: var(--bg-sunken); }
+  .field-card .field-card__overview > img {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: none;
+  }
+}

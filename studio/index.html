@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <meta name="theme-color" content="#D2D1CE" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1A1917" media="(prefers-color-scheme: dark)" />
+    <meta name="description" content="来处：把收集来的文字、视频和图片，写成自己的作品；每一句都能回到原处。" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="preload" href="/src/assets/fonts/noto-sans-sc-ui/ui-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/src/assets/fonts/noto-serif-sc-body/noto-serif-sc-gb1-primary.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/src/assets/fonts/noto-sans-sc-body/noto-sans-sc-gb1-primary.woff2" as="font" type="font/woff2" crossorigin />
+    <title>来处</title>
+    <script>
+      /* CORE-29: the theme is decided before the first frame (same key and rule as src/theme.ts), so a light-mode user
+         never sees a dark flash while the app bundle loads. */
+      (function () {
+        var preference = 'system';
+        try { var saved = localStorage.getItem('field-appearance-v1'); if (saved === 'light' || saved === 'dark' || saved === 'system') preference = saved; } catch (error) { /* storage blocked */ }
+        var theme = preference;
+        if (theme === 'system') { try { theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; } catch (error) { theme = 'light'; } }
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.colorScheme = theme;
+      })();
+    </script>
+    <style>
+      /* The canvas ground of each theme (the theme-color values above) until the stylesheet arrives. */
+      html { background: #D2D1CE; }
+      html[data-theme="dark"] { background: #1A1917; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

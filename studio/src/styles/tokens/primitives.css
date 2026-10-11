@@ -1,0 +1,113 @@
+/* 原野 FIELD 设计令牌（与 docs/redesign/DESIGN_SYSTEM.md §3.11 / output/design-directions/final/tokens.css 同源）。组件禁止直接引用 --p-* 原始色。 */
+@layer tokens {
+/* ---------- 0. 主题开关（与 src/theme.ts 的 data-theme 机制兼容） ---------- */
+:root { color-scheme: light dark; }               /* JS 未执行时跟随系统 */
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"]  { color-scheme: dark; }
+
+/* ---------- 1. 原始层 primitives（不随主题变，组件禁止直接引用） ---------- */
+:root {
+  /* 晴日 · 中性：测量本绿灰。不是奶油，不是 #111 */
+  --p-paper-0:   #FFFFFF;  /* 誊清白：文稿纸、浮起的工具 */
+  --p-paper-25:  #FAFBF8;  /* 台纸白：材料卡、摘录、面板 */
+  --p-paper-50:  #F2F4EF;  /* 悬停底 */
+  --p-paper-100: #EBEEE8;  /* 测量本绿：画布 */
+  --p-paper-150: #E3E7E0;  /* 封皮：侧栏 */
+  --p-paper-200: #DCE1D8;  /* 当前项、按下 */
+  --p-paper-250: #D3D9CF;  /* 次级实底（“添加”按下） */
+  --p-paper-300: #C9D1C7;  /* 网格十字 */
+  --p-paper-350: #D3D9D0;  /* 网格小点 */
+  --p-carbon-400: #8A928D; /* 禁用 */
+  --p-carbon-500: #6F7873; /* 图标（非文字 ≥3:1） */
+  --p-carbon-600: #575F5A; /* 三级文字（选中底上 ≥4.9:1） */
+  --p-carbon-700: #4F5954; /* 铅灰：二级文字 */
+  --p-carbon-800: #46504B; /* 铅笔字：笔记 */
+  --p-carbon-950: #1C2422; /* 碳墨：主文字、选中墨线 */
+
+  /* 夜灯 · 中性：带绿的炭灰，层级靠亮度递增 */
+  --p-night-cover:  #101412;
+  --p-night-ground: #151917;
+  --p-night-mount:  #1D2220;
+  --p-night-fair:   #232927;
+  --p-night-raised: #262C29;
+  --p-night-hover:  #2A302D;
+  --p-night-bar:    #2C3431;
+  --p-night-soft:   #333B37; /* 次级实底（“添加”） */
+  --p-night-action: #3A4541;
+  --p-night-grid:   #252B28;
+  --p-night-grid-2: #1D2320;
+  --p-moon-500: #7D8680;   /* 图标 */
+  --p-moon-600: #9AA39D;   /* 三级文字（选中底上 ≥5:1） */
+  --p-moon-700: #AAB3AD;   /* 二级文字 */
+  --p-moon-800: #BEC7C1;   /* 笔记 */
+  --p-moon-900: #CBD2CC;   /* 逐字稿正文（暗光） */
+  --p-moon-950: #E3E8E2;   /* 月光墨：主文字（不用纯白） */
+
+  /* 蓝晒：只表示“出处 / 可以回去的准确位置” */
+  --p-cyan-100: #E1EAF1;   /* 浅色淡染 */
+  --p-cyan-600: #2A6293;   /* 浅色线绳 */
+  --p-cyan-700: #1E5481;   /* 浅色签底、纸上的字 */
+  --p-cyan-on:  #EEF3F7;   /* 签上的字 */
+  --p-cyan-300: #8DBBE4;   /* 暗光纸上的字 */
+  --p-cyan-400: #5E97CC;   /* 暗光线绳 */
+  --p-cyan-500: #2F6DA6;   /* 暗光签底 */
+  --p-cyan-900: #1E2E3B;   /* 暗光淡染 */
+
+  /* 朱：只给品牌标志「原点」的那一枚点（2026-10-07 起，§9）。界面里不拿它当状态色或强调色 */
+  --p-zhu-700: #B23A22;    /* 浅色底（对纸 5.42:1） */
+  --p-zhu-400: #EC5F45;    /* 暗色底（对夜 5.31:1） */
+
+  /* 光：只表示“光落在这里”——溯光、当前句、播放头、键盘焦点、光标 */
+  --p-light-700: #9A5800;  /* 浅色：文字与焦点环 */
+  --p-light-600: #A9660F;  /* 浅色：溯光走过的线 */
+  --p-light-800: #7E4700;  /* 浅色：溯光的亮段 */
+  --p-light-wash-l: #F5ECDC;
+  --p-light-300: #E6B865;  /* 暗光：文字、焦点环（降饱和，不是荧光琥珀） */
+  --p-light-150: #D6BD8C;  /* 暗光：溯光走过的线（暖灰白） */
+  --p-light-50:  #FFF7E8;  /* 暗光：溯光的亮段 */
+
+  /* 状态 */
+  --p-red-700: #B03A2E;   --p-red-300: #E8735F;   --p-red-wash-l: #F6E4E1;   --p-red-wash-d: #3A2420;
+  --p-green-700: #2F6B4A; --p-green-300: #7CC39A; --p-green-wash-l: #E2EFE6; --p-green-wash-d: #1E3127;
+  --p-mustard-700: #6F5C00; --p-mustard-300: #D6C05C; --p-mustard-wash-l: #F3EFD9; --p-mustard-wash-d: #332E19;
+
+  --p-viewer: #0E0E0D;     /* 原图查看器底，不随主题 */
+  /* 稿纸书桌 v2 原始色；旧色在引用清零后清理。 */
+  --p-desk-desk-light: #D2D1CE;
+  --p-desk-desk-dark: #1A1917;
+  --p-desk-shell-light: #ECEBE8;
+  --p-desk-shell-dark: #2A2927;
+  --p-desk-shell-sunken-light: #E1E0DD;
+  --p-desk-shell-sunken-dark: #21201E;
+  --p-desk-panel-light: #F4F4F3;
+  --p-desk-panel-dark: #2B2B2A;
+  --p-desk-plain-light: #F6F4EE;
+  --p-desk-plain-dark: #33312E;
+  --p-desk-manuscript-light: #FFFEFB;
+  --p-desk-manuscript-dark: #3D3B38;
+  --p-desk-note-light: #EDE9E1;
+  --p-desk-note-dark: #2C2A27;
+  --p-desk-jacket-light: #E3DFD6;
+  --p-desk-jacket-dark: #262523;
+  --p-desk-wall-light: #ECECEA;
+  --p-desk-wall-dark: #2B2B2A;
+  --p-desk-ink-light: #221F1B;
+  --p-desk-ink-dark: #EEEAE4;
+  --p-desk-ink-2-light: #48453F;
+  --p-desk-ink-2-dark: #CCC7BF;
+  --p-desk-ink-3-light: #59554F;
+  --p-desk-ink-3-dark: #BAB5AE;
+  --p-desk-edge-light: #76726B;
+  --p-desk-edge-dark: #8C8880;
+  --p-desk-stamp-light: #A5271A;
+  --p-desk-stamp-dark: #EC5F45;
+  --p-desk-highlight: #FFE45C;
+  --p-desk-media-ink: #F7F4EC;
+  --p-desk-viewer-secondary: #A8A49E;
+  --p-desk-print-sunken: #F2F1EE;
+  --p-desk-retired-1: #F1F3EE;
+  --p-desk-retired-2: #1F2523;
+  --p-desk-retired-3: #E6EAE3;
+  --p-desk-retired-4: #1A1F1D;
+}
+}

@@ -1,0 +1,27 @@
+/* 迁移期：把旧样式里的变量名指向新令牌，让未重写的表面立刻换上新色板与字体。
+   各表面在 features/*.css 中重写后，删除对应旧规则；全部迁移完成后删除本文件。 */
+@layer tokens {
+  :root {
+    --ink: var(--fg-1); --muted: var(--fg-2); --blue: var(--fg-2); --line: var(--border-hair);
+    --canvas: var(--bg-canvas); --paper: var(--bg-surface); --sidebar-surface: var(--bg-sidebar);
+    --text-primary: var(--fg-1); --text-secondary: var(--fg-2); --placeholder: var(--fg-3);
+    --surface-raised: var(--bg-elevated); --surface-subtle: var(--bg-sunken); --surface-soft: var(--bg-sunken);
+    --surface-hover: var(--bg-hover); --surface-selected: var(--bg-selected); --surface-selected-hover: var(--bg-pressed);
+    --line-strong: var(--border-strong); --chrome-line: var(--border-hair);
+    --focus: var(--focus-ring); --focus-soft: var(--light-wash);
+    --danger: var(--status-danger-fg); --danger-surface: var(--status-danger-bg);
+    --success: var(--status-success-fg); --success-surface: var(--status-success-bg);
+    --warning: var(--status-warning-fg); --warning-surface: var(--status-warning-bg);
+    --note-paper: var(--note-bg); --note-ink: var(--note-fg); --quote-paper: var(--quote-bg); --quote-ink: var(--fg-1);
+    --shadow-panel-legacy: var(--shadow-panel); --shadow-popover: var(--shadow-tool); --scrim: var(--bg-scrim);
+    --action-blue: var(--action-bg); --action-blue-hover: var(--action-bg-hover); --action-ink: var(--action-fg);
+    --sidebar: var(--sidebar-w);
+    /* React Flow */
+    --xy-background-color: var(--bg-canvas);
+    --xy-edge-stroke: var(--canvas-edge); --xy-edge-stroke-selected: var(--fg-1);
+    --xy-connectionline-stroke: var(--canvas-edge);
+    --xy-selection-background-color: var(--marquee-bg); --xy-selection-border: 1px solid var(--marquee-border);
+    --xy-minimap-background-color: var(--bg-sunken);
+    --xy-minimap-mask-background-color: light-dark(rgb(210 209 206 / .55), rgb(26 25 23 / .5));
+  }
+}

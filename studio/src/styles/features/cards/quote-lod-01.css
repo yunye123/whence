@@ -1,0 +1,37 @@
+/* Index simple tier: unchanged outer geometry, 24px screen stamp and complete source lines. */
+@layer features {
+  .field-card--quote[data-lod="simple"][data-lod-frame] .field-card__head,
+  .field-card--quote[data-lod="simple"][data-lod-frame] .field-card__surface > .field-card__header {
+    zoom: var(--lod-k);
+    height: max(calc(38px * var(--z-tier)), 26px);
+    padding: 0 calc(var(--card-pad-x) * var(--z-tier));
+    gap: 8px;
+    border-bottom-width: 1px;
+  }
+  .field-card--quote[data-lod="simple"][data-lod-frame] .field-card__head > .field-card__header { flex: 1 1 0; min-width: 0; }
+  .field-card--quote[data-lod="simple"][data-lod-frame] .field-card__citation { zoom: 1; }
+  .field-card--quote[data-lod="simple"][data-lod-frame] .field-card__quote-source { font-size: var(--fs-xs); }
+  .field-card--quote[data-lod="simple"][data-lod-frame] > .react-flow__handle-left,
+  .field-card--quote[data-lod="simple"][data-lod-frame] > .react-flow__handle-right { top: max(calc(19px * var(--z-tier)), 13px); }
+  .field-card--quote[data-lod="simple"][data-lod-frame] .field-card__quote-content {
+    --lod-zoom: max(1, calc(14 / 16 / var(--z-tier)));
+    --mine-space: 0px;
+    flex: 1 1 0;
+    max-height: none;
+    height: auto;
+    zoom: var(--lod-zoom);
+    container-type: size;
+    padding: 0 calc(var(--card-pad-x) / var(--lod-zoom));
+  }
+  .field-card--quote[data-lod="simple"][data-lod-frame] .field-card__quote-text {
+    font-size: 16px;
+    line-height: clamp(18px, calc(100cqh - 1px), 26px);
+    -webkit-line-clamp: max(1, round(down, 100cqh / 1lh, 1));
+    max-height: max(0px, round(down, 100cqh, 1lh));
+    white-space: pre-wrap;
+  }
+  .field-card--quote[data-lod="simple"][data-lod-frame] .field-card__quote-note { display: none; }
+  /* The inert dashed stamp carries the gone-source state in this tier. Keep the footer DOM,
+     but let a minimum-size frame reserve its remaining height for a whole original line. */
+  .field-card--quote[data-lod="simple"][data-lod-frame] .field-card__footer { display: none; }
+}

@@ -1,0 +1,13 @@
+{
+  "schema": "field-wordfreq-source-v1",
+  "repository": "https://github.com/rspeer/wordfreq",
+  "commit": "912caf64b657478d1dff1138efdc078947d54bb1",
+  "file": "large_zh.msgpack.gz",
+  "bytes": 1773909,
+  "sha256": "e079d7aaff1cfb92874850cb3ffbc7b611af939d9d671c1cbda932d968467cdd",
+  "gitBlobSha1": "bc38498f391d18bb8b22a1ce704fd4cdaed3adb0",
+  "url": "https://raw.githubusercontent.com/rspeer/wordfreq/912caf64b657478d1dff1138efdc078947d54bb1/wordfreq/data/large_zh.msgpack.gz",
+  "license": "CC-BY-SA-4.0",
+  "attribution": "Robyn Speer; wordfreq; SUBTLEX authors including Marc Brysbaert; sources and license retained in LICENSES/wordfreq.txt",
+  "noticeSha256": "d9b104dafe63886af55e7cea7484824e32e12d4e1f57f319923dd643b36d6b15"
+}

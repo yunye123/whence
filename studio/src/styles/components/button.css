@@ -1,0 +1,203 @@
+/* §6.1 基础按钮、图标按钮、kbd、开关、分段控件。只引用语义令牌。
+   注意：base/focus.css 的焦点环写在更低的层里，这里凡是设置了 box-shadow 的控件都要自己重写 :focus-visible。 */
+@layer components {
+  /* ---------- 按钮 ---------- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: transparent;
+    color: var(--fg-1);
+    font: var(--type-ui-strong);
+    font-size: var(--fs-ui);
+    line-height: 22px;
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+  }
+  .btn > svg { flex: none; color: var(--fg-icon); }
+  .btn:hover:enabled { background: var(--bg-hover); }
+  .btn:active:enabled { background: var(--bg-pressed); transition-duration: 0ms; }   /* 按下：进 0ms、出 120ms */
+  .btn.is-pressed, .btn[aria-pressed="true"] { background: var(--bg-pressed); }
+  .btn:focus-visible { box-shadow: var(--focus-shadow); }
+
+  /* 次级实底：画布里的主动作（“添加”、逐字稿“摘录到画布”、阅读“摘录”） */
+  .btn--soft { background: var(--action-soft-bg); color: var(--action-soft-fg); box-shadow: inset 0 0 0 1px var(--action-soft-ring); font-weight: var(--fw-semibold); }
+  .btn--soft > svg { color: var(--fg-1); }
+  .btn--soft:hover:enabled, .btn--soft:active:enabled, .btn--soft.is-pressed { background: var(--action-soft-bg-hover); }
+  .btn--soft:focus-visible { box-shadow: inset 0 0 0 1px var(--action-soft-ring), var(--focus-shadow); }
+
+  /* 墨色实底：只给对话框页脚的确认按钮 */
+  /* 暗光反相（浅墨底、深字）：暗底上的深色实底只有 1.6:1，看不出是唯一的确认动作 */
+  .btn--primary {
+    --primary-bg: var(--action-bg);
+    --primary-bg-hover: var(--action-bg-hover);
+    --primary-fg: var(--action-fg);
+    background: var(--primary-bg);
+    color: var(--primary-fg);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--primary-fg) 9%, transparent);
+  }
+  .btn--primary > svg { color: inherit; }
+  .btn--primary:hover:enabled, .btn--primary:active:enabled { background: var(--primary-bg-hover); }
+  .btn--primary:focus-visible { box-shadow: inset 0 1px 0 color-mix(in srgb, var(--primary-fg) 9%, transparent), var(--focus-shadow); }
+  .btn--primary kbd { color: var(--primary-fg); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary-fg) 26%, transparent); }
+
+  /* 线框：次要按钮、顶栏“导出” */
+  .btn--line { background: var(--paper-plain); box-shadow: inset 0 0 0 1px var(--border-strong); }
+  .btn--line:hover:enabled { background: var(--paper-plain); box-shadow: inset 0 0 0 1px var(--border-strong), inset 0 0 0 100px var(--bg-hover); }
+  .btn--line:active:enabled { box-shadow: inset 0 0 0 1px var(--border-strong), inset 0 0 0 100px var(--bg-pressed); }
+  .btn--line:focus-visible { box-shadow: inset 0 0 0 1px var(--border-strong), var(--focus-shadow); }
+
+  /* 危险：墨字与图标区分状态。 */
+  .btn--danger { background: var(--status-danger-bg); color: var(--status-danger-fg); box-shadow: inset 0 0 0 1px var(--status-danger-border); }
+  .btn--danger > svg { color: inherit; }
+  .btn--danger:hover:enabled, .btn--danger:active:enabled { background: var(--status-danger-bg); box-shadow: inset 0 0 0 1px var(--status-danger-fg); }
+  .btn--danger:focus-visible { box-shadow: inset 0 0 0 1px var(--status-danger-border), var(--focus-shadow); }
+
+  .btn--sm { height: 28px; padding: 0 10px; gap: 5px; font-size: var(--fs-xs); line-height: var(--lh-xs); }
+  .btn--sm > svg { width: 14px; height: 14px; }
+
+  /* 禁用：不用整体透明度；文字降为 --fg-disabled，原因写在 title 或描述里 */
+  .btn:disabled, .btn[aria-disabled="true"] { color: var(--fg-disabled); cursor: default; }
+  .btn:disabled > svg, .btn[aria-disabled="true"] > svg { color: var(--fg-disabled); }
+  .btn--primary:disabled { background: var(--action-soft-bg); box-shadow: none; }
+  .btn--soft:disabled, .btn--danger:disabled { background: var(--bg-sunken); box-shadow: none; }
+
+  /* ---------- 图标按钮（命中区不小于 24×24） ---------- */
+  .icon-btn {
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-icon);
+    background: transparent;
+    color: var(--fg-2);
+    cursor: pointer;
+    transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+  }
+  .icon-btn:hover:enabled { background: var(--bg-hover); color: var(--fg-1); }
+  .icon-btn:active:enabled { background: var(--bg-pressed); transition-duration: 0ms; }
+  .icon-btn[aria-pressed="true"], .icon-btn[aria-expanded="true"][aria-haspopup] { background: var(--bg-pressed); color: var(--fg-1); }
+  .icon-btn:focus-visible { box-shadow: var(--focus-shadow); }
+  .icon-btn:disabled { color: var(--fg-disabled); cursor: default; }
+  .icon-btn--sm { width: 28px; height: 28px; }
+  .icon-btn--xs { width: 24px; height: 24px; }
+  .icon-btn.is-quiet { color: var(--fg-icon); }
+  .icon-btn.is-quiet:hover:enabled { color: var(--fg-1); }
+
+  /* ---------- kbd：透明底 + 发丝内框，字用 --fg-2；永远不叠悬停底色 ---------- */
+  kbd, .kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--border-hair);
+    color: var(--fg-2);
+    font: var(--type-kbd);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .btn:active kbd, .btn.is-pressed kbd { color: var(--fg-1); }
+
+  /* ---------- 开关（role="switch" + aria-checked） ---------- */
+  .switch {
+    position: relative;
+    flex: none;
+    width: 28px;
+    height: 16px;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: var(--fg-2);
+    cursor: pointer;
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .switch::before { content: ''; position: absolute; inset: -4px -2px; }   /* 命中区扩到 24 高 */
+  .switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 14px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--paper-plain);
+    transition: left var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+  }
+  .switch[aria-checked="false"] { background: var(--switch-off-bg); box-shadow: inset 0 0 0 1px var(--switch-off-border); }
+  .switch[aria-checked="false"]::after { left: 2px; background: var(--fg-icon); }
+  .switch:focus-visible { box-shadow: var(--focus-shadow); }
+  .switch[aria-checked="false"]:focus-visible { box-shadow: inset 0 0 0 1px var(--switch-off-border), var(--focus-shadow); }
+  .switch:disabled { background: var(--bg-pressed); box-shadow: none; cursor: default; }
+  .switch:disabled::after { background: var(--fg-disabled); }
+
+  /* ---------- 分段控件（role="group" + aria-pressed），顶栏“画布 / 大纲”、写作“正文 / 脚本” ---------- */
+  .seg {
+    display: inline-flex;
+    align-items: center;
+    flex: none;
+    gap: 0;
+    margin: 0;
+    padding: 2px;
+    border: 0;
+    border-radius: 8px;
+    background: var(--bg-shell-sunken);
+    box-shadow: inset 0 0 0 1px var(--border-hair);
+  }
+  .seg__item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 28px;
+    min-height: 0;
+    padding: 0 10px;
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: transparent;
+    color: var(--fg-2);
+    font: var(--type-ui-strong);
+    font-size: var(--fs-ui);
+    line-height: 22px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+  }
+  .seg__item > svg { flex: none; color: var(--fg-icon); }
+  .seg__item:hover:not([aria-pressed="true"]) { background: var(--bg-hover); color: var(--fg-1); }
+  /* 按下的一段：浮起的白片 + 1px --fg-icon 外框（非文字对比 ≥3:1） */
+  .seg__item[aria-pressed="true"] { background: var(--paper-plain); color: var(--fg-1); box-shadow: var(--shadow-chip); }
+  .seg__item[aria-pressed="true"] > svg { color: var(--fg-1); }
+  .seg__item:focus-visible { box-shadow: var(--focus-shadow); position: relative; z-index: 1; }
+  .seg__item:disabled { color: var(--fg-disabled); cursor: default; }
+
+  /* ---------- 迁移期：旧按钮类换上新色板（只改颜色、边、圆角与字重，尺寸仍由各表面的旧规则决定） ---------- */
+  :where(.primary-button) { border: 0; border-radius: var(--radius-ctl); background: var(--action-bg); color: var(--action-fg); box-shadow: inset 0 1px 0 color-mix(in srgb, var(--action-fg) 9%, transparent); font-weight: var(--fw-medium); }
+  :where(.primary-button):hover:enabled { background: var(--action-bg-hover); }
+  :where(.primary-button):disabled { background: var(--action-soft-bg); color: var(--fg-disabled); box-shadow: none; }
+  :where(.outline-button) { border: 0; border-radius: var(--radius-ctl); background: var(--paper-plain); color: var(--fg-1); box-shadow: inset 0 0 0 1px var(--border-strong); font-weight: var(--fw-medium); }
+  :where(.outline-button):hover:enabled { background: var(--paper-plain); box-shadow: inset 0 0 0 1px var(--border-strong), inset 0 0 0 100px var(--bg-hover); }
+  :where(.outline-button):disabled { color: var(--fg-disabled); }
+  :where(.danger-button) { border: 0; border-radius: var(--radius-ctl); background: var(--status-danger-bg); color: var(--status-danger-fg); box-shadow: inset 0 0 0 1px var(--status-danger-border); font-weight: var(--fw-medium); }
+  :where(.icon-button) { border-radius: var(--radius-ctl); color: var(--fg-2); }
+  :where(.icon-button):hover:enabled { background: var(--bg-hover); color: var(--fg-1); }
+  :where(.icon-button):disabled { color: var(--fg-disabled); }
+  :where(.primary-button, .outline-button, .danger-button, .icon-button):focus-visible { box-shadow: var(--focus-shadow); }
+  :where(.outline-button):focus-visible { box-shadow: inset 0 0 0 1px var(--border-strong), var(--focus-shadow); }
+}

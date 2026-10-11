@@ -1,0 +1,4 @@
+@layer features {
+  .field-card--draft[data-lod="simple"][data-lod-frame] { --lod-title: max(1, calc(13 / 23 / var(--z-tier))); }
+  .field-card--draft[data-lod="simple"] .field-card__draft-rule { border-top-width: calc(2px / var(--z-tier)); border-bottom-width: calc(1px / var(--z-tier)); }
+}

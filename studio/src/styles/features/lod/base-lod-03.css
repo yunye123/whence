@@ -1,0 +1,16 @@
+/* W1-E: features/lod.css; original cascade position retained by styles/index.css. */
+@layer features {                                      /* 概览档的标签另画，托盘上沿完整 */
+  .field-card[data-lod="simple"] :is(.field-card__rail, .field-card__length-rail) > .react-flow__handle-right {
+    zoom: var(--lod-k);
+    right: calc(-1 * var(--card-pad-x) * var(--z-tier));
+  }
+  .field-card[data-lod="simple"] .field-card__media-placeholder span { display: none; }
+
+  /* --- 外框已锁定：在不变的外框里重排；纵向只露整行 --- */
+  .field-card[data-lod="simple"][data-lod-frame] > .field-card__surface { overflow: visible clip; }
+
+  /* 标题：屏幕 ≥ 13px（= max(名义字号, 13px / --z-tier)），最多两行 */
+  .field-card[data-lod="simple"][data-lod-frame] {
+    --lod-title: max(1, calc(14 / 16 / var(--z-tier)));
+  }
+}

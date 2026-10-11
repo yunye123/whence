@@ -1,0 +1,4 @@
+/* W1-E: layout/shell.css; original cascade position retained by styles/index.css. */
+@layer layout {
+  @keyframes field-scrim-in { from { opacity: 0; } }
+}

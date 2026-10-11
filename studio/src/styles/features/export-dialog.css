@@ -1,0 +1,88 @@
+/* W3-K release 1: three columns, neutral panel, manuscript selection. */
+@layer features {
+  .modal-export { width: min(1296px, calc(100vw - 48px)); height: min(792px, calc(100dvh - 48px)); background: var(--bg-panel); border-radius: 10px; }
+  .modal-export .modal-header { flex: none; padding: 20px 24px 0; }
+  .modal-export .modal-title { font: 600 18px/26px var(--font-read); }
+  .modal-export .modal-subtitle { font: 400 12px/18px var(--font-ui); color: var(--fg-3); }
+  .modal-export .export-dialog__body { display: grid; grid-template-columns: 208px minmax(0, 1fr) 248px; gap: 24px; flex: 1; min-height: 0; padding: 18px 24px 24px; overflow: hidden; }
+  .modal .export-options, .export-options { display: flex; flex-direction: column; align-self: start; gap: 2px; margin: 0; border-radius: 0; box-shadow: none; overflow: visible; min-width: 0; }
+  .export-options > button, .modal .export-options > button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 64px; margin: 0; padding: 10px 12px; border: 0; border-radius: 8px; background: transparent; color: var(--fg-2); text-align: left; cursor: pointer; opacity: 1; }
+  .export-options > button + button { box-shadow: none; }
+  .export-options > button[data-export-format="package"] { margin-top: 16px; position: relative; }
+  .export-options > button[data-export-format="package"]::before { content: ''; position: absolute; top: -9px; left: 12px; right: 12px; height: 1px; background: var(--border-hair); }
+  .export-options > button:hover:not([aria-checked="true"]):enabled { background: var(--bg-hover); }
+  .export-options > button[aria-checked="true"], .modal .export-options > button[aria-checked="true"] { background: var(--paper-manuscript); box-shadow: var(--shadow-chip); color: var(--fg-1); }
+  .export-options > button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+  .export-options > button:disabled { cursor: not-allowed; }
+  .exp-icon { display: grid; place-items: center; flex: none; width: 22px; height: 24px; background: transparent; color: currentColor; }
+  .exp-copy { display: grid; gap: 2px; min-width: 0; }
+  .exp-copy strong, .modal .export-options strong { margin: 0; font: 500 14px/20px var(--font-ui); color: currentColor; overflow-wrap: anywhere; }
+  .export-options > button[aria-checked="true"] strong, .modal .export-options > button[aria-checked="true"] strong { font-weight: 600; }
+  .exp-format, .modal .export-options small { margin: 0; font: 400 12px/18px var(--font-num); color: var(--fg-3); overflow-wrap: anywhere; }
+  .export-options > button.is-unavailable .exp-format { font-family: var(--font-ui); }
+  .export-options > button:disabled { color: var(--fg-3); }
+  .export-dialog__stage { min-width: 0; min-height: 0; display: grid; place-items: center; padding: 32px; background: var(--bg-canvas); border-radius: 6px; overflow: auto; }
+  .export-dialog__explanation { width: min(360px, 100%); padding: 24px; background: var(--paper-manuscript); box-shadow: var(--shadow-paper); overflow-wrap: anywhere; }
+  .export-dialog__format-icon { display: block; color: var(--fg-icon); margin-bottom: 16px; }
+  .export-dialog__explanation h3 { margin: 0 0 12px; font: 600 18px/26px var(--font-read); color: var(--fg-1); }
+  .export-dialog__explanation p { margin: 0 0 16px; font: 400 14px/22px var(--font-ui); color: var(--fg-2); }
+  .export-dialog__explanation .export-dialog__no-preview { font-size: 12px; line-height: 18px; color: var(--fg-3); }
+  .export-dialog__filename { display: grid; gap: 6px; border-top: 1px solid var(--rule-paper); padding-top: 16px; }
+  .export-dialog__filename span { font: 400 12px/18px var(--font-ui); color: var(--fg-3); }
+  .export-dialog__filename strong { font: 500 14px/22px var(--font-ui); }
+  .export-dialog__settings { min-width: 0; min-height: 0; overflow: auto; padding: 2px; }
+  .export-dialog__details h3, .export-dialog__drafts legend { font: 600 12px/18px var(--font-ui); color: var(--fg-2); margin-bottom: 8px; }
+  .export-dialog__details p { font: 400 14px/22px var(--font-ui); color: var(--fg-2); margin: 0 0 14px; }
+  .export-dialog__details .export-dialog__format-label { font: 400 12px/18px var(--font-num); color: var(--fg-3); }
+  .export-dialog__drafts { border: 0; padding: 0; margin: 0; min-width: 0; }
+  .export-dialog__draft { display: flex; gap: 10px; align-items: start; padding: 12px 0; border-bottom: 1px solid var(--border-hair); cursor: pointer; }
+  .export-dialog__draft input { flex: none; margin: 3px 0 0; width: 16px; height: 16px; accent-color: var(--action-bg); }
+  .export-dialog__draft span { display: grid; gap: 4px; min-width: 0; }
+  .export-dialog__draft strong { font: 500 14px/20px var(--font-read); color: var(--fg-1); overflow-wrap: anywhere; }
+  .export-dialog__draft small { font: 400 12px/18px var(--font-ui); color: var(--fg-3); }
+  .modal-export .export-dialog__footer { flex: none; min-height: 64px; padding: 12px 24px; border-top: 1px solid var(--border-hair); gap: 12px; }
+  .export-dialog__summary { flex: 1; min-width: 0; display: grid; gap: 4px; color: var(--fg-3); font: 400 12px/18px var(--font-ui); overflow-wrap: anywhere; }
+  .export-dialog__footer .btn--line { background: var(--paper-manuscript); box-shadow: var(--shadow-chip); }
+  .export-dialog__footer .btn { flex: none; }
+  .moodboard { display: contents; }
+  .moodboard__body { display: grid; grid-template-columns: minmax(0, 1fr) 248px; gap: 24px; align-items: stretch; }
+  .moodboard__preview { display: grid; place-items: center; position: relative; width: 100%; height: 100%; min-width: 0; min-height: 0; padding: 32px; border-radius: 6px; background: var(--bg-canvas); overflow: hidden; }
+  .export-dialog__stage:has(.moodboard__preview) { padding: 0; overflow: hidden; }
+  .moodboard__preview canvas { display: block; max-width: 100%; max-height: 100%; box-shadow: var(--shadow-paper); }
+  .moodboard__waiting { position: absolute; bottom: 8px; font: 400 12px/18px var(--font-ui); color: var(--fg-3); }
+  .moodboard__options { display: grid; gap: 16px; align-content: start; border: 0; padding: 0; margin: 0; min-width: 0; }
+  .moodboard__option { display: grid; gap: 8px; margin: 0; min-width: 0; }
+  .moodboard__option .seg-ctl { min-width: 0; }
+  .moodboard__option .seg-ctl > button { flex: 1 1 auto; min-width: 0; padding: 0 6px; font-size: 12px; }
+  .moodboard__option .seg-ctl { background: var(--bg-shell-sunken); }
+  .moodboard__option .seg-ctl > button[aria-checked="true"] { background: var(--paper-manuscript); color: var(--fg-1); box-shadow: var(--shadow-chip); }
+  .moodboard__pair { display: contents; }
+  .moodboard__select { width: 100%; height: 36px; padding: 0 8px; border: 0; border-radius: var(--radius-ctl); background: var(--bg-shell-sunken); box-shadow: inset 0 0 0 1px var(--border-hair); color: var(--fg-1); font: 400 14px/22px var(--font-ui); }
+  .moodboard__scope { font: 500 14px/22px var(--font-ui); color: var(--fg-1); }
+  .moodboard__swatch { flex: none; width: 12px; height: 12px; border-radius: 3px; box-shadow: inset 0 0 0 1px var(--border-strong); }
+  .moodboard__swatch--canvas { background: var(--export-bg-desk); }
+  .moodboard__swatch--white { background: var(--export-bg-white); }
+  .moodboard__swatch--dark { background: var(--export-bg-dark); }
+  .moodboard__px { font-family: var(--font-num); font-variant-numeric: tabular-nums; color: var(--fg-2); }
+  .moodboard__warn, .moodboard__done { color: var(--fg-2); font: 400 12px/18px var(--font-ui); }
+  .moodboard__error { max-width: 100%; }
+  .moodboard__empty { margin: 0; font: 400 14px/22px var(--font-ui); color: var(--fg-2); }
+  @media (max-width: 1199px) {
+    .modal-export .export-dialog__body { grid-template-columns: minmax(0, 1fr) 248px; grid-template-rows: auto minmax(0, 1fr); gap: 18px 24px; }
+    .modal-export .export-options { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .modal .export-options > button { padding: 8px; gap: 8px; }
+    .export-options > button[data-export-format="package"] { margin-top: 0; }
+    .export-options > button[data-export-format="package"]::before { display: none; }
+  }
+  @media (max-width: 999px) {
+    .modal-export .export-dialog__body { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(260px, 1fr) auto; overflow-y: auto; }
+    .modal-export .export-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .export-dialog__settings { overflow: visible; }
+    .moodboard__options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .moodboard__options .dialog-check { grid-column: 1 / -1; }
+  }
+  @media (forced-colors: active) {
+    .export-options > button[aria-checked="true"], .export-dialog__explanation, .moodboard__preview canvas { outline: 1px solid CanvasText; }
+    .export-options > button:focus-visible { outline: 2px solid Highlight; }
+  }
+}

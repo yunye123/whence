@@ -1,0 +1,149 @@
+/* 菜单：挂 body、固定字号、role=menu（§6.21）；HUD 工具提示（§6.1 .tip）；快捷键角标只在提示里出现。
+   组件：src/components/Menu.tsx（Menu / MenuItem / MenuSection / MenuSeparator / useHudTooltip / TipHit）。 */
+@layer components {
+  /* 暗光下浅字在深底上显粗：界面字重按 --fw-text 的暗光差值同步减一点（浅色 450，暗光 410），不写主题选择器 */
+  .field-menu, .hud-tip, .canvas-hint { --fw-ui-optical: calc(var(--fw-book) - 400 + var(--fw-text)); }
+  .field-menu {
+    position: fixed;
+    z-index: var(--z-popover);
+    box-sizing: border-box;
+    max-height: 70vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    padding: 6px;
+    border-radius: var(--radius-tool);
+    background: var(--bg-panel);
+    box-shadow: var(--shadow-tool);
+    font: var(--type-ui);
+    font-size: var(--fs-ui);
+    line-height: 22px;
+    color: var(--fg-1);
+    text-align: left;
+    outline: none;
+    transform-origin: top left;
+    animation: field-menu-in var(--dur-base) var(--ease-out);
+    --menu-from: -4px;
+  }
+  .field-menu[data-side="top"] { transform-origin: bottom left; --menu-from: 4px; }
+  @keyframes field-menu-in {
+    from { opacity: 0; transform: translateY(var(--menu-from)) scale(.98); }
+  }
+
+  .field-menu__section { display: flex; flex-direction: column; }
+  .field-menu__heading {
+    padding: 8px 10px 4px;
+    font: var(--type-meta);
+    color: var(--fg-3);
+    user-select: none;
+  }
+  .field-menu__separator { height: 1px; margin: 6px 4px; background: var(--border-hair); }
+
+  .field-menu__item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    height: 34px;
+    padding: 0 8px 0 10px;
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: transparent;
+    font: var(--type-ui);
+    font-size: var(--fs-ui);
+    line-height: 22px;
+    font-weight: var(--fw-ui-optical);
+    color: var(--fg-1);
+    text-align: left;
+    white-space: nowrap;
+    cursor: default;
+  }
+  /* 当前项 = 有焦点的项（指针移入也会把焦点移过来）；键盘焦点另加内框，不溢出菜单 */
+  .field-menu__item:hover,
+  .field-menu__item:focus { outline: none; background: var(--bg-hover); }
+  .field-menu__item:focus-visible { box-shadow: var(--focus-shadow); }
+  .field-menu__item:active:not([aria-disabled="true"]) { background: var(--bg-pressed); }
+  .field-menu__icon {
+    flex: none;
+    display: inline-grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
+    color: var(--fg-icon);
+  }
+  .field-menu__icon > svg { display: block; }
+  .field-menu__label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .field-menu__reason {
+    flex: none;
+    margin-left: auto;
+    padding-left: 16px;
+    font: var(--type-meta);
+    color: var(--fg-3);
+  }
+  .field-menu__item[aria-disabled="true"] { color: var(--fg-3); }
+  .field-menu__item[aria-disabled="true"] .field-menu__icon { color: var(--fg-disabled); }
+  .field-menu__item[aria-busy="true"] { color: var(--fg-2); cursor: progress; }
+  .field-menu__item.is-danger,
+  .field-menu__item.is-danger .field-menu__icon { color: var(--status-danger-fg); }
+
+  /* kbd：透明底 + 发丝内框，字用 --fg-2，不叠悬停底（任何底色上 ≥ 4.5:1） */
+  .field-menu__kbd,
+  .hud-tip__kbd,
+  .canvas-hint kbd {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--border-hair);
+    font: var(--type-kbd);
+    color: var(--fg-2);
+    white-space: nowrap;
+  }
+  .field-menu__kbd { margin-left: auto; }
+  .field-menu__label + .field-menu__kbd,
+  .field-menu__label + .field-menu__reason { margin-left: 16px; }
+
+  /* 工具提示：悬停 500ms 或键盘焦点立即出现，离开 0ms 消失（§6.1） */
+  .hud-tip {
+    position: fixed;
+    z-index: var(--z-tooltip);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 26px;
+    padding: 0 6px 0 10px;
+    border-radius: 5px;
+    background: var(--tip-bg);
+    box-shadow: var(--shadow-tool);
+    font: var(--type-meta);
+    font-weight: var(--fw-ui-optical);
+    color: var(--tip-fg);
+    white-space: nowrap;
+    pointer-events: none;
+    animation: hud-tip-in var(--dur-fast) var(--ease-out);
+  }
+  .hud-tip:not(:has(.hud-tip__kbd)) { padding-right: 10px; }
+  .hud-tip__note { font: var(--type-meta); color: var(--tip-fg); }
+  .hud-tip .hud-tip__kbd {
+    height: 18px;
+    color: var(--tip-fg);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tip-fg) 35%, transparent);
+  }
+  .hud-tip__kbd + .hud-tip__kbd { margin-left: -4px; }
+  @keyframes hud-tip-in { from { opacity: 0; } }
+
+  /* 盖在 HUD 按钮上的空 title 层：原生提示不会叠在自绘提示上；命中区与按钮一致 */
+  .hud-hit {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+  }
+}

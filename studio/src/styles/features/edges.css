@@ -1,0 +1,177 @@
+/* 连线、标签避让、引用连线（§6.17，不含溯光）。组件：src/canvas/edges/。
+   描边一律 vector-effect: non-scaling-stroke（屏幕宽度不随缩放变）；端点圆环、线头按 --z 反算成屏幕尺寸。
+   视口变换层里不用 filter / 模糊：点亮只改线本身的宽度与颜色（§0 规则 3）。 */
+@layer features {
+  /* 标签永远在卡片之上（--z-flow-label）；标签本身由避让算法放在卡片之外。 */
+  .react-flow__edgelabel-renderer { z-index: var(--z-flow-label); }
+
+  /* ---- 线 ---- */
+  .field-edge__hit {
+    fill: none; stroke: transparent; stroke-width: 16; stroke-linecap: round;
+    vector-effect: non-scaling-stroke; pointer-events: stroke;
+  }
+  .react-flow__edge.is-derived { cursor: default; }
+  .react-flow__edge.is-derived .field-edge__hit { pointer-events: none; }   /* 引用线只读：点击穿到画布 */
+
+  .field-edge__line,
+  .field-edge__eye,
+  .field-edge__eyelet,
+  .field-edge__dot,
+  .field-edge__leader,
+  .field-edge__tie { pointer-events: none; }
+
+  .field-edge__line {
+    fill: none; stroke-width: 1.25; stroke-linecap: round; vector-effect: non-scaling-stroke;
+    transition: stroke-width var(--dur-fast) var(--ease-out), stroke var(--dur-fast) var(--ease-out);
+  }
+  .field-edge__line--excerpt { stroke: var(--edge-ink); }
+  .field-edge--cite { stroke: var(--zhu); stroke-linecap: butt; stroke-dasharray: calc(5px / var(--z, 1)) calc(4px / var(--z, 1)); }
+  .field-edge__line--pencil { stroke: var(--edge-ink); }
+
+  /* Transitional legacy selectors, no visible holes. */
+  .field-edge__eye { display: none; }
+  .field-edge__eyelet { display: none; }
+  /* 标签离线较远时的引出线（短线、附近没有空位，CANVAS-12）：1px 铅笔线，随线一起压暗 */
+  .field-edge__leader { fill: none; stroke: var(--canvas-edge); stroke-width: 1; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+  /* 我画的关系：终点 r 2.4 实心点 */
+  .field-edge__dot { r: calc(2.5px / var(--z, 1)); fill: var(--edge-ink); }
+  /* Old tail selectors are retained but never rendered. */
+  .field-edge__tie, .field-edge__tail, .field-edge__knot { display: none; }
+
+  /* 悬停（可选中的线）与来历链点亮：2px */
+  .react-flow__edge.selectable:hover .field-edge__line--pencil,
+  .react-flow__edge.is-lit .field-edge__line { stroke-width: 2; }
+  .react-flow__edge.is-lit .field-edge__eye { stroke-width: 2; }
+
+  /* Selected: ink, 2.5 screen px; citation dashes retained. */
+  .react-flow__edge.selected .field-edge__line { stroke-width: 2.5; }
+  .react-flow__edge.selected .field-edge__line { stroke: var(--selection-ring); }
+  .react-flow__edge.selected .field-edge__dot { fill: var(--selection-ring); }
+
+  /* 选中卡片时，无关连线压暗 */
+  .react-flow__edge.is-dim { opacity: var(--canvas-edge-dim); transition: opacity var(--dur-fast) var(--ease-out); }
+
+  /* 键盘焦点（KB-M3）：2.5px 焦点色；压暗的线获得焦点时恢复 */
+  .react-flow__edge:focus-visible { opacity: 1; }
+  .react-flow__edge:focus-visible .field-edge__line { stroke: var(--focus-ring); stroke-width: 2.5; stroke-dasharray: none; }
+  .react-flow__edge:focus-visible .field-edge__dot,
+  .react-flow__edge:focus-visible .field-edge__knot { fill: var(--focus-ring); r: calc(3.5px / var(--z, 1)); }
+  .react-flow__edge:focus-visible .field-edge__eye,
+  .react-flow__edge:focus-visible .field-edge__eyelet,
+  .react-flow__edge:focus-visible .field-edge__tail { stroke: var(--focus-ring); }
+
+  /* Labels: Noto Sans 12/18, no text stroke. */
+  .field-edge-label {
+    --label-s: var(--edge-label-scale, 1);
+    position: absolute; left: 0; top: 0;
+    max-width: calc(182px * var(--label-s));
+    padding: 0 calc(7px * var(--label-s));
+    border-radius: calc(4px * var(--label-s));
+    background: none;
+    -webkit-text-stroke: 0;
+    color: var(--fg-2);
+    font: var(--fw-regular) calc(12px * var(--label-s)) / calc(18px * var(--label-s)) var(--font-ui);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    pointer-events: all; cursor: pointer; user-select: none;
+    transition: opacity var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+  }
+  .field-edge-label__num { font: 500 calc(12px * var(--label-s)) / 1 var(--font-num); font-variant-numeric: tabular-nums; }
+  .field-edge-label__paragraph {
+    box-sizing: border-box; display: inline-grid; place-items: center; vertical-align: top;
+    min-width: calc(18px * var(--label-s)); height: calc(18px * var(--label-s));
+    margin-left: calc(4px * var(--label-s)); padding: 0 calc(2px * var(--label-s));
+    border: calc(1px / var(--z, 1)) solid currentColor; border-radius: 50%;
+    font: 500 calc(12px * var(--label-s)) / 1 var(--font-num);
+  }
+  .field-edge-label:hover { color: var(--fg-1); }
+  /* 选中卡片时：来历链上的标签加深到主文字色，无关标签退到 --fg-3（仍 ≥ 4.5:1，标签是要读的信息，CANVAS-11）；
+     线条照旧压到 .3 */
+  .field-edge-label.is-lit { color: var(--fg-1); }
+  .field-edge-label.is-dim { color: var(--fg-3); }
+  .field-edge-label.is-selected { color: var(--fg-1); box-shadow: 0 0 0 calc(1px / var(--z, 1)) var(--selection-ring); }
+  .field-edge-label.is-focused { opacity: 1; color: var(--fg-1); box-shadow: 0 0 0 calc(2px / var(--z, 1)) var(--focus-ring); }
+  .field-edge-label--cite { cursor: default; }
+
+  /* ---- 标签框（EG-M3、FC-08）：原位输入，与标签同字体、同缩放补偿；按键提示挂在框下，不影响框的居中 ---- */
+  .field-edge-editor {
+    --label-s: var(--edge-label-scale, 1);
+    position: absolute; left: 0; top: 0;
+    pointer-events: all;
+  }
+  .field-edge-editor__input {
+    box-sizing: border-box;
+    display: block;
+    width: calc(204px * var(--label-s));
+    height: calc(30px * var(--label-s));
+    margin: 0;
+    padding: 0 calc(9px * var(--label-s));
+    border: calc(1px * var(--label-s)) solid var(--focus-ring);
+    border-radius: calc(5px * var(--label-s));
+    background: var(--bg-panel);
+    color: var(--fg-1);
+    font: var(--fw-regular) calc(12px * var(--label-s)) / calc(18px * var(--label-s)) var(--font-ui);
+    box-shadow: var(--shadow-tool);
+    outline: none;
+  }
+  .field-edge-editor__input::placeholder { color: var(--fg-3); opacity: 1; }
+  .field-edge-editor__hint {
+    position: absolute; top: 100%; left: 50%;
+    translate: -50% calc(4px * var(--label-s));
+    padding: 0 calc(6px * var(--label-s));
+    border-radius: calc(4px * var(--label-s));
+    background: var(--bg-canvas);
+    color: var(--fg-2);
+    font: var(--fw-regular) calc(12px * var(--label-s)) / calc(18px * var(--label-s)) var(--font-ui);
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  /* ---- 线的操作条：单独选中一条线时贴在标签（或线中点）下 8px。外观同卡片操作条，屏幕尺寸固定（K8，按 --z 反算） ---- */
+  .field-edge-tools {
+    position: absolute; left: 0; top: 0;
+    display: flex; align-items: center; gap: 2px;
+    height: var(--contextbar-h);
+    padding: 0 4px;
+    border-radius: var(--radius-tool);
+    background: var(--bg-panel);
+    color: var(--fg-contextbar);
+    box-shadow: var(--shadow-tool);
+    font: var(--type-ui-strong);
+    white-space: nowrap;
+    transform-origin: 0 0;
+    pointer-events: all;
+    cursor: default;
+    animation: field-edge-tools-in var(--dur-fast) var(--ease-out);
+  }
+  @keyframes field-edge-tools-in { from { opacity: 0; } }
+  .field-edge-tools__btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 32px; margin: 0; padding: 0 10px;
+    border: 0; border-radius: 7px;
+    background: transparent; color: var(--fg-contextbar);
+    font: var(--type-ui-strong); letter-spacing: 0; white-space: nowrap;
+    cursor: pointer;
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .field-edge-tools__btn svg { flex: none; color: var(--fg-contextbar-2); }
+  .field-edge-tools__btn:hover { background: var(--contextbar-hover); }
+  .field-edge-tools__btn:active { background: var(--contextbar-pressed); transition-duration: 0ms; }
+  .field-edge-tools__btn:focus-visible { outline: none; box-shadow: var(--focus-shadow); }
+  .field-edge-tools__rule { flex: none; width: 1px; height: 18px; margin: 0 2px; background: var(--contextbar-rule); }
+  [data-tracing="true"] .field-edge-tools { opacity: 0; pointer-events: none; }
+
+  /* ---- 建立连线（EG-M2）：预览线 + 目标卡 1.5px 虚线墨框 ---- */
+  .field-connection { pointer-events: none; }
+  .field-connection__line {
+    fill: none; stroke: var(--edge-ink); stroke-width: 1.25;
+    stroke-linecap: round; vector-effect: non-scaling-stroke;
+  }
+  .field-connection.is-over .field-connection__line { stroke: var(--fg-1); }
+  .field-connection__target {
+    fill: none; stroke: var(--selection-ring); stroke-width: 1.5; stroke-dasharray: 5 4;
+    vector-effect: non-scaling-stroke;
+  }
+  .field-connection__start { r: calc(2.4px / var(--z, 1)); fill: var(--fg-1); }
+  .field-connection__end { r: calc(2.4px / var(--z, 1)); fill: var(--canvas-edge); }
+  .field-connection.is-over .field-connection__end { fill: var(--fg-1); }
+}

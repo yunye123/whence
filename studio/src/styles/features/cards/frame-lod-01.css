@@ -1,0 +1,4 @@
+/* W3-E: simple label compensation is discrete; fixed node geometry. */
+@layer features {
+  .field-card--frame[data-stationery][data-lod="simple"] .field-card__header { zoom: var(--lod-k); }
+}

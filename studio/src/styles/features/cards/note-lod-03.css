@@ -1,0 +1,17 @@
+/* Note overview: the first source sentence in WenKai; whole lines at screen 14px. */
+@layer features {
+  .field-card .field-card__overview--note .field-card__overview-content {
+    --o-pad: clamp(0px, calc((100cqh - 22px) / 2), 8px);
+    padding: var(--o-pad) 6px 0;
+  }
+  .field-card .field-card__overview--note h3 {
+    --o-max: 99;
+    font: 400 14px/22px var(--font-note);
+    --o-avail: max(0px, calc(100cqh - var(--o-pad)));
+    /* Leave one CSS pixel for fractional container rounding at very small frames. */
+    line-height: clamp(14px, calc(var(--o-avail) - 1px), 22px);
+    color: var(--fg-2);
+    white-space: pre-wrap;
+    text-wrap: wrap;
+  }
+}

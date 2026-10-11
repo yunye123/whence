@@ -1,0 +1,51 @@
+/* W1-E: features/inspector.css; original cascade position retained by styles/index.css. */
+@layer features {
+
+  /* ---------- 3. 阅读拆分 §6.18.3 ----------
+     主区成为固定定位的包含块：面板盖住顶栏右段与画布右段，画布条（含顶栏左侧的画布名与保存状态）留在左侧。 */
+  .studio:has(.inspector--reading-expanded) .main-workspace { contain: layout; }
+  .studio:has(.inspector--reading-expanded) .topbar-actions { visibility: hidden; }
+  .inspector--reading-expanded {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: auto;
+    width: var(--panel-w-reading);
+    max-width: calc(100% - 120px);
+    height: auto;
+    container: inspector-reading / inline-size;
+    background: var(--paper-plain);
+    box-shadow: var(--shadow-panel);
+    overflow: visible;
+  }
+  /* 画布条右缘 56px 渐隐到画布色：卡片不在面板边上被硬切 */
+  .inspector--reading-expanded::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 100%;
+    bottom: 0;
+    width: 56px;
+    background: linear-gradient(to right, transparent, var(--bg-canvas));
+    pointer-events: none;
+  }
+  /* 头部与画布条里的顶栏同高，两条发丝线在面板边上接成一条 */
+  .inspector--reading-expanded { --inspector-head-h: var(--topbar-h); }
+  .inspector--reading-expanded .inspector-header { padding-left: var(--space-8); }
+  .inspector--reading-expanded .inspector-layout { display: grid; grid-template-columns: 232px minmax(0, 1fr); align-items: start; }
+  .inspector--reading-expanded .inspector-layout:has(> .inspector-slot--lead:not(:empty)) {
+    background: linear-gradient(var(--border-hair), var(--border-hair)) 231px 0 / 1px 100% no-repeat;
+  }
+  .inspector--reading-expanded .inspector-slot--lead { grid-column: 1; position: sticky; top: 0; max-height: calc(100dvh - var(--inspector-head-h) - var(--footer-band-h)); padding: 28px var(--space-7) var(--space-8) var(--space-8); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+  .inspector--reading-expanded .inspector-column { grid-column: 2; padding: 40px 64px 96px; }
+  .inspector--reading-expanded .inspector-slot--lead:empty + .inspector-column { grid-column: 1 / -1; padding-left: 96px; }
+  .inspector--reading-expanded .inspector-slot--margin { display: none; }
+  .inspector--reading-expanded .inspector-title-area--article { max-width: calc(var(--measure-read) * 17 / 13); margin-bottom: var(--space-5); }
+  .inspector--reading-expanded :where(.inspector-column > .inspector-section) { padding-inline: 0; max-width: none; margin-inline: 0; }
+  .inspector--reading-expanded :where(.inspector-column > .inspector-section + .inspector-section) { box-shadow: none; }
+  @container inspector-reading (max-width: 879px) {
+    .inspector-slot--lead { display: none; }
+    .inspector-column, .inspector-slot--lead:empty + .inspector-column { grid-column: 1 / -1; padding: 32px 40px 80px 64px; }
+  }
+}

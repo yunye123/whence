@@ -1,0 +1,9 @@
+/* W1-E: layout/shell.css; original cascade position retained by styles/index.css. */
+@layer layout {
+  .studio {
+    display: flex;
+    height: 100dvh;
+    overflow: hidden;
+    background: var(--bg-canvas);
+  }
+}

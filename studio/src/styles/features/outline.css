@@ -1,0 +1,93 @@
+/* PLAN v2 §2.9：稿纸、页边段号和位置出处印，层级只靠缩进和字重。 */
+@layer features {
+  .outline-view {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    max-width: none;
+    margin: 0;
+    padding: var(--space-11) max(var(--space-8), calc((100% - 760px) / 2)) 120px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: var(--bg-canvas);
+    color: var(--fg-1);
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+  .outline-view .outline-intro { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-6); margin: 0 0 var(--space-8); color: var(--fg-3); }
+  .outline-intro h2 { margin: 0; font: var(--fw-semibold) var(--fs-h2)/var(--lh-h2) var(--font-ui); color: var(--fg-1); letter-spacing: 0; }
+  .outline-intro p { margin: var(--space-2) 0 0; font: var(--type-ui); color: var(--fg-2); }
+  .outline-intro > span { flex: none; font: var(--type-meta); color: var(--fg-3); }
+  .outline-draft, .outline-view .outline-empty { position: relative; margin: 0 0 var(--space-8); border-radius: var(--radius-paper); background: var(--paper-manuscript); box-shadow: var(--shadow-fair); }
+  .outline-draft { min-height: 160px; padding: 24px 16px 24px 32px; }
+  /* 版框整张纸只画一次，避开页眉与文武线。 */
+  .outline-draft::before { content: ''; position: absolute; inset: 108px 16px 24px 32px; border: 1px solid var(--frame-line); border-top: 0; pointer-events: none; }
+  .outline-draft__rule { height: 6px; margin: 10px 0 16px; border-top: 2px solid var(--fg-2); border-bottom: 1px solid var(--frame-line); }
+  .outline-view .outline-row {
+    position: relative;
+    display: grid;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 36px;
+    margin: 0;
+    padding: 0 12px;
+    border: 0;
+    border-radius: var(--radius-icon);
+    background: transparent;
+    box-shadow: none;
+    color: var(--fg-1);
+    text-align: left;
+    cursor: pointer;
+  }
+  .outline-view .outline-row:hover:enabled { background: var(--row-hover); border-color: transparent; }
+  .outline-view .outline-row:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; box-shadow: inset 0 0 0 1px var(--focus-ring); }
+  .outline-view .outline-row:disabled { cursor: default; color: var(--fg-3); opacity: 1; }
+  .outline-row__icon { display: grid; place-items: center; width: 28px; height: 28px; border-radius: var(--radius-icon); background: var(--bg-sunken); color: var(--fg-2); overflow: hidden; }
+  .outline-row__icon img { width: 100%; height: 100%; object-fit: cover; filter: none; }
+  .outline-row__meta { font: 400 12px/18px var(--font-ui); color: var(--fg-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .outline-view .outline-row--draft { grid-template-columns: minmax(0, 1fr) 28px; grid-template-areas: 'title icon' 'meta meta'; gap: 4px 12px; min-height: 52px; padding: 0 12px; }
+  .outline-row--draft .outline-row__icon { grid-area: icon; background: transparent; }
+  .outline-row--draft .outline-row__meta { grid-area: meta; overflow: hidden; text-overflow: ellipsis; }
+  .outline-draft__title { grid-area: title; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 600 18px/26px var(--font-read); color: var(--fg-1); }
+  .outline-sections { margin: 0; padding: 0 0 8px; list-style: none; }
+  .outline-section { position: relative; padding: 0 0 8px; border-radius: var(--radius-icon); }
+  .outline-section.is-dragging { opacity: .5; }
+  .outline-section.is-over { box-shadow: inset 0 2px 0 var(--focus-ring); }
+  .outline-section__head { position: relative; display: flex; align-items: center; }
+  .outline-section__grip { position: absolute; z-index: 1; left: 6px; display: grid; place-items: center; width: 14px; height: 24px; color: var(--fg-3); cursor: grab; pointer-events: none; }
+  .outline-view .outline-row--section { grid-template-columns: minmax(0, 1fr) auto; padding-left: 24px; }
+  .outline-section__title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 600 14px/22px var(--font-ui); color: var(--fg-1); }
+  .outline-section__paragraph, .outline-ref__paragraph { position: absolute; left: -28px; top: 50%; width: 22px; height: 22px; margin-top: -11px; pointer-events: none; }
+  .outline-section__paragraph::before, .outline-ref__paragraph::before { content: attr(data-para); display: grid; place-items: center; width: 22px; height: 22px; font: 400 12px/22px var(--font-num); color: var(--fg-3); }
+  .outline-ref__paragraph::before { border: 1px solid var(--zhu); border-radius: 50%; }
+  .outline-refs { margin: 0 0 4px 24px; padding: 0; list-style: none; }
+  .outline-view .outline-row--ref { grid-template-columns: auto minmax(0, 1fr) minmax(0, 160px); min-height: 36px; padding-left: 0; }
+  .outline-ref__paragraph { left: -52px; }
+  .outline-ref__tag { display: inline-flex; align-items: center; color: var(--fg-3); }
+  /* mini 原本无框，已移除状态在大纲补出虚线；不改变共享 stamp 的其他表面。 */
+  .outline-ref__tag .tag--gone { border: 1px dashed var(--fg-3); padding: 0 4px; }
+  .outline-ref__text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 14px/22px var(--font-read); color: var(--fg-1); }
+  .outline-row--ref:disabled .outline-ref__text { color: var(--fg-3); }
+  .outline-ref__source { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 12px/18px var(--font-ui); color: var(--fg-3); }
+  .outline-group { margin: 0 0 var(--space-8); }
+  .outline-group__title { display: flex; align-items: baseline; gap: var(--space-3); margin: 0 0 var(--space-3); padding: 0; font: 600 12px/18px var(--font-ui); color: var(--fg-2); }
+  .outline-group__title span { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+  .outline-refs--loose { display: grid; gap: 8px; margin: 0; }
+  .outline-refs--loose > li { border-top: 2px solid var(--zhu); border-radius: var(--radius-paper); background: var(--paper-plain); box-shadow: var(--shadow-paper); }
+  .outline-view .outline-refs--loose .outline-row--ref { min-height: 46px; padding: 4px 12px; }
+  .outline-list { margin: 0; padding: var(--space-3); list-style: none; border-radius: var(--radius-paper); background: var(--paper-plain); box-shadow: var(--shadow-paper); }
+  .outline-view .outline-row--card { grid-template-columns: 28px minmax(0, 1fr) minmax(0, 180px); min-height: 40px; }
+  .outline-row--card .outline-row__meta { overflow: hidden; text-overflow: ellipsis; }
+  .outline-card__title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 600 14px/22px var(--font-ui); color: var(--fg-1); }
+  .outline-view .outline-empty { display: grid; justify-items: center; gap: var(--space-4); padding: var(--space-12) var(--space-8); text-align: center; color: var(--fg-2); }
+  .outline-empty::before { content: ''; position: absolute; inset: 16px; border: 1px solid var(--frame-line); pointer-events: none; }
+  .outline-empty h3 { margin: 0; font: 600 18px/26px var(--font-read); color: var(--fg-1); }
+  .outline-empty p { max-width: 30em; margin: 0; font: var(--type-ui); color: var(--fg-2); }
+  .outline-empty p.cjk-wrap { word-break: keep-all; overflow-wrap: anywhere; line-break: strict; text-wrap: balance; }
+  @media (forced-colors: active) {
+    .outline-draft, .outline-list, .outline-empty, .outline-refs--loose > li { outline: 1px solid CanvasText; }
+    .outline-view .outline-row:focus-visible { outline-color: Highlight; }
+    .outline-ref__paragraph::before { border-color: CanvasText; }
+  }
+}

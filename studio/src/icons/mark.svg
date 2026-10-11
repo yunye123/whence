@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" role="img" aria-label="来处">
+  <!-- 来处标志「原点」（2026-10-07，方案 A，24 网格）：墨色方纸，左下角一枚朱点，纸在朱点处让出一段圆弧。墨跟随文字色；朱点读 CSS 变量 brand-dot，没有时退回文字色（单色版）。16、32 像素用品牌稿 mark-16 / mark-32 的专用几何，见 field-icons.tsx 的 MarkIcon。 -->
+  <path d="M6 2H22V18H12.4A6.4 6.4 0 0 0 6 11.6Z"/><path style="fill:var(--brand-dot, currentColor)" d="M2 18A4 4 0 1 0 10 18A4 4 0 1 0 2 18Z"/>
+</svg>

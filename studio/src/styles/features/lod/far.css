@@ -1,0 +1,19 @@
+/* W1-E: features/lod.css; original cascade position retained by styles/index.css. */
+@layer features {
+
+  /* ===================================================================
+     3. 概览档（< 0.5）：纸面只留 1px 发丝（屏幕），文稿保留纸叠；内容换成剪影
+     =================================================================== */
+  /* K7：详情层隐藏但保留尺寸与测量 */
+  .field-card.is-overview > .field-card__surface { visibility: hidden; pointer-events: none; }
+  .field-card.is-overview > .field-card__handle { visibility: hidden; pointer-events: none; }
+
+  .field-card[data-lod="far"] {
+    --card-edge: 0 0 0 calc(1px / var(--z-tier)) var(--border-strong);
+    --card-ambient-rest: 0 0 transparent;
+    --card-ambient-lift: 0 0 transparent;
+    --card-ambient: 0 0 transparent;
+  }
+  .field-card[data-lod="far"].is-selected { --card-edge: 0 0 0 calc(var(--selection-width) / var(--z)) var(--selection-ring); }
+  .field-card[data-lod="far"].is-failed:not(.is-selected) { --card-edge: 0 0 0 calc(1px / var(--z-tier)) var(--status-danger-border); }
+}

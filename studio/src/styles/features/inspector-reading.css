@@ -1,0 +1,778 @@
+/* 阅读（DESIGN_SYSTEM §6.18.3）：文字资料的正文、选区操作、已摘录留痕、目录与本文已摘录、回源提示；
+   也负责摘录面板的原文区、我的理解、标签与来源链接、X 推文正文与来源区的排版。
+   正文的 textContent 必须逐字等于源文本（K9-13）：Markdown 记号在 .md-mark 里隐藏，段落号只用伪元素 attr(data-para)
+   （不用 counter()：回源跨段时的“平铺块”会合并几段，attr 保证段号仍与 paragraphIndexAt 一致）。 */
+@layer features {
+  /* ---------- 正文排版 ---------- */
+  .inspector-reading-body {
+    position: relative;
+    max-width: var(--measure-read);
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    font: var(--fw-text) var(--fs-read)/var(--lh-read) var(--font-ui);
+    color: var(--fg-1);
+    white-space: normal;
+    overflow-wrap: break-word;
+    letter-spacing: var(--ls-cjk);
+    text-wrap: pretty;
+    user-select: text;
+    cursor: text;
+    outline: none;
+  }
+  .inspector-reading-body:focus-visible { box-shadow: none; }
+  /* 键盘进入正文时左缘亮一下就退（INSP-23）：不再留下一条与全文等高的琥珀竖线（琥珀留给溯光） */
+  .inspector-reading-body:focus-visible::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -14px;
+    width: 2px;
+    border-radius: 1px;
+    background: var(--focus-ring);
+    pointer-events: none;
+    animation: reading-focus-fade 1600ms var(--ease-out) forwards;
+  }
+  @keyframes reading-focus-fade { 0%, 60% { opacity: 1; } 100% { opacity: 0; } }
+  .inspector-reading-body .md-mark { display: none; }
+  .inspector-reading-body .md-block {
+    position: relative;
+    margin: 0 0 .85em;
+    white-space: pre-wrap;
+    scroll-margin-top: var(--reading-scroll-margin);
+  }
+  .inspector-reading-body .md-block:last-child { margin-bottom: 0; }
+  /* 段落号：正文左侧页边，IBM Plex Mono；伪元素不进入源文复制。 */
+  .inspector-reading-body [data-para]::before {
+    content: attr(data-para);
+    position: absolute;
+    top: 0;
+    left: -40px;
+    width: 22px;
+    font-family: var(--font-num);
+    font-size: var(--fs-xs);
+    font-weight: var(--fw-medium);
+    font-style: normal;
+    line-height: calc(var(--fs-read) * var(--lh-read));
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+    text-align: center;
+    text-decoration: none;
+    color: var(--fg-3);
+    pointer-events: none;
+    user-select: none;
+  }
+  .inspector-reading-body [data-para][data-provenance="excerpt"]::before {
+    top: 4px;
+    height: 22px;
+    border: 1px solid var(--zhu);
+    border-radius: 50%;
+    line-height: 20px;
+    font-weight: var(--fw-semibold);
+  }
+
+  /* 标题：只在 # 行上，不计段 */
+  .inspector-reading-body .md-heading {
+    margin: 1.7em 0 .55em;
+    font-family: var(--font-ui);
+    font-weight: var(--fw-semibold);
+    color: var(--fg-1);
+    white-space: normal;
+    text-wrap: balance;
+    scroll-margin-top: var(--reading-scroll-margin);
+  }
+  .inspector-reading-body > .md-heading:first-child,
+  .inspector-reading-body > .md-mark:first-child + .md-heading { margin-top: 0; }
+  .inspector-reading-body .md-heading--1 { font-size: var(--fs-h2); line-height: var(--lh-h2); }
+  .inspector-reading-body .md-heading--2 { font-size: var(--fs-h3); line-height: var(--lh-h3); }
+  .inspector-reading-body .md-heading--3 { font-size: var(--fs-read); line-height: var(--lh-h3); }
+  .inspector-reading-body .md-heading--4 { font-size: var(--fs-body); line-height: var(--lh-body); color: var(--fg-2); }
+  .inspector-reading-body .is-duplicate-title { display: none; }
+  .inspector-reading-body .md-heading + .md-mark + .md-block:not(.md-heading) { margin-top: 0; }
+  /* 纯文本里的“一、二、”小节行：仍算一段，只加重 */
+  .inspector-reading-body .md-section-title { margin-top: 1.4em; font-weight: var(--fw-semibold); }
+  .inspector-reading-body .md-hline { font-weight: var(--fw-semibold); }
+  .inspector-reading-body .md-hline--1 { font-size: var(--fs-h2); }
+  .inspector-reading-body .md-hline--2 { font-size: var(--fs-h3); }
+  /* 单换行分段的长行（TXT 常见）：行与行之间留出段距，选区与高亮不受影响 */
+  .inspector-reading-body .is-prose .md-soft:not(.md-soft--heading)::after { content: ''; display: block; height: .5em; }
+  .inspector-reading-body .md-soft--heading::after { content: ''; display: block; height: .3em; }
+
+  .inspector-reading-body strong { font-weight: var(--fw-semibold); }
+  /* 中文没有斜体（font-synthesis: none）：强调用着重号 */
+  .inspector-reading-body em { font-style: normal; text-emphasis: filled dot; text-emphasis-position: under right; }
+  .inspector-reading-body s { color: var(--fg-3); text-decoration-thickness: 1px; }
+  /* 行内代码（文件名、路径）整体换到下一行，只在比一行还长时才断开（INSP-22）；只是排版，文字不变 */
+  .inspector-reading-body :not(pre) > code {
+    display: inline-block;
+    max-width: 100%;
+    vertical-align: baseline;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+    padding: .08em .32em;
+    border-radius: 4px;
+    background: var(--bg-sunken);
+    box-shadow: inset 0 0 0 1px var(--border-hair);
+    font-family: var(--font-code);
+    font-size: .86em;
+  }
+  .inspector-reading-body .md-link {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-decoration-color: var(--border-strong);
+    text-underline-offset: .22em;
+  }
+  .inspector-reading-body a.md-link { cursor: pointer; transition: text-decoration-color var(--dur-fast) var(--ease-out); }
+  .inspector-reading-body a.md-link:hover { text-decoration-color: currentColor; }
+  .inspector-reading-body a.md-link:focus-visible { border-radius: 2px; box-shadow: var(--focus-shadow); }
+  .inspector-reading-body .md-image { color: var(--fg-3); font-size: var(--fs-body); }
+  .inspector-reading-body .md-image::before { content: '图片　'; font-size: var(--fs-xs); }
+
+  .inspector-reading-body .md-quote {
+    margin-left: 0;
+    margin-right: 0;
+    padding-left: 1em;
+    box-shadow: inset 2px 0 0 var(--border-strong);
+    color: var(--fg-2);
+  }
+  .inspector-reading-body .md-list { padding-left: 1.6em; }
+  .inspector-reading-body .md-list > li { margin: .2em 0; padding-left: .2em; white-space: pre-wrap; }
+  .inspector-reading-body .md-list > li::marker { color: var(--fg-3); font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+  .inspector-reading-body .md-list > .md-depth-1 { margin-left: 1.4em; }
+  .inspector-reading-body .md-list > .md-depth-2 { margin-left: 2.8em; }
+  .inspector-reading-body .md-list > .md-depth-3 { margin-left: 4.2em; }
+  .inspector-reading-body .md-task { position: relative; list-style: none; }
+  .inspector-reading-body .md-task::before {
+    content: '';
+    position: absolute;
+    top: calc((var(--lh-read) * 1em - .8em) / 2);
+    left: -1.25em;
+    width: .8em;
+    height: .8em;
+    border-radius: 3px;
+    box-shadow: inset 0 0 0 1.5px var(--fg-icon);
+  }
+  .inspector-reading-body .md-task--done { color: var(--fg-2); }
+  .inspector-reading-body .md-task--done::before { background: var(--fg-2); box-shadow: none; }
+  .inspector-reading-body .md-task--done::after {
+    content: '';
+    position: absolute;
+    top: calc((var(--lh-read) * 1em - .8em) / 2 + .16em);
+    left: calc(-1.25em + .27em);
+    width: .22em;
+    height: .4em;
+    border: solid var(--paper-plain);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  /* 代码块：滚动放在里层 code 上，pre 本身不裁切，段落号才能留在左侧页边 */
+  .inspector-reading-body .md-code {
+    padding: 0;
+    border-radius: var(--radius-ctl);
+    background: var(--bg-sunken);
+    box-shadow: inset 0 0 0 1px var(--border-hair);
+    font-family: var(--font-code);
+    font-size: 14px;
+    line-height: 1.7;
+    overflow: visible;
+  }
+  .inspector-reading-body .md-code > code {
+    display: block;
+    padding: 12px 14px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    font: inherit;
+    white-space: pre;
+    tab-size: 2;
+  }
+  .inspector-reading-body .md-code[data-para]::before { line-height: calc(14px * 1.7 + 24px); }
+  /* 围栏里的空行把代码切成两段（“第 N 段”的定义），两段仍拼成一个盒子：中间留出那一行空白 */
+  .inspector-reading-body .md-code.is-continuing { margin-bottom: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  .inspector-reading-body .md-code.is-continuing > code { padding-bottom: 0; }
+  .inspector-reading-body .md-code.is-continued { border-top-left-radius: 0; border-top-right-radius: 0; box-shadow: inset 1px 0 0 var(--border-hair), inset -1px 0 0 var(--border-hair), inset 0 -1px 0 var(--border-hair); }
+  .inspector-reading-body .md-code.is-continued.is-continuing { box-shadow: inset 1px 0 0 var(--border-hair), inset -1px 0 0 var(--border-hair); }
+  .inspector-reading-body .md-code.is-continued > code { padding-top: calc(14px * 1.7); }
+  .inspector-reading-body .md-code.is-continued[data-para]::before { top: calc(14px * 1.7 - 12px); }
+  .inspector-reading-body .md-code.is-continuing { box-shadow: inset 1px 0 0 var(--border-hair), inset -1px 0 0 var(--border-hair), inset 0 1px 0 var(--border-hair); }
+  .inspector-reading-body .md-rule { display: flex; align-items: center; height: 1.6em; }
+  .inspector-reading-body .md-rule::after { content: ''; flex: 1; height: 1px; background: var(--border-hair); }
+  .inspector-reading-body .md-rule[data-para]::before { content: none; }
+  /* 回源跨段时的平铺块：几段合成一个 pre-wrap 块，空行就是段距 */
+  .inspector-reading-body .md-flat .md-soft { white-space: pre-wrap; }
+
+  /* ---------- 回源高亮与已摘录留痕：只染底，不加下划线（v1.0 的下划线越过句号） ---------- */
+  .inspector-reading-body mark.inspector-source-highlight {
+    padding: 0 1px;
+    border-radius: 0;
+    background: var(--bg-selected);
+    color: inherit;
+    box-shadow: none;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    scroll-margin-top: var(--reading-scroll-margin);
+    animation: reading-arrive var(--dur-afterglow) var(--ease-out) 1 backwards;
+  }
+  .inspector-reading-body mark.inspector-source-highlight[aria-label="摘录原文"],
+  .inspector-reading-body .reading-trace.is-excerpt {
+    padding: 0 1px;
+    border-radius: 0;
+    background: var(--excerpt-mark-image);
+    color: inherit;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    text-decoration-line: var(--excerpt-mark-decoration);
+    text-decoration-color: var(--hl);
+    text-decoration-thickness: .2em;
+    text-underline-position: under;
+    text-underline-offset: .04em;
+    text-decoration-skip-ink: auto;
+  }
+  .inspector-reading-body mark.inspector-source-highlight .reading-trace { padding: 0; background: transparent; text-decoration-line: none; }
+  .inspector-reading-body .reading-trace.is-pulse { animation: reading-pulse 1200ms var(--ease-out) 1; }
+  @keyframes reading-arrive { from { box-shadow: 0 0 0 3px var(--border-strong); } to { box-shadow: 0 0 0 3px transparent; } }
+  @keyframes reading-pulse { 0%, 30% { box-shadow: 0 0 0 2px var(--border-strong); } 100% { box-shadow: 0 0 0 2px transparent; } }
+
+  /* ---------- 页边：已摘录标记与选区操作（都在正文之外） ---------- */
+  .reading-surface { position: relative; }
+  .reading-margin { position: absolute; top: 0; left: 0; width: 0; height: 0; }
+  .reading-used {
+    position: absolute;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3);
+    height: var(--hit-min);
+    padding: 0 var(--space-3);
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: transparent;
+    color: var(--fg-2);
+    font: var(--fw-medium) var(--fs-xs)/1 var(--font-ui);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .reading-used > svg { flex: none; stroke: var(--zhu); }
+  .reading-used:hover:enabled { background: var(--bg-hover); }
+  .reading-used:focus-visible { box-shadow: var(--focus-shadow); }
+  .reading-used:disabled { cursor: default; }
+
+  .reading-selection-bar {
+    --focus-gap: var(--bg-panel);
+    position: absolute;
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 148px;
+    padding: var(--space-2);
+    border-radius: var(--radius-tool);
+    background: var(--bg-panel);
+    color: var(--fg-contextbar);
+    box-shadow: var(--shadow-tool);
+    user-select: none;
+    animation: reading-bar-in var(--dur-fast) var(--ease-out) backwards;
+  }
+  /* 尖角指向选区首行 */
+  .reading-selection-bar--margin::before {
+    content: '';
+    position: absolute;
+    top: calc(var(--space-2) + 16px - 5px);
+    left: -5px;
+    width: 10px;
+    height: 10px;
+    background: var(--bg-panel);
+    box-shadow: -1px 1px 0 var(--contextbar-edge);
+    transform: rotate(45deg);
+  }
+  .reading-selection-bar--above, .reading-selection-bar--below { flex-direction: row; width: auto; }
+  /* 窄页边（106–151）：同样站在右页边，标签缩短（“写理解”），不退到正文上方压住上一行（INSP-04） */
+  .reading-selection-bar.is-compact { width: 100px; }
+  .reading-selection-bar.is-compact .reading-selection-bar__item { gap: var(--space-3); padding: 0 var(--space-3); }
+  .reading-selection-bar__item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    height: 32px;
+    min-width: 0;
+    padding: 0 var(--space-4);
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: transparent;
+    color: inherit;
+    font: var(--type-ui-strong);
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .reading-selection-bar__item > svg { flex: none; color: var(--fg-contextbar-2); }
+  .reading-selection-bar__item--primary { font-weight: var(--fw-semibold); }
+  .reading-selection-bar__item--primary > svg { color: var(--fg-contextbar); }
+  .reading-selection-bar__item:hover:enabled { background: var(--contextbar-hover); }
+  .reading-selection-bar__item:active:enabled { background: var(--contextbar-pressed); transition-duration: 0ms; }
+  .reading-selection-bar__item:focus-visible { position: relative; z-index: 1; box-shadow: var(--focus-shadow); }
+  .reading-selection-bar__item:disabled { color: var(--fg-disabled); cursor: default; }
+  .reading-selection-bar__item:disabled > svg { color: var(--fg-disabled); }
+  .reading-selection-bar__item kbd,
+  .inspector-excerpt-status kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    margin-left: auto;
+    padding: 0 var(--space-2);
+    border-radius: 4px;
+    box-shadow: inset 0 0 0 1px var(--border-hair);
+    color: var(--fg-2);
+    font: var(--type-kbd);
+  }
+  @keyframes reading-bar-in { from { opacity: 0; transform: translateY(4px); } }
+
+  /* ---------- 阅读 / 编辑切换：停靠面板里是吸顶一行；阅读拆分里在头部 ---------- */
+  .inspector-reading-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-5);
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+  .inspector-reading-toolbar .seg { flex: none; }
+  .inspector-reading-count { font: var(--type-meta); color: var(--fg-3); white-space: nowrap; }
+  /* 吸顶工具行的高度：上下内边距 + 32 高的“阅读 / 编辑”分段（定位提示通栏贴在它下面） */
+  .inspector--docked .inspector-text-source { --docked-reading-toolbar-h: calc(2 * var(--space-4) + var(--space-9)); }
+  .inspector--docked .inspector-text-source .inspector-reading-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    margin: calc(-1 * var(--space-6)) calc(-1 * var(--space-8)) var(--space-6);
+    padding: var(--space-4) var(--space-8);
+    background: var(--inspector-paper);
+    box-shadow: inset 0 -1px 0 var(--border-hair);
+  }
+  .inspector-header .inspector-reading-toolbar { margin-right: var(--space-2); }
+
+  /* 窄阅读面板（< 880，左栏收起，例如 1440 宽且侧栏展开）：目录与本文已摘录从头部“目录”弹出 */
+  .reading-lead-toggle { position: relative; display: none; }
+  @container inspector-reading (max-width: 879px) {
+    .reading-lead-toggle { display: block; }
+  }
+  .reading-lead-toggle > .btn[aria-expanded="true"] { background: var(--bg-pressed); }
+  .reading-lead-popover {
+    position: absolute;
+    top: calc(100% + var(--space-3));
+    right: 0;
+    z-index: var(--z-popover);
+    width: 300px;
+    max-height: min(600px, calc(100vh - 96px));
+    padding: var(--space-6) var(--space-6) var(--space-6) var(--space-7);
+    border-radius: var(--radius-tool);
+    background: var(--bg-panel);
+    box-shadow: var(--shadow-tool);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    animation: reading-bar-in var(--dur-base) var(--ease-out) backwards;
+  }
+
+  /* ---------- 回源提示：吸顶，正文居中时仍看得见（PR-M3） ---------- */
+  /* 已定位时是一枚贴着文章列左缘的浮签（宽随内容）；多处相同、找不到原文时展开成整栏 */
+  .inspector-text-source .inspector-source-location {
+    position: sticky;
+    top: var(--space-5);
+    z-index: 4;
+    width: fit-content;
+    max-width: 100%;
+    margin: 0 0 var(--space-7);
+    padding: var(--space-3) var(--space-3) var(--space-3) var(--space-5);
+    border: 0;
+    border-radius: var(--radius-tool);
+    background: var(--bg-panel);
+    color: var(--fg-1);
+    box-shadow: var(--shadow-tool);
+  }
+  /* 停靠面板：定位提示是工具行下方一条通栏（与工具行一样吸顶），正文从它下面滑过，不再是一枚压住正文首行的浮签（INSP-05） */
+  .inspector--docked .inspector-text-source .inspector-source-location {
+    top: var(--docked-reading-toolbar-h);
+    width: auto;
+    max-width: none;
+    margin: calc(-1 * var(--space-6)) calc(-1 * var(--space-8)) var(--space-6);
+    padding: var(--space-2) var(--space-4) var(--space-2) var(--space-6);
+    border-radius: 0;
+    background: var(--inspector-paper);
+    box-shadow: inset 0 -1px 0 var(--border-hair);
+  }
+  .inspector--docked .inspector-source-location-heading { gap: var(--space-2); }
+  .inspector--docked .inspector-source-location-heading > strong { white-space: nowrap; }
+  .inspector--docked .inspector-text-source .inspector-source-location--missing { box-shadow: inset 0 -1px 0 var(--border-hair), inset 2px 0 0 var(--status-warning-fg); }
+  /* 阅读拆分：已定位时，提示就是吸顶头部里的一行（替换字数与进度的位置），关掉后字数回来 */
+  .inspector-header .inspector-source-location { position: static; width: auto; max-width: none; margin: 0; padding: 0; background: none; box-shadow: none; }
+  .inspector-header .inspector-source-location-heading { min-height: 0; gap: var(--space-3); white-space: nowrap; }
+  .inspector-header .inspector-source-location-heading > strong { font: var(--type-meta); font-weight: var(--fw-medium); }
+  .inspector-header .inspector-source-location-actions { margin-left: var(--space-2); }
+  .inspector--reading-expanded .inspector-head-meta:has(.inspector-source-location) > :not(.inspector-slot) { display: none; }
+  .inspector-text-source .inspector-source-location:is(.inspector-source-location--missing, .inspector-source-location--choices) { width: auto; }
+  .inspector--reading-expanded .inspector-text-source .inspector-source-location { max-width: calc(var(--measure-read) * 17 / 13); }
+  .inspector-source-location-heading { display: flex; align-items: center; gap: var(--space-4); min-height: 28px; }
+  .inspector-source-location-heading > svg { flex: none; color: var(--fg-icon); }
+  .inspector-source-location-heading > strong { flex: 0 1 auto; font: var(--type-ui-strong); color: var(--fg-1); }
+  .inspector-source-location-where { font: var(--type-meta); color: var(--fg-2); white-space: nowrap; }
+  .inspector-source-location-actions { display: flex; align-items: center; gap: var(--space-2); margin-left: auto; }
+  .inspector-source-return { color: var(--fg-1); }
+  .inspector-source-location--missing .inspector-source-location-heading > svg { color: var(--status-warning-fg); }
+  .inspector-source-location--missing { box-shadow: var(--shadow-tool), inset 2px 0 0 var(--status-warning-fg); }
+  .inspector-text-source .inspector-source-location > p { margin: var(--space-2) 0 0 24px; font: var(--type-meta); color: var(--fg-2); }
+  .inspector-source-matches { display: flex; flex-wrap: wrap; gap: var(--space-3); max-height: 148px; margin: var(--space-4) 0 var(--space-2) 24px; overflow-y: auto; overscroll-behavior: contain; }
+  .inspector-source-matches > button {
+    display: grid;
+    gap: 2px;
+    max-width: 100%;
+    padding: var(--space-3) var(--space-5);
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: var(--bg-sunken);
+    box-shadow: inset 0 0 0 1px var(--border-hair);
+    color: var(--fg-1);
+    text-align: left;
+    cursor: pointer;
+  }
+  .inspector-source-matches > button > span { font: var(--type-ui-strong); }
+  .inspector-source-matches > button > small { max-width: 300px; overflow: hidden; font: var(--type-meta); color: var(--fg-3); text-overflow: ellipsis; white-space: nowrap; }
+  .inspector-source-matches > button:hover { box-shadow: inset 0 0 0 1px var(--border-strong); }
+  .inspector-source-matches > button[aria-pressed="true"] { background: var(--bg-selected); box-shadow: inset 0 0 0 1.5px var(--border-strong); }
+  .inspector-source-matches > button:focus-visible { box-shadow: inset 0 0 0 1px var(--border-strong), var(--focus-shadow); }
+  .inspector-text-source .inspector-source-location details { margin: var(--space-4) 0 var(--space-2) 24px; font: var(--type-meta); color: var(--fg-2); }
+  .inspector-text-source .inspector-source-location summary { width: fit-content; border-radius: 4px; cursor: pointer; }
+  .inspector-text-source .inspector-source-location summary:focus-visible { box-shadow: var(--focus-shadow); }
+  .inspector-text-source .inspector-source-location blockquote { max-height: 160px; margin: var(--space-4) 0 0; padding-left: var(--space-5); box-shadow: inset 2px 0 0 var(--quote-rule); overflow: auto; font: var(--type-body); color: var(--fg-1); white-space: pre-wrap; overflow-wrap: anywhere; }
+
+  /* ---------- 文章列的版心（阅读拆分） ----------
+     标题与正文左缘对齐：旧样式给标题区写了 margin auto（居中在 688 宽里），这里归零。
+     窄面板（< 880，左栏收起）时文章列占满整行：外壳的容器查询选择器权重低于它的常规规则，这里补一条同权重的。 */
+  .inspector--reading-expanded .inspector-title-area--article { margin-inline: 0; }
+  /* 没有左栏时（短文、或窄面板）文章在面板里居中；--reading-center 是版心两侧的留白（百分比相对整行宽度） */
+  /* --reading-bar-room：选区操作条（148）站在右页边所需的宽度（§6.18.3），窄面板时版心先让出它，再谈居中 */
+  .inspector--reading-expanded .inspector-layout > .inspector-column {
+    --reading-center: calc((100% - var(--measure-read) * 17 / 13) / 2);
+    --reading-bar-room: calc(148px + var(--space-6) + var(--space-5));
+  }
+  .inspector--reading-expanded .inspector-slot--lead:empty + .inspector-column { padding-right: max(64px, var(--reading-center)); padding-left: max(96px, var(--reading-center)); }
+  @container inspector-reading (max-width: 879px) {
+    .inspector--reading-expanded .inspector-layout > .inspector-column { grid-column: 1 / -1; padding: 32px 40px 80px max(64px, min(var(--reading-center), calc(100% - var(--measure-read) * 17 / 13 - var(--reading-bar-room)))); }
+    .inspector--reading-expanded .inspector-layout:has(> .inspector-slot--lead:not(:empty)) { background: none; }
+  }
+
+  /* ---------- 元信息（阅读拆分：标题下两行短句 + 发丝） ---------- */
+  .reading-meta {
+    max-width: calc(var(--measure-read) * 17 / 13);
+    margin: calc(-1 * var(--space-2)) 0 var(--space-8);
+    padding-bottom: var(--space-7);
+    font: var(--type-ui);
+    color: var(--fg-2);
+    box-shadow: inset 0 -1px 0 var(--border-hair);
+  }
+  .reading-meta > p { margin: 0; }
+  .reading-meta__line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--space-4); }
+  .reading-meta__author { font: var(--fw-medium) var(--fs-sm)/var(--lh-sm) var(--font-ui); color: var(--fg-1); }
+  .reading-meta > .reading-meta__when { margin-top: var(--space-2); font: var(--type-meta); color: var(--fg-3); }
+
+  /* ---------- 停靠面板里的阅读：窄栏 16px，段号收进 28px 页边 ---------- */
+  .inspector--docked .inspector-text-source.is-reading .reading-surface { padding-left: 28px; }
+  .inspector--docked .inspector-reading-body { font-size: 16px; }
+  .inspector--docked .inspector-reading-body [data-para]::before { left: -32px; }
+  .inspector--docked .inspector-reading-body:focus-visible::after { left: -8px; }
+  /* 窄栏标签在段后留白里，不遮原句、不进入正文 textContent。 */
+  .reading-surface[data-notes="end"] .md-block:has(.reading-trace) { margin-bottom: 36px; }
+  .reading-used--end { min-width: 84px; padding: 0 var(--space-3); justify-content: flex-end; }
+
+  /* ---------- 编辑：按内容长高，不嵌套滚动（PR-M1） ---------- */
+  .inspector-text-editor {
+    display: block;
+    width: 100%;
+    min-height: 240px;
+    margin: 0;
+    padding: var(--space-4) var(--space-5);
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: var(--bg-sunken);
+    box-shadow: inset 0 0 0 1px var(--border-hair);
+    color: var(--fg-1);
+    font: var(--fw-regular) var(--fs-body)/1.8 var(--font-ui);
+    caret-color: var(--fg-1);
+    field-sizing: content;
+    resize: none;
+    outline: none;
+    transition: box-shadow var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+  }
+  .inspector-text-editor::placeholder { color: var(--fg-3); opacity: 1; }
+  .inspector-text-editor:hover:not(:focus):not(:read-only) { box-shadow: inset 0 0 0 1px var(--border-strong); }
+  .inspector-text-editor:focus { background: var(--inspector-paper); box-shadow: inset 0 0 0 1px var(--border-strong), inset 2px 0 0 var(--focus-ring); }
+  .inspector--reading-expanded .inspector-text-editor { max-width: calc(var(--measure-read) + 2 * var(--space-5)); margin-left: calc(-1 * var(--space-5)); font: var(--fw-text) var(--fs-read)/var(--lh-read) var(--font-ui); }
+
+  .inspector-reading-empty { display: grid; justify-items: center; gap: var(--space-4); padding: var(--space-11) var(--space-5); text-align: center; color: var(--fg-3); }
+  .inspector-reading-empty > svg { color: var(--fg-icon); }
+  .inspector-reading-empty h3 { margin: 0; font: var(--type-ui-strong); font-size: var(--fs-md); color: var(--fg-1); }
+  .inspector-reading-empty p { max-width: 300px; margin: 0 0 var(--space-3); font: var(--type-ui); color: var(--fg-2); }
+
+  /* ---------- 页脚：选区状态 + 编辑态的摘录按钮；阅读拆分里收成 40 高的状态带 ---------- */
+  .inspector-excerpt-footer { min-height: 56px; }
+  .inspector-excerpt-status { display: flex; flex-direction: column; gap: 2px; min-width: 0; font: var(--type-ui); color: var(--fg-2); }
+  .inspector-excerpt-line { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .inspector-excerpt-line > b { font-weight: var(--fw-semibold); color: var(--fg-1); }
+  .inspector-excerpt-status small { display: flex; align-items: center; gap: var(--space-2); margin: 0; font: var(--type-meta); color: var(--fg-3); white-space: nowrap; }
+  .inspector-excerpt-status small kbd { margin-left: 0; }
+  /* 按键提示只在阅读视图里成立（编辑框里 E 是打字） */
+  .inspector-excerpt-status .inspector-excerpt-hint { display: none; }
+  .inspector--reading .inspector-excerpt-status .inspector-excerpt-hint { display: flex; }
+  .inspector-excerpt-button { flex: none; }
+  /* 阅读视图里选区操作条出现时，页脚按钮让位：同一时刻只有一个“摘录选中文字到画布” */
+  /* 阅读视图里页脚不摆一个点不了的按钮（INSP-21）：没有选区时只留“按 E 摘录”的提示 */
+  .inspector:has(.reading-selection-bar) .inspector-excerpt-button,
+  .inspector--reading .inspector-excerpt-button:disabled { display: none; }
+  .inspector--reading-expanded > .inspector-excerpt-footer {
+    min-height: var(--footer-band-h);
+    height: var(--footer-band-h);
+    padding: 0 var(--space-6) 0 var(--space-8);
+    background: var(--bg-shell);
+  }
+  .inspector--reading-expanded .inspector-excerpt-status { flex-direction: row; align-items: center; gap: var(--space-5); white-space: nowrap; }
+
+  /* ---------- 左栏：目录、本文已摘录、还剩约 N 分钟 ---------- */
+  .reading-lead { display: block; font: var(--type-ui); }
+  .reading-lead__group + .reading-lead__group { margin-top: var(--space-7); padding-top: var(--space-6); box-shadow: inset 0 1px 0 var(--border-hair); }
+  .reading-lead__title { display: flex; align-items: center; gap: var(--space-3); margin: 0 0 var(--space-4); font: var(--type-meta); color: var(--fg-3); }
+  .reading-toc { margin: 0; padding: 0; list-style: none; }
+  .reading-toc__item {
+    display: block;
+    width: 100%;
+    min-height: var(--hit-min);
+    margin: 0;
+    padding: 5px var(--space-2) 5px var(--space-5);
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: inset 2px 0 0 var(--border-hair);
+    color: var(--fg-2);
+    font: var(--type-ui);
+    text-align: left;
+    cursor: pointer;
+    transition: color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+  }
+  .reading-toc__item--2 { padding-left: calc(var(--space-5) + 12px); }
+  .reading-toc__item--3 { padding-left: calc(var(--space-5) + 24px); font-size: var(--fs-xs); }
+  .reading-toc__item:hover { color: var(--fg-1); box-shadow: inset 2px 0 0 var(--border-strong); }
+  .reading-toc__item[aria-current="location"] { color: var(--fg-1); font-weight: var(--fw-medium); box-shadow: inset 2px 0 0 var(--fg-1); }
+  .reading-toc__item:focus-visible { position: relative; z-index: 1; border-radius: 2px; box-shadow: inset 2px 0 0 var(--fg-1), var(--focus-shadow); }
+  .inspector .cjk-wrap { word-break: keep-all; overflow-wrap: anywhere; line-break: strict; }
+  .reading-excerpts { display: grid; gap: var(--space-5); margin: 0; padding: 0; list-style: none; }
+  .reading-excerpt {
+    position: relative;
+    margin-left: 0;
+    padding: 0 var(--space-5) var(--space-5);
+    border-radius: var(--radius-paper);
+    background: var(--paper-plain);
+    box-shadow: var(--shadow-paper);
+  }
+  .reading-excerpt__head { display: flex; align-items: center; min-height: 40px; }
+  .reading-excerpt__lost { margin-left: 22px; font: var(--type-meta); color: var(--fg-3); }
+  .reading-excerpt__text {
+    display: -webkit-box;
+    margin: 0;
+    overflow: hidden;
+    font: var(--fw-medium) var(--fs-body)/var(--lh-body) var(--font-read);
+    color: var(--fg-1);
+    text-wrap: balance;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 6;
+  }
+  .reading-excerpt__mine {
+    display: -webkit-box;
+    margin: var(--space-4) 0 0;
+    overflow: hidden;
+    font: var(--type-mine);
+    color: var(--note-fg);
+    text-wrap: balance;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+  .reading-lead__left { margin: var(--space-7) 0 0; font: var(--type-meta); color: var(--fg-3); }
+  .reading-lead__empty { margin: 0; font: var(--type-ui); color: var(--fg-2); text-wrap: balance; }
+
+  /* ---------- 阅读拆分里，文末的标签与来源链接安静一些 ---------- */
+  .inspector--reading-expanded :is(.inspector-tags, .inspector-url-section) { max-width: calc(var(--measure-read) * 17 / 13); }
+  .inspector--reading-expanded .inspector-text-source + :is(.inspector-tags, .inspector-url-section) { margin-top: var(--space-10); padding-top: var(--space-8); box-shadow: inset 0 1px 0 var(--border-hair); }
+
+  /* ---------- 摘录面板：原文区（与摘录卡同一结构：签 + 来源标题，再是原句） ---------- */
+  .inspector .inspector-citation { margin: 0; padding-bottom: var(--space-7); border-radius: 0; background: none; }
+  .inspector .inspector-source-button {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-4);
+    width: auto;
+    max-width: 100%;
+    min-height: 32px;
+    margin: 0 0 var(--space-5) calc(-1 * var(--space-2));
+    padding: var(--space-2) var(--space-4) var(--space-2) var(--space-2);
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: transparent;
+    color: var(--fg-3);
+    text-align: left;
+    cursor: pointer;
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .inspector .inspector-source-button:hover:enabled { background: var(--bg-hover); }
+  .inspector .inspector-source-button:focus-visible { box-shadow: var(--focus-shadow); }
+  .inspector .inspector-source-button:disabled { cursor: default; }
+  .inspector-citation-source { min-width: 0; overflow: hidden; font: var(--type-meta); color: var(--fg-3); text-overflow: ellipsis; white-space: nowrap; }
+  .inspector-citation-heading { margin: 0 0 var(--space-4); font: var(--type-meta); color: var(--fg-3); }
+  .inspector .inspector-citation blockquote {
+    margin: 0;
+    font: var(--fw-medium) var(--fs-body)/1.65 var(--font-read);
+    color: var(--fg-1);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    text-wrap: pretty;
+    user-select: text;
+  }
+  .inspector .inspector-citation-updated {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    margin: var(--space-5) 0 0;
+    padding: var(--space-4) var(--space-5);
+    border-radius: var(--radius-ctl);
+    background: var(--status-warning-bg);
+    color: var(--fg-2);
+    font: var(--type-meta);
+  }
+  .inspector .inspector-citation-updated > svg { flex: none; margin-top: 2px; color: var(--status-warning-fg); }
+  .inspector .inspector-citation-missing { margin: var(--space-4) 0 0; font: var(--type-meta); color: var(--fg-3); }
+
+  /* 我的理解：原句与理解之间一条虚线（--quote-rule），霞鹜文楷 */
+  .inspector .inspector-citation + .inspector-body-section--quote {
+    margin: 0 var(--space-8);
+    padding-inline: 0;
+    box-shadow: none;
+    background: linear-gradient(to right, var(--quote-rule) 50%, transparent 0) 0 0 / 6px 1px repeat-x;
+  }
+  .inspector .inspector-field-label { display: block; margin: 0 0 var(--space-4); font: var(--type-meta); font-weight: var(--fw-medium); color: var(--fg-2); }
+  .inspector-mine {
+    display: block;
+    width: calc(100% + 2 * var(--space-5));
+    min-height: calc(3 * var(--fs-body) * 1.65 + 2 * var(--space-3));
+    margin: 0 calc(-1 * var(--space-5));
+    padding: var(--space-3) var(--space-5);
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: transparent;
+    color: var(--note-fg);
+    font: var(--type-mine);
+    caret-color: var(--fg-1);
+    field-sizing: content;
+    resize: none;
+    outline: none;
+    transition: background-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+  }
+  .inspector-mine::placeholder { color: var(--fg-3); opacity: 1; }
+  .inspector-mine:hover:not(:focus):not(:read-only) { background: var(--bg-hover); }
+  .inspector-mine:focus { background: var(--bg-sunken); box-shadow: inset 2px 0 0 var(--focus-ring); }
+  .inspector-note-field {
+    display: block;
+    width: 100%;
+    min-height: 88px;
+    margin: 0;
+    padding: var(--space-4) var(--space-5);
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: var(--bg-sunken);
+    box-shadow: inset 0 0 0 1px var(--border-hair);
+    color: var(--fg-1);
+    font: var(--type-body);
+    caret-color: var(--fg-1);
+    field-sizing: content;
+    resize: none;
+    outline: none;
+  }
+  .inspector-note-field::placeholder { color: var(--fg-3); opacity: 1; }
+  .inspector-note-field:hover:not(:focus):not(:read-only) { box-shadow: inset 0 0 0 1px var(--border-strong); }
+  .inspector-note-field:focus { background: var(--inspector-paper); box-shadow: 0 0 0 1px var(--border-strong), var(--focus-shadow); }
+
+  /* ---------- 标签与来源链接 ---------- */
+  .inspector-url-row { display: flex; align-items: center; gap: var(--space-3); }
+  .inspector-url-row > .input { flex: 1 1 auto; font-family: var(--font-ui-latin); }
+  .inspector .inspector-field-hint { margin: var(--space-3) 0 0; font: var(--type-meta); color: var(--fg-3); }
+  .inspector .inspector-field-error { margin: var(--space-3) 0 0; font: var(--type-meta); color: var(--status-danger-fg); }
+
+  /* ---------- X 推文正文与来源 ---------- */
+  .inspector .inspector-x-post { padding-top: var(--space-6); border-bottom: 0; }
+  .inspector-x-heading { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); margin: 0 0 var(--space-5); }
+  .inspector .inspector-x-post h3, .inspector .inspector-x-provenance h3 { display: flex; align-items: center; gap: var(--space-3); margin: 0; font: var(--type-ui-strong); color: var(--fg-1); }
+  .inspector .inspector-x-post h3 > svg, .inspector .inspector-x-provenance h3 > svg { flex: none; color: var(--fg-icon); }
+  .inspector-x-chip {
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    padding: 0 var(--space-4);
+    border-radius: 4px;
+    box-shadow: inset 0 0 0 1px var(--border-hair);
+    color: var(--fg-3);
+    font: var(--type-meta);
+    white-space: nowrap;
+  }
+  .inspector-x-chip.is-partial { color: var(--status-warning-fg); box-shadow: inset 0 0 0 1px var(--status-warning-border); }
+  .inspector .inspector-x-post-text {
+    max-width: var(--measure-read);
+    margin: 0;
+    font: var(--fw-text) var(--fs-body)/1.8 var(--font-ui);
+    color: var(--fg-1);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    text-wrap: pretty;
+    user-select: text;
+  }
+  .inspector .inspector-x-post-text.is-clipped { mask-image: linear-gradient(to bottom, currentColor calc(100% - 3em), transparent); }
+  /* 空一行分段的推文：段距 .85em，而不是整整一个空行；分隔的换行仍在 DOM 里，只是不显示 */
+  .inspector-x-post-text .x-post-para { display: block; }
+  .inspector-x-post-text .x-post-para:not(:last-child) { margin-bottom: .85em; }
+  .inspector-x-post-text .x-post-gap { display: none; }
+  .inspector .inspector-x-heading { max-width: calc(var(--measure-read) * 15 / 13); }
+  .inspector .inspector-x-post-hint { margin: var(--space-4) 0 0; font: var(--type-meta); color: var(--fg-3); }
+  .inspector .inspector-x-post-error { margin: var(--space-4) 0 0; font: var(--type-meta); color: var(--status-danger-fg); overflow-wrap: anywhere; }
+  .inspector .inspector-x-post-actions { display: flex; flex-wrap: wrap; gap: var(--space-4); margin-top: var(--space-5); }
+  .inspector .inspector-x-post-actions:empty { display: none; }
+  .inspector .inspector-x-provenance { padding-top: var(--space-6); padding-bottom: var(--space-6); color: var(--fg-1); }
+  .inspector .inspector-x-provenance .inspector-section-heading { margin: 0 0 var(--space-4); }
+  .inspector .inspector-x-author { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-3) var(--space-4); margin: 0; font: var(--type-ui); }
+  .inspector .inspector-x-author dt { flex: none; font: var(--type-meta); color: var(--fg-3); }
+  .inspector .inspector-x-author dd { min-width: 0; margin: 0; font-weight: var(--fw-medium); color: var(--fg-1); overflow-wrap: anywhere; }
+  .inspector .inspector-x-author .inspector-x-where { font-weight: var(--fw-book); color: var(--fg-2); }
+  .inspector .inspector-x-source-status { margin: var(--space-2) 0 0; font: var(--type-meta); color: var(--fg-3); }
+  .inspector .inspector-x-snapshot { margin-top: var(--space-5); font: var(--type-meta); color: var(--fg-2); }
+  .inspector .inspector-x-snapshot > p { margin: 0; }
+  .inspector .inspector-x-snapshot summary { width: fit-content; margin-top: var(--space-3); border-radius: 4px; color: var(--fg-1); text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: .22em; cursor: pointer; }
+  .inspector .inspector-x-snapshot summary:focus-visible { box-shadow: var(--focus-shadow); }
+  .inspector .inspector-x-snapshot details p { margin: var(--space-4) 0 0; padding-left: var(--space-5); box-shadow: inset 2px 0 0 var(--quote-rule); font: var(--type-body); color: var(--fg-1); white-space: pre-wrap; overflow-wrap: anywhere; }
+  /* 阅读拆分里，X 来源读作署名：作者 + “发表在 X”，再一行收集状态，下方发丝 */
+  .inspector--reading-expanded .inspector-x-provenance {
+    max-width: calc(var(--measure-read) * 17 / 13);
+    margin: calc(-1 * var(--space-2)) 0 var(--space-8);
+    padding: 0 0 var(--space-7);
+    box-shadow: inset 0 -1px 0 var(--border-hair);
+  }
+  .inspector--reading-expanded .inspector-x-provenance + .inspector-text-source { box-shadow: none; }
+  .inspector--reading-expanded .inspector-x-provenance .inspector-section-heading,
+  .inspector--reading-expanded .inspector-x-author dt {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}

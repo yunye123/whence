@@ -1,0 +1,25 @@
+/* W1-E: layout/shell.css; original cascade position retained by styles/index.css. */
+@layer layout {
+  @media (max-width: 1279px) { .studio { --sidebar-full-w: 220px; } }
+  /* 阅读拆分（§5.1、§6.18.3）：侧栏收成 56 窄轨，阅读面板按 72% 拿到更宽的版面；“展开侧栏”时整条侧栏浮在画布条上，
+     用负的右外边距让出位置，面板宽度不跟着跳 */
+  @media (min-width: 1000px) {
+    .studio:not(.sidebar-hidden):has(.inspector--reading-expanded) { --sidebar-w: var(--sidebar-rail-w); }
+    .studio:not(.sidebar-hidden):has(.inspector--reading-expanded) .sidebar.is-rail-open {
+      width: var(--sidebar-full-w);
+      flex-basis: var(--sidebar-full-w);
+      margin-right: calc(var(--sidebar-rail-w) - var(--sidebar-full-w));
+      box-shadow: inset -1px 0 0 var(--border-hair), var(--shadow-tool);
+    }
+  }
+
+  .studio .sidebar {
+    position: relative;
+    z-index: 12;
+    width: var(--sidebar-w);
+    flex: 0 0 var(--sidebar-w);
+    box-shadow: inset -1px 0 0 var(--border-hair);
+    transition: none;
+  }
+  .studio .sidebar-scrim { display: none; }
+}

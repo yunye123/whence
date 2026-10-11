@@ -1,0 +1,12 @@
+/* W1-E import position retained; no thread drawing, stagger, or amber trace remains. */
+@layer features {
+  @keyframes wl-fade { from { opacity: 0; } }
+  .welcome.is-ready:not(.is-settled) :is(.welcome__top, .welcome__lead, .welcome__demo, .welcome__foot) { animation: wl-fade 260ms var(--ease-out) both; }
+  /* Opacity keeps controls reachable while the first-frame assets load. Any key settles immediately. */
+  .welcome:not(.is-ready) > * { opacity: 0; }
+  .welcome.is-settled :is(.welcome__top, .welcome__lead, .welcome__demo, .welcome__foot) { animation: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .welcome.is-ready:not(.is-settled) :is(.welcome__top, .welcome__lead, .welcome__demo, .welcome__foot) { animation: none; }
+    .welcome__entry:hover { translate: none; }
+  }
+}

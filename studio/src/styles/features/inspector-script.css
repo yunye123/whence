@@ -1,0 +1,488 @@
+/* W1-E: features/inspector-writing.css; original cascade position retained by styles/index.css. */
+@layer features {
+
+  /* ======================================================================
+     5. 正文 / 脚本（§6.29）：分段控件 · 脚本表（# | 画面 | 旁白 | 时长）· 空状态
+     ====================================================================== */
+  .draft-view-switch {
+    position: relative;
+    display: inline-grid;
+    grid-auto-columns: 1fr;
+    grid-auto-flow: column;
+    flex: none;
+    height: 28px;
+    padding: 2px;
+    border-radius: var(--radius-ctl);
+    background: var(--bg-shell-sunken);
+    box-shadow: inset 0 0 0 1px var(--border-hair);
+    isolation: isolate;
+  }
+  .draft-view-switch__thumb {
+    position: absolute;
+    z-index: -1;
+    top: 2px;
+    bottom: 2px;
+    left: 2px;
+    width: calc(50% - 2px);
+    border-radius: calc(var(--radius-ctl) - 2px);
+    background: var(--paper-plain);
+    box-shadow: var(--shadow-chip);
+    transition: transform var(--dur-base) var(--ease-out);
+  }
+  .draft-view-switch[data-view="script"] .draft-view-switch__thumb { transform: translateX(100%); }
+  .draft-view-switch__option {
+    min-width: 48px;
+    height: 24px;
+    padding: 0 var(--space-5);
+    border: 0;
+    border-radius: calc(var(--radius-ctl) - 2px);
+    background: none;
+    color: var(--fg-2);
+    font: var(--fw-semibold) var(--fs-ui)/20px var(--font-ui);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color var(--dur-fast) var(--ease-out);
+  }
+  .draft-view-switch__option:hover { color: var(--fg-1); }
+  .draft-view-switch__option[aria-pressed="true"] { color: var(--fg-1); cursor: default; }
+  .draft-view-switch__option:focus-visible { outline: none; box-shadow: var(--focus-shadow); }
+  .inspector-slot--header-meta .draft-view-switch { align-self: center; margin-left: var(--space-4); }
+  .draft-body[hidden] { display: none; }
+  .draft-head-group { display: contents; }
+  .draft-head-group.is-concealed { display: flex; gap: var(--space-2); visibility: hidden; }
+
+  /* 专注写作里的脚本：纸放宽到 960 居中，页边段号与出处脊线收起（表格自己带序号与画面） */
+  .inspector--writing-expanded .inspector-layout:has(.draft-writing.is-script) { grid-template-columns: minmax(32px, 1fr) minmax(0, 960px) minmax(32px, 1fr); }
+  .inspector--writing-expanded .inspector-layout:has(.draft-writing.is-script) > :is(.inspector-slot--lead, .inspector-slot--margin) { display: none; }
+  .inspector--writing-expanded .inspector-layout:has(.draft-writing.is-script) > .inspector-column { grid-column: 2; padding: 56px 64px 120px; }
+  /* 旧样式把专注写作的标题限宽 688 居中；放宽的纸上标题与表格同一左缘 */
+  .inspector--writing-expanded .inspector-layout:has(.draft-writing.is-script) .inspector-title-area { max-width: none; margin-inline: 0; }
+
+  .draft-script {
+    --script-sticky-top: 44px;
+    --script-bg: var(--paper-manuscript);
+    --script-words: var(--fw-read) var(--fs-note)/1.75 var(--font-read);
+    --script-line: calc(var(--fs-note) * 1.75);
+    container: draft-script / inline-size;
+    color: var(--draft-fg);
+  }
+  .inspector--writing-expanded .draft-script { --script-sticky-top: 0px; --script-bg: var(--draft-bg); }
+  .draft-script__notice {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-4);
+    margin: 0 0 var(--space-6);
+    padding: var(--space-4) var(--space-5);
+    border-radius: var(--radius-ctl);
+    background: var(--bg-sunken);
+    color: var(--fg-2);
+    font: var(--type-meta);
+    text-wrap: pretty;
+  }
+  .draft-script__notice > svg { flex: none; margin-top: 2px; color: var(--fg-icon); }
+
+  /* 行：窄（停靠面板）时时长写在画面下方；宽（专注写作）时四列，表头 40 */
+  .draft-script__row {
+    display: grid;
+    grid-template-columns: 20px 132px minmax(0, 1fr);
+    grid-template-areas: "num picture words" "num time words";
+    grid-template-rows: auto 1fr;
+    column-gap: var(--space-5);
+    align-items: start;
+  }
+  .draft-script__num { grid-area: num; }
+  /* 画面格画在旁白格之上：窄版 96 宽的画面列放不下“01:12–01:26”这样的签，签伸进列间距时不被旁白的悬停底色与焦点环盖住 */
+  .draft-script__picture { position: relative; z-index: 1; grid-area: picture; min-width: 0; }
+  .draft-script__words { grid-area: words; min-width: 0; }
+  .draft-script__time { grid-area: time; }
+  /* 表头吸在滚动区顶部（停靠面板里在格式条下方）：吸附的是整个 rowgroup，它的父级是整张表 */
+  /* 表头在一切行内层次之上（画面格 1、打开的格子所在行 1、插入线 2） */
+  .draft-script__columns { position: sticky; top: var(--script-sticky-top); z-index: 3; background: var(--script-bg); border-top: 2px solid var(--fg-1); padding-top: 4px; }
+  .draft-script__row--columns {
+    grid-template-areas: "num picture words";
+    grid-template-rows: auto;
+    align-items: center;
+    height: 36px;
+    background: var(--script-bg);
+    box-shadow: inset 0 -1px 0 var(--frame-line);
+    color: var(--fg-3);
+    font: var(--type-meta);
+  }
+  .draft-script__row--columns > .draft-script__time { display: none; }
+  .draft-script__row--columns > .draft-script__num { font-family: var(--font-num); text-align: right; }
+
+  /* 场标题：黑体 18/600 + 场在原片里的位置（签，可点回原片）+ 右侧本场时长 */
+  .draft-script__row--scene {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "name time";
+    grid-template-rows: auto;
+    align-items: center;
+    padding: var(--space-8) 0 var(--space-4);
+  }
+  .draft-script__scene:first-of-type .draft-script__row--scene,
+  .draft-script__columns + .draft-script__scene .draft-script__row--scene { padding-top: var(--space-6); }
+  .draft-script__scene-name { grid-area: name; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-5); min-width: 0; }
+  .draft-script__scene-title { margin: 0; color: var(--fg-1); font: var(--fw-semibold) var(--fs-h3)/var(--lh-h3) var(--font-ui); text-wrap: balance; }
+  .draft-script__scene-range { color: var(--fg-3); font: var(--fw-medium) var(--fs-xs)/1 var(--font-num); }
+  .draft-script__scene-time { color: var(--fg-1); font: var(--fw-semibold) var(--fs-ui)/var(--lh-h3) var(--font-num); text-align: right; }
+
+  /* 刚写进来的一行（观看页“写进文稿”）：溯光色的底淡出一次，与新卡落位同一节奏（§7） */
+  .draft-script__row--line.is-revealed { animation: draft-script-reveal 1200ms var(--ease-out); }
+  /* 一行：发丝线分开；序号与旁白首行同高 */
+  .draft-script__row--line { padding: var(--space-6) 0; box-shadow: inset 0 1px 0 var(--border-hair); }
+  .draft-script__row--line > .draft-script__num {
+    position: relative;
+    color: var(--fg-3);
+    font: var(--fw-medium) var(--fs-xs)/var(--script-line) var(--font-num);
+    text-align: right;
+  }
+  .draft-script__row--line > .draft-script__time {
+    margin-top: var(--space-3);
+    color: var(--fg-2);
+    font: var(--fw-medium) var(--fs-ui)/var(--lh-sm) var(--font-num);
+  }
+  .draft-script__row--line > .draft-script__time:has(.draft-script__none) { display: none; }
+  /* 拖动把手：悬停这一行时在序号的位置出现（序号淡出），只给指针用；键盘在旁白格上按 Alt+↑/↓ */
+  .draft-script__grip {
+    position: absolute;
+    top: calc((var(--script-line) - 24px) / 2);
+    right: -5px;
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-ctl);
+    color: var(--fg-icon);
+    opacity: 0;
+    cursor: grab;
+    touch-action: none;
+    transition: opacity var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+  }
+  .draft-script__grip:hover { background: var(--bg-hover); color: var(--fg-1); }
+  .draft-script__num-text { transition: opacity var(--dur-fast) var(--ease-out); }
+  .draft-script__row--line:hover > .draft-script__num .draft-script__grip { opacity: 1; }
+  .draft-script__row--line:hover > .draft-script__num:has(.draft-script__grip) .draft-script__num-text { opacity: 0; }
+  .draft-script__table.is-dragging, .draft-script__table.is-dragging * { cursor: grabbing; }
+  .draft-script__table.is-dragging .draft-script__row--line:hover > .draft-script__num .draft-script__grip { opacity: 0; }
+  .draft-script__table.is-dragging .draft-script__row--line:hover > .draft-script__num .draft-script__num-text { opacity: 1; }
+  .draft-script__row.draft-script__row--line.is-picture-note > .draft-script__num .draft-script__grip { top: calc(1px + var(--space-3) + var(--space-2) + (var(--fs-ui) * 1.65 - 24px) / 2); }
+  /* 场的把手：挂在场名左侧的留白里（不挤动场名），键盘可达（Alt+↑/↓ 或 ↑/↓） */
+  .draft-script__scene-name { position: relative; }
+  .draft-script__scene-grip {
+    position: absolute;
+    top: 50%;
+    left: -24px;
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 24px;
+    margin-top: -12px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: none;
+    color: var(--fg-icon);
+    opacity: 0;
+    cursor: grab;
+    touch-action: none;
+    transition: opacity var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+  }
+  .draft-script__row--scene:hover .draft-script__scene-grip, .draft-script__scene-grip:focus-visible { opacity: 1; }
+  .draft-script__scene-grip:hover { background: var(--bg-hover); color: var(--fg-1); }
+  .draft-script__scene-grip:focus-visible { outline: none; box-shadow: var(--focus-shadow); }
+  /* 拖起来的行（或场）：留在原处变淡；插入线是表格的光标（与正文光标同一光色），左端一个小圆点 */
+  .draft-script__table { position: relative; padding: 0 var(--space-5) var(--space-4); border-inline: 1px solid var(--frame-line); border-bottom: 1px solid var(--frame-line); }
+  .draft-script__row--line.is-lifted, .draft-script__scene.is-lifted { opacity: .38; }
+  .draft-script__drop {
+    position: absolute;
+    z-index: 2;
+    left: 20px;
+    right: 0;
+    height: 2px;
+    margin-top: -1px;
+    border-radius: 1px;
+    background: var(--fg-1);
+    pointer-events: none;
+  }
+  .draft-script__drop::before {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -8px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 2px var(--fg-1);
+  }
+  .draft-script__drop.is-scene { left: 0; }
+  .draft-script__drop.is-scene::before { left: -10px; }
+  .draft-script__ghost {
+    position: fixed;
+    z-index: var(--z-popover);
+    top: 0;
+    left: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3);
+    max-width: 280px;
+    height: 28px;
+    padding: 0 var(--space-5) 0 var(--space-4);
+    border-radius: var(--radius-ctl);
+    background: var(--paper-manuscript);
+    box-shadow: var(--shadow-tool);
+    color: var(--fg-1);
+    font: var(--type-meta);
+    white-space: nowrap;
+    pointer-events: none;
+    will-change: transform;
+  }
+  .draft-script__ghost > svg { flex: none; color: var(--fg-icon); }
+  .draft-script__ghost > span { overflow: hidden; text-overflow: ellipsis; }
+  /* 移过去的那一行（或场）亮一下，与“写进文稿”的新行同一种提示，短一些 */
+  .draft-script__row.is-moved { animation: draft-script-reveal 900ms var(--ease-out); }
+  .draft-script__none { color: var(--fg-3); }
+  .draft-script__row--beat { grid-template-areas: "words words words"; grid-template-rows: auto; padding: var(--space-6) 0 var(--space-2); box-shadow: inset 0 1px 0 var(--border-hair); }
+  .draft-script__row--beat > [role="cell"] { grid-area: words; }
+  .draft-script__beat { margin: 0; color: var(--fg-2); font: var(--fw-semibold) var(--fs-ui)/20px var(--font-ui); }
+
+  /* 帧（圆角 3）与收在画面列内的出处印。取帧缓存、懒加载与播放路径保持原样。 */
+  .draft-shot-button { display: block; border-radius: var(--radius-photo); cursor: pointer; transition: box-shadow var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out); }
+  .draft-shot-button:hover { box-shadow: var(--shadow-image-lift); transform: translateY(-1px); }
+  .draft-shot-button.is-gone { cursor: default; }
+  .draft-shot-button.is-gone:hover { box-shadow: none; transform: none; }
+  .draft-shot {
+    position: relative;
+    display: block;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: var(--radius-photo);
+    background: var(--paper-wall);
+    box-shadow: inset 0 0 0 1px var(--rule-paper);
+  }
+  .draft-shot__media { display: block; width: 100%; height: 100%; object-fit: cover; filter: none; }
+  .draft-shot.is-portrait { background: var(--media-chip); }
+  .draft-shot.is-portrait .draft-shot__media { object-fit: contain; }
+  .draft-shot__blank { display: grid; place-items: center; width: 100%; height: 100%; color: var(--fg-icon); }
+  /* 出处印和帧的左缘对齐，不伸入序号列。 */
+  .draft-script__tags { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); margin: var(--space-4) 0 0; }
+  .draft-script__tag, .draft-script__scene-tag { display: inline-flex; }
+  .draft-script__open {
+    height: var(--hit-min);
+    margin-left: 0;
+    padding: 0 var(--space-4);
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: var(--bg-sunken);
+    color: var(--fg-2);
+    font: var(--type-meta);
+    cursor: pointer;
+  }
+  .draft-script__open:hover { background: var(--bg-hover); color: var(--fg-1); }
+  /* 没有画面的一行：画面格平时空着（时长格也空着）；指针移到这一行或焦点进来时，才出现虚线框与“补一个镜头” */
+  .draft-script__fill {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    width: 100%;
+    height: 40px;
+    padding: 0 var(--space-4);
+    border: 1px dashed var(--border-hair);
+    border-radius: var(--radius-photo);
+    background: none;
+    color: var(--fg-3);
+    font: var(--type-meta);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+  }
+  .draft-script__fill > svg { flex: none; }
+  button.draft-script__fill:is(:hover, :focus-visible) { border-color: var(--fg-3); background: var(--bg-hover); color: var(--fg-1); }
+  .draft-script__row--line > .draft-script__picture > button.draft-script__fill,
+  .draft-script__shot-note > button.draft-script__fill--note { opacity: 0; transition: opacity var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out); }
+  .draft-script__row--line:is(:hover, :focus-within) > .draft-script__picture > button.draft-script__fill,
+  .draft-script__row--line:is(:hover, :focus-within) .draft-script__shot-note > button.draft-script__fill--note { opacity: 1; }
+  /* 拖动时指针被把手捕获，被拖的那一行一直算“悬停”：拖动期间不显出补镜头 */
+  .draft-script__table.is-dragging .draft-script__row--line:is(:hover, :focus-within) > .draft-script__picture > button.draft-script__fill,
+  .draft-script__table.is-dragging .draft-script__row--line:is(:hover, :focus-within) .draft-script__shot-note > button.draft-script__fill--note { opacity: 0; }
+  /* 正在写这条画面说明时，骑在框边上的小签会压住输入框的下沿：写完（离开格子）再出现 */
+  .draft-script__row--line.is-open .draft-script__shot-note > button.draft-script__fill--note { opacity: 0; pointer-events: none; }
+  button.draft-script__fill:focus-visible { outline: none; box-shadow: var(--focus-shadow); }
+  .draft-script__fill.is-static { cursor: default; }
+  /* 停靠面板默认宽度下画面列 96：空框只留“+”，字写在 title 与读屏名里，让旁白多几个字的宽度 */
+  .draft-script__fill:not(.is-static) > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  /* 用文字写下、还没找到的镜头（“画面：路口只有一盏灯”）：说明写在画面列的虚线框里，框贴着说明；“补一个镜头”在悬停或聚焦时
+     像一枚小签骑在框的下边线上（不占行高）；这一行没有旁白 */
+  .draft-script__shot-note {
+    position: relative;
+    display: grid;
+    justify-items: start;
+    gap: var(--space-1);
+    padding: var(--space-3) var(--space-4) var(--space-5);
+    border: 1px dashed var(--border-hair);
+    border-radius: var(--radius-photo);
+  }
+  .draft-script__shot-note .draft-script__line {
+    width: calc(100% + var(--space-3) * 2);
+    margin: 0 calc(-1 * var(--space-3));
+    padding: var(--space-2) var(--space-8) var(--space-2) var(--space-3);
+    color: var(--fg-2);
+    font: var(--fw-read) var(--fs-ui)/1.65 var(--font-read);
+  }
+  .draft-script__shot-note .draft-script__edit { top: calc(var(--space-2) + (var(--fs-ui) * 1.65 - 14px) / 2); right: var(--space-3); }
+  .draft-script__fill--note {
+    position: absolute;
+    bottom: -12px;
+    left: var(--space-2);
+    width: auto;
+    height: 24px;
+    padding: 0 var(--space-3);
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: var(--script-bg);
+    justify-content: flex-start;
+  }
+  button.draft-script__fill--note:is(:hover, :focus-visible) { background: var(--script-bg); box-shadow: inset 0 0 0 1px var(--border-strong); }
+  button.draft-script__fill--note:focus-visible { box-shadow: var(--focus-shadow); }
+  .draft-script__fill--note:not(.is-static) > span { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
+  /* 停靠面板的画面列只有 96 宽，放不下一段说明：这一行的画面格横跨画面与旁白两列 */
+  .draft-script__row--line.is-picture-note { grid-template-areas: "num picture picture" "num time time"; }
+  .draft-script__row--line.is-picture-note > .draft-script__words { display: none; }
+  /* 序号（宽版还有时长）与框里说明的第一行同高 */
+  .draft-script__row.draft-script__row--line.is-picture-note > :is(.draft-script__num, .draft-script__time) { padding-top: calc(1px + var(--space-3) + var(--space-2)); line-height: calc(var(--fs-ui) * 1.65); }
+  @container draft-script (min-width: 420px) {
+    .draft-script__row:is(.draft-script__row--columns, .draft-script__row--line) { grid-template-columns: 20px 144px minmax(0, 1fr); }
+  }
+  /* 停靠面板（窄版）：没有画面的一行把空着的画面列让给旁白；“补一个镜头”缩成序号下方的一个“+”（悬停或聚焦时出现） */
+  @container draft-script (max-width: 639px) {
+    .draft-script__row--line.has-shot { --script-bleed: var(--space-3); }
+    .draft-script__row--line:not(.has-shot):not(.is-picture-note) { position: relative; grid-template-areas: "num words words"; grid-template-rows: auto; }
+    /* 不参与排版：一行旁白也不因为它变高；紧贴在序号下方，落在这一行的下内边距里 */
+    .draft-script__row--line:not(.has-shot):not(.is-picture-note) > .draft-script__picture { position: absolute; top: calc(var(--space-6) + var(--script-line) - 4px); left: 0; width: 20px; }
+    .draft-script__row--line:not(.has-shot):not(.is-picture-note) > .draft-script__time { display: none; }
+    .draft-script__row--line:not(.has-shot):not(.is-picture-note) > .draft-script__picture > button.draft-script__fill { width: 20px; height: 20px; margin: 0; padding: 0; border: 0; }
+    .draft-script__row--line:not(.has-shot):not(.is-picture-note) > .draft-script__picture > .draft-script__fill.is-static { display: none; }
+  }
+
+  /* 旁白：宋体 16/1.75；整格是一个按钮，按下回到正文的这一段 */
+  /* 旁白格向左伸进列间距的量：宽版 12；窄版有画面的行只伸 6，让开伸出画面列的签 */
+  .draft-script__row--line { --script-bleed: var(--space-5); }
+  .draft-script__line {
+    position: relative;
+    display: block;
+    width: calc(100% + var(--script-bleed) + var(--space-5));
+    margin: calc(-1 * var(--space-3)) calc(-1 * var(--space-5)) calc(-1 * var(--space-3)) calc(-1 * var(--script-bleed));
+    padding: var(--space-3) var(--space-9) var(--space-3) var(--script-bleed);
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: none;
+    color: var(--draft-fg);
+    font: var(--script-words);
+    text-align: justify;
+    text-wrap: wrap;
+    overflow-wrap: anywhere;
+    cursor: pointer;
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .draft-script__line:hover { background: var(--bg-hover); }
+  .script-cell {
+    --draft-size: var(--fs-note);
+    --script-cell-line: var(--script-line);
+    position: relative;
+    display: block;
+    width: calc(100% + var(--script-bleed) + var(--space-5));
+    margin: calc(-1 * var(--space-3)) calc(-1 * var(--space-5)) calc(-1 * var(--space-3)) calc(-1 * var(--script-bleed));
+    padding: var(--space-3) var(--space-9) var(--space-3) var(--script-bleed);
+    border-radius: var(--radius-ctl);
+    background: var(--paper-manuscript);
+    box-shadow: 0 0 0 1px var(--border-strong), 0 1px 2px var(--shadow-c1);
+    color: var(--draft-fg);
+    font: var(--script-words);
+    text-align: left;
+    overflow-wrap: anywhere;
+    cursor: text;
+  }
+  .script-cell .cm-content { text-wrap: wrap; font-kerning: normal; }
+  .script-cell .cm-content:focus-visible { box-shadow: none; }
+  .script-cell .draft-script__label { margin-right: var(--space-4); }
+  .draft-script__shot-note .script-cell {
+    --draft-size: var(--fs-ui);
+    --script-cell-line: calc(var(--fs-ui) * 1.65);
+    width: calc(100% + var(--space-3) * 2);
+    margin: 0 calc(-1 * var(--space-3));
+    padding: var(--space-2) var(--space-8) var(--space-2) var(--space-3);
+    color: var(--fg-2);
+    font: var(--fw-read) var(--fs-ui)/1.65 var(--font-read);
+  }
+  .draft-script__row--line.is-open { position: relative; z-index: 1; }
+  .draft-script__row--line.is-pending { padding-top: var(--space-4); }
+  .draft-script__line:focus-visible { outline: none; box-shadow: var(--focus-shadow); }
+  .draft-script__edit { position: absolute; top: calc(var(--space-3) + (var(--script-line) - 14px) / 2); right: var(--space-4); color: var(--fg-icon); opacity: 0; transition: opacity var(--dur-fast) var(--ease-out); }
+  .draft-script__line:is(:hover, :focus-visible) .draft-script__edit { opacity: 1; }
+  .is-quote .draft-script__line { padding-left: calc(var(--script-bleed) + 14px); font-weight: var(--fw-medium); }
+  .is-quote .draft-script__line::before {
+    content: '';
+    position: absolute;
+    top: var(--space-4);
+    bottom: var(--space-4);
+    left: var(--script-bleed);
+    width: 2px;
+    background: var(--rule-paper);
+  }
+  :is(.is-list, .is-code) .draft-script__line { white-space: pre-line; }
+  .is-code .draft-script__line { font: var(--fw-regular) var(--fs-ui)/1.7 var(--font-code); }
+  .draft-script__label {
+    display: inline-block;
+    margin-right: var(--space-4);
+    padding: 0 var(--space-3);
+    border-radius: 3px;
+    box-shadow: inset 0 0 0 1px var(--border-strong);
+    color: var(--fg-2);
+    font: var(--fw-medium) var(--fs-xs)/20px var(--font-ui);
+    vertical-align: 2px;
+  }
+  .draft-script__muted { margin-right: var(--space-2); color: var(--fg-3); font: var(--type-meta); }
+  .draft-script__ref {
+    margin: 0 1px 0 2px;
+    color: var(--fg-2);
+    font: var(--fw-semibold) var(--fs-xs)/1 var(--font-num);
+    font-variant-numeric: tabular-nums;
+    vertical-align: .55em;
+  }
+  .draft-script__ref.is-after-punct { margin-left: calc(var(--fs-note) * -.4); }
+  .draft-script__ref.is-gone { color: var(--fg-3); }
+
+  @container draft-script (min-width: 640px) {
+    .draft-script__row:is(.draft-script__row--columns, .draft-script__row--line) { grid-template-columns: 40px 240px minmax(0, 1fr) 72px; grid-template-areas: "num picture words time"; grid-template-rows: auto; column-gap: var(--space-6); }
+    .draft-script__fill:not(.is-static) > span { position: static; width: auto; height: auto; overflow: visible; clip-path: none; }
+    .draft-script__drop { left: 40px; }
+    .draft-script__row--columns { height: 40px; }
+    .draft-script__row--columns > .draft-script__time { display: block; text-align: right; }
+    .draft-script__row--scene { grid-template-columns: minmax(0, 1fr) 72px; }
+    .draft-script__row--line > .draft-script__time,
+    .draft-script__row--line > .draft-script__time:has(.draft-script__none) { display: block; margin-top: 0; font-size: var(--fs-ui); line-height: var(--script-line); text-align: right; }
+    /* 宽版：空画面格里的虚线框与旁白第一行同高，不把这一行撑高 */
+    .draft-script__row--line > .draft-script__picture > .draft-script__fill { height: var(--script-line); }
+    .draft-script__fill--note { height: 24px; }
+    .draft-script__row--line.is-picture-note { grid-template-areas: "num picture words time"; }
+    .draft-script__row--line.is-picture-note > .draft-script__words { display: block; }
+  }
+
+  /* 还不是脚本：一张安静的示意（三行：序号 · 画面框 · 两道字）+ 说明 + 回到正文 */
+  .draft-script--empty { display: grid; place-items: center; padding: var(--space-10) 0 var(--space-12); }
+  .draft-script__empty { display: grid; justify-items: center; gap: var(--space-4); max-width: 360px; text-align: center; }
+  .draft-script__empty h3 { margin: var(--space-4) 0 0; color: var(--fg-1); font: var(--fw-semibold) var(--fs-h3)/var(--lh-h3) var(--font-read); }
+  .draft-script__empty p { margin: 0; color: var(--fg-2); font: var(--fw-book) var(--fs-ui)/22px var(--font-ui); text-wrap: pretty; }
+  .draft-script__empty .btn { margin-top: var(--space-4); }
+  .draft-script__sketch { display: grid; gap: var(--space-4); width: 208px; padding: var(--space-5) var(--space-6); border-radius: var(--radius-paper); background: var(--bg-sunken); }
+  .draft-script__sketch-row { display: grid; grid-template-columns: 10px 56px minmax(0, 1fr); align-items: center; gap: var(--space-4); }
+  .draft-script__sketch-row > i { width: 10px; height: 6px; border-radius: 1px; background: var(--rail-tick); }
+  .draft-script__sketch-row > b { height: 32px; border: 1px dashed var(--border-strong); border-radius: var(--radius-photo); }
+  .draft-script__sketch-row > em {
+    height: 22px;
+    background:
+      linear-gradient(var(--rail-seg), var(--rail-seg)) 0 4px / 100% 5px no-repeat,
+      linear-gradient(var(--rail-seg), var(--rail-seg)) 0 15px / 64% 5px no-repeat;
+  }
+  .draft-script__sketch-row:first-child > b { border-style: solid; border-color: transparent; background: var(--rail-seg); }
+}

@@ -1,0 +1,6 @@
+.directory-recovery-content { color: var(--fg-1); line-height: 1.8; }
+.directory-recovery-content > svg { color: var(--fg-icon); margin-bottom: 12px; }
+.directory-recovery-content dl { padding: 16px; background: var(--bg-sunken); border: 1px solid var(--border-hair); font-size: var(--fs-ui); }
+.directory-recovery-content dt { margin-top: 12px; }
+.directory-recovery-content dt:first-child { margin-top: 0; }
+.directory-recovery-actions { flex-wrap: wrap; }

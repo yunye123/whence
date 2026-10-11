@@ -1,0 +1,390 @@
+/* 来处 · 稿纸书桌 v2。组件只引用语义令牌；旧部件的废弃令牌在迁移完成后清理。 */
+@layer tokens {
+/* ---------- 2. 语义层 semantic（随主题变，一处定义） ---------- */
+:root {
+  /* 2.1 表面（亮度递增 = 层级） */
+  --bg-sidebar:   var(--bg-shell);
+  --bg-canvas:    light-dark(var(--p-desk-desk-light), var(--p-desk-desk-dark));
+  --bg-surface:   light-dark(var(--p-paper-25),  var(--p-night-mount));   /* 台纸：材料卡、摘录、面板 */
+  --bg-paper:     light-dark(var(--p-paper-0),   var(--p-night-fair));    /* 誊清纸：文稿、阅读页、写作页 */
+  --bg-elevated:  light-dark(var(--p-paper-0),   var(--p-night-raised));  /* 工具条、导航、菜单、提示条、操作条 */
+  --bg-contextbar:light-dark(var(--p-paper-0),   var(--p-night-bar));     /* 选区浮动操作条：浅色是白色浮层，暗光是更亮的一块 */
+  --bg-sunken:    light-dark(rgb(38 38 38 / .055), rgb(0 0 0 / .22));      /* 输入框、分组托盘 */
+  --bg-hover:     light-dark(rgb(38 38 38 / .06), rgb(255 255 255 / .06));
+  --bg-pressed:   light-dark(rgb(38 38 38 / .10), rgb(255 255 255 / .10));
+  --bg-selected:  var(--paper-plain);   /* 列表当前项（aria-current） */
+  --bg-scrim:     light-dark(rgb(22 22 22 / .56), rgb(6 6 5 / .76)); /* 用户批准的弹窗方案 B */
+  --bg-viewer:    var(--p-viewer);
+
+  /* 2.2 文字与图标 */
+  --fg-1:        light-dark(var(--p-desk-ink-light), var(--p-desk-ink-dark));
+  --fg-2:        light-dark(var(--p-desk-ink-2-light), var(--p-desk-ink-2-dark));
+  --fg-3:        light-dark(var(--p-desk-ink-3-light), var(--p-desk-ink-3-dark));
+  --fg-icon:     var(--edge-ink);
+  --fg-disabled: color-mix(in srgb, var(--fg-3) 55%, transparent);
+  --fg-on-solid: light-dark(var(--p-desk-manuscript-light), var(--p-desk-desk-dark));    /* 墨色主按钮上的字 */
+  --fg-contextbar:   var(--fg-1);
+  --fg-contextbar-2: var(--fg-2);
+  --fg-transcript:   light-dark(var(--fg-1), var(--fg-2));   /* 逐字稿非当前句 */
+
+  /* 2.3 线 */
+  --border-hair:   light-dark(rgb(38 38 38 / .12), rgb(255 255 255 / .08));
+  --border-strong: light-dark(rgb(38 38 38 / .24), rgb(255 255 255 / .14));
+  --border-inner-hi: light-dark(rgb(255 255 255 / .8), rgb(255 255 255 / .05)); /* 浮层 1px 内高光 */
+
+  /* 2.4 画布 */
+  --canvas-grid-major: light-dark(var(--p-paper-300), var(--p-night-grid));    /* 96px 十字 */
+  --canvas-grid-minor: light-dark(var(--p-paper-350), var(--p-night-grid-2));  /* 24px 小点 */
+  --canvas-edge:       var(--edge-ink); /* 我画的关系：铅笔线（对画布 ≥3:1） */
+  --canvas-edge-dim:   .3;                                                     /* 选中时无关连线的不透明度 */
+  --canvas-lamp:       light-dark(transparent, rgb(255 240 214 / .085));      /* 暗光台灯光池（屏幕空间） */
+  --canvas-vignette:   light-dark(transparent, rgb(0 0 0 / .34));              /* 暗光四角 */
+
+  /* 2.5 角色色（8 类语义，各带 fg / bg / line） */
+  --source-fg:    light-dark(var(--p-cyan-700), var(--p-cyan-300));  /* 纸上的出处字、时间码 */
+  --source-solid: light-dark(var(--p-cyan-700), var(--p-cyan-500));  /* 实心出处签 */
+  --source-solid-hover: color-mix(in srgb, var(--source-solid) 88%, black);  /* 悬停变深（签上字 ≥5.9:1） */
+  --source-solid-press: color-mix(in srgb, var(--source-solid) 78%, black);
+  --source-on:    var(--p-cyan-on);                                  /* 签上的字 */
+  --source-line:  light-dark(var(--p-cyan-600), var(--p-cyan-400));  /* 线绳、边码刻痕、孔眼 */
+  --source-wash:  light-dark(var(--p-cyan-100), var(--p-cyan-900));  /* 已摘录原文的淡染 */
+  --brand-dot:    light-dark(var(--p-zhu-700), var(--p-zhu-400));    /* 标志「原点」的朱点（§9），只给 MarkIcon 用 */
+
+  --quote-bg:     var(--paper-plain);
+  --quote-rule:   var(--rule-paper); /* 原句与“我的理解”之间的虚线 */
+
+  --note-bg:      var(--paper-note);  /* 不透明便笺纸；禁止 backdrop-filter。 */
+  --note-fg:      var(--fg-2);
+  --note-border:  var(--paper-edge);
+  --note-crease:  light-dark(rgb(28 36 34 / .10), rgb(0 0 0 / .32));        /* 上沿压痕：暗线 */
+  --note-crease-hi: light-dark(rgb(255 255 255 / .95), rgb(255 255 255 / .07)); /* 上沿压痕：亮线 */
+
+  --draft-bg:     var(--paper-manuscript);
+  --draft-fg:     var(--fg-1);
+  --draft-sheet-1: light-dark(var(--p-desk-retired-1), var(--p-desk-retired-2));                     /* 纸叠：下方露出的上一稿 */
+  --draft-sheet-2: light-dark(var(--p-desk-retired-3), var(--p-desk-retired-4));                     /* 纸叠：再下一张，色阶再低一级 */
+  --draft-sheet-border: light-dark(rgb(28 36 34 / .16), rgb(255 255 255 / .08));
+
+  --selection-ring:  var(--fg-1);                                    /* 选中：细墨线 */
+  --selection-width: 1.5px;                                          /* 屏幕宽度，按 --z 反算 */
+  --selection-gap:   var(--bg-canvas);                               /* 只给图片：墨线与画面之间 2px 画布色间隙 */
+  --marquee-bg:      light-dark(rgb(34 31 27 / .05), rgb(238 234 228 / .06));
+  --marquee-border:  light-dark(rgb(34 31 27 / .45), rgb(238 234 228 / .45));
+
+  --focus-ring:   var(--fg-1);  /* 键盘焦点用墨色双圈。 */
+  --focus-gap:    var(--bg-canvas);
+
+  --light-fg:     light-dark(var(--p-light-700), var(--p-light-300));  /* 当前句、播放头、光标 */
+  --light-wash:   light-dark(var(--p-light-wash-l), rgb(255 255 255 / .055)); /* 当前句底：暗光是中性提亮，不是褐色 */
+  --trace-walk:   light-dark(var(--p-light-600), var(--p-light-150));  /* 溯光：光走过的线绳本身提亮 */
+  --trace-head:   light-dark(var(--p-light-800), var(--p-light-50));   /* 溯光：流动的亮段与光点 */
+  --trace-lift:   light-dark(var(--p-light-wash-l), rgb(255 255 255 / .08)); /* 溯光起点：被引原文提亮（浅色是暖光，与当前句底同色；暗光中性白），CANVAS-10 */
+
+  --status-danger-fg:  var(--fg-1);
+  --status-danger-bg:  var(--bg-sunken);
+  --status-danger-border: var(--border-strong);
+  --status-success-fg: var(--fg-1);
+  --status-success-bg: var(--bg-sunken);
+  --status-warning-fg: var(--fg-1);
+  --status-warning-bg: var(--bg-sunken);
+  --status-warning-border: var(--border-strong);
+
+  /* 2.6 按钮：墨色主按钮只给对话框确认；画布里的“添加”是次级实底 */
+  --action-bg:       var(--fg-1);
+  --action-bg-hover: color-mix(in srgb, var(--action-bg) 86%, var(--bg-panel));
+  --action-fg:       var(--fg-on-solid);
+  --action-soft-bg:       var(--paper-plain);
+  --action-soft-bg-hover: var(--bg-hover);
+  --action-soft-fg:       var(--fg-1);
+
+  /* 2.7 轨道、刻度、选区、开关、笔记色调、小地图 */
+  --text-selection: light-dark(rgb(34 31 27 / .14), rgb(238 234 228 / .10));
+  --text-selection-ink: var(--fg-2); /* 选中后保证暗色稿纸上的浅灰文字可读。 */
+  --rail-bg:    light-dark(rgb(38 38 38 / .08), rgb(255 255 255 / .08));   /* 篇幅轨、进度轨底 */
+  --rail-seg:   light-dark(rgb(38 38 38 / .12), rgb(255 255 255 / .11));   /* 句子刻度格 */
+  --rail-tick:  var(--rule-paper);   /* 刻度线、概览灰条 */
+  --rail-played: light-dark(rgb(34 31 27 / .30), rgb(238 234 228 / .30));  /* 已播放的句子格 */
+  --switch-off-bg:     var(--bg-pressed);
+  --switch-off-border: var(--fg-icon);                                       /* 关态 1px 描边，非文字 ≥3:1 */
+  --note-tone-paper:    transparent;                                        /* CardTone → 笔记淡纸色，只作区分 */
+  --note-tone-butter:   transparent;
+  --note-tone-mint:     light-dark(rgb(74 150 108 / .06), rgb(110 180 140 / .06));
+  --note-tone-lavender: light-dark(rgb(124 108 186 / .06), rgb(160 146 220 / .06));
+  --note-tone-blue:     light-dark(rgb(64 120 176 / .06), rgb(110 160 210 / .06));
+  --mm-source: var(--paper-jacket);
+  --mm-quote:  var(--paper-plain);
+  --mm-draft:  var(--paper-manuscript);
+  --mm-note:   var(--paper-note);
+  --mm-mask:   light-dark(rgb(210 209 206 / .35), rgb(26 25 23 / .35));
+  /* 操作条的叠层（浅色是白条，暗光是深条；都走通用悬停色） */
+  --contextbar-hover:   var(--bg-hover);
+  --contextbar-pressed: var(--bg-pressed);
+  --contextbar-rule:    var(--border-hair);
+  --contextbar-edge:    var(--border-hair);
+
+  /* 2.8 压在媒体画面上的覆盖层（画面不随主题，所以这些也不随主题） */
+  --media-fg:        var(--p-desk-media-ink);
+  --media-scrim:     rgb(14 14 13 / .72);    /* 图片说明、概览标题渐变终点（从 30% 处开始） */
+  --media-text-shadow: 0 1px 2px rgb(0 0 0 / .55), 0 0 12px rgb(0 0 0 / .35); /* 字幕与压图文字 */
+  --media-chip:      rgb(20 18 15 / .80);   /* 时长、播放中 */
+  --media-button-bg: rgb(246 244 238 / .94);
+  --media-button-fg: var(--p-desk-ink-light);
+  --viewer-fg:       var(--p-desk-ink-dark);               /* 原图查看器 */
+  --viewer-fg-2:     var(--p-desk-viewer-secondary);
+  --viewer-bar:      rgb(42 41 39 / .92);
+  --viewer-rule:     rgb(255 255 255 / .12);   /* 查看器里的分隔、描边、当前态内框 */
+
+  /* 2.9 中性投影色；暗光用黑。 */
+  --shadow-c1: light-dark(rgb(48 48 48 / .07), rgb(0 0 0 / .30));
+  --shadow-c2: light-dark(rgb(48 48 48 / .16), rgb(0 0 0 / .44));
+  --shadow-c3: light-dark(rgb(48 48 48 / .11), rgb(0 0 0 / .42));
+}
+
+:root {
+  /* 稿纸书桌 v2：新角色先声明，尺寸随对应部件迁移。 */
+  --bg-shell: light-dark(var(--p-desk-shell-light), var(--p-desk-shell-dark));
+  --bg-shell-sunken: light-dark(var(--p-desk-shell-sunken-light), var(--p-desk-shell-sunken-dark));
+  --bg-panel: light-dark(var(--p-desk-panel-light), var(--p-desk-panel-dark));
+  --paper-plain: light-dark(var(--p-desk-plain-light), var(--p-desk-plain-dark));
+  --paper-manuscript: light-dark(var(--p-desk-manuscript-light), var(--p-desk-manuscript-dark));
+  --paper-note: light-dark(var(--p-desk-note-light), var(--p-desk-note-dark));
+  --paper-jacket: light-dark(var(--p-desk-jacket-light), var(--p-desk-jacket-dark));
+  --paper-wall: light-dark(var(--p-desk-wall-light), var(--p-desk-wall-dark));
+  --edge-ink: light-dark(var(--p-desk-edge-light), var(--p-desk-edge-dark));
+  --zhu: light-dark(var(--p-desk-stamp-light), var(--p-desk-stamp-dark));
+  --zhu-wash: light-dark(rgb(165 39 26 / .08), rgb(236 95 69 / .14));
+  --hl: light-dark(var(--p-desk-highlight), rgb(227 207 74 / .85));
+  --tip-bg: var(--fg-1);
+  --tip-fg: light-dark(var(--p-desk-plain-light), var(--p-desk-desk-dark));
+  --rule-paper: light-dark(rgb(56 52 46 / .16), rgb(255 250 242 / .14));
+  --rule-paper-soft: light-dark(rgb(56 52 46 / .085), rgb(255 250 242 / .07));
+  --frame-line: light-dark(rgb(34 31 27 / .14), rgb(255 250 242 / .13));
+  --paper-edge: light-dark(rgb(48 48 48 / .10), rgb(0 0 0 / .30));
+  --paper-top-hi: light-dark(transparent, rgb(255 255 255 / .07));
+  --paper-manuscript-hi: light-dark(transparent, rgb(255 255 255 / .13));
+  --shadow-paper-1: light-dark(rgb(48 48 48 / .07), rgb(0 0 0 / .25));
+  --shadow-paper-2: light-dark(rgb(48 48 48 / .18), rgb(0 0 0 / .50));
+  --shadow-fair-1: light-dark(rgb(48 48 48 / .08), rgb(0 0 0 / .25));
+  --shadow-fair-2: light-dark(rgb(48 48 48 / .20), rgb(0 0 0 / .55));
+  --shadow-fair-edge: light-dark(rgb(48 48 48 / .09), rgb(0 0 0 / .35));
+  --shadow-chip-edge: light-dark(rgb(48 48 48 / .12), rgb(0 0 0 / .35));
+  --shadow-chip-1: light-dark(rgb(48 48 48 / .08), transparent);
+  --shadow-insert: 0 0 0 1px var(--paper-edge), 0 1px 0 var(--shadow-paper-1);
+  --shadow-chip: inset 0 1px 0 var(--paper-top-hi), 0 0 0 1px var(--shadow-chip-edge), 0 1px 2px var(--shadow-chip-1);
+  --action-soft-ring: var(--fg-1);
+  --status-success-border: var(--border-strong);
+  --row-hover: light-dark(rgb(56 52 46 / .06), rgb(255 250 242 / .06));
+  --font-mono: 'Field Punct Sans', 'IBM Plex Mono', 'Noto Sans SC Variable', monospace;
+  --fs-ui: 14px;
+  --lh-ui: 22px;
+  --stamp-h: 24px;
+  --stamp-head: 22px;
+  --radius-note: 0;
+  --radius-photo: 3px;
+  --radius-tab: 5px;
+  --radius-jacket: 3px;
+  --radius-stamp: 2px;
+  --radius-icon: 6px;
+  --fw-draft: 400;
+  --hl-from: 42%;
+  --hl-to: 95%;
+  --excerpt-mark-image: linear-gradient(to bottom, transparent var(--hl-from), var(--hl) var(--hl-from), var(--hl) var(--hl-to), transparent var(--hl-to));
+  --excerpt-mark-decoration: none;
+  --type-card-meta: 400 12px/18px var(--font-ui);
+  --type-card-body: 400 14px/22px var(--font-ui);
+  --type-card-quote: 500 16px/26px var(--font-read);
+  --type-card-mine: 400 14px/22px var(--font-ui);
+  --type-card-note: 400 14px/22px var(--font-note);
+  --type-card-note-title: 500 16px/24px var(--font-note);
+  --type-card-draft-title: 600 23px/30px var(--font-read);
+  --export-bg-desk: var(--p-desk-wall-light);
+  --export-bg-white: var(--p-paper-0);
+  --export-bg-dark: var(--p-viewer);
+  --print-paper: var(--p-paper-0);
+  --print-sunken: var(--p-desk-print-sunken);
+  --print-ink: var(--p-desk-ink-light);
+  --print-ink-2: var(--p-desk-ink-2-light);
+  --print-ink-3: var(--p-desk-ink-3-light);
+  --print-rule: rgb(38 38 38 / .12);
+  --print-rule-strong: rgb(38 38 38 / .24);
+  --print-zhu: var(--p-desk-stamp-light);
+}
+
+/* ---------- 3. 字体 ---------- */
+:root {
+  --font-ui:      'Noto Sans SC Variable', 'Microsoft YaHei UI', 'PingFang SC', sans-serif;
+  --font-ui-latin:'Inter Variable', 'Noto Sans SC Variable', 'Microsoft YaHei UI', sans-serif;   /* :lang(en) 用 */
+  --font-read:    'Noto Serif SC Variable', 'Songti SC', 'SimSun', serif;                          /* 我写出来的 */
+  --font-note:    'LXGW WenKai Screen', 'Noto Sans SC Variable', 'KaiTi', serif;                   /* 我在想的 */
+  --font-num:     var(--font-mono);                           /* + tabular-nums */
+  --font-code:    var(--font-mono);                 /* 仅 Markdown 代码 */
+
+  /* 字号 / 行高（px）。中文最小 12px；11px 只给纯西文数字 */
+  --fs-2xs: 11px; --lh-2xs: 16px;   /* 只用于西文、数字；中文不用 */
+  --fs-xs:  12px; --lh-xs:  18px;   /* 元信息、签上文字、计数、kbd */
+  --fs-sm:  13px; --lh-sm:  20px;   /* 默认界面（按钮、菜单、列表次项） */
+  --fs-md:  14px; --lh-md:  22px;   /* 列表主项、面板标签 */
+  --fs-body: 15px; --lh-body: 24px; /* 一切“读的正文”：卡片摘要、面板正文、页边出处、来历卡 */
+  --fs-lg:  15px; --lh-lg:  22px;   /* 卡片标题 */
+  --fs-note: 16px; --lh-note: 1.7;  /* 笔记 */
+  --fs-read: 16px; --lh-read: 1.875; /* 阅读正文（黑体）16/30 */
+  --fs-draft:18px; --lh-draft: 1.9; /* 写作正文（宋体） */
+  --fs-h3: 18px; --lh-h3: 26px;
+  --fs-h2: 21px; --lh-h2: 30px;
+  --fs-h1: 23px; --lh-h1: 32px;     /* 阅读文章标题，与 W3-H 实测标题一致 */
+  --fs-title: 23px; --lh-title: 30px;   /* 写作页文稿标题（宋体） */
+  --fs-display: 64px; --lh-display: 76px; /* 欢迎页两种声音的标题、空画布地名 */
+  --fs-clock: 26px;                 /* 播放器时间 */
+  --measure-read: 34em;             /* ≈34 字（17px 下 578px，§3.4） */
+  --measure-draft: 34em;            /* ≈34 字 */
+
+  /* 字重（可变字体，中文真实可分辨） */
+  --fw-regular: 400;
+  --fw-book: 450;      /* 界面默认 */
+  --fw-medium: 520;    /* 按钮、标签 */
+  --fw-semibold: 600;  /* 标题、当前句 */
+  --fw-display: 500;   /* 64px 展示字（不用 300 细体：1x 屏发虚） */
+  --fw-text: 400;      /* 长段黑体（阅读正文、逐字稿）；暗光见第 11 节 */
+  --fw-read: 420;      /* 宋体正文；暗光与 1x 屏在第 11 节调整 */
+  --fw-card-serif: 450;/* 卡片里 15px 宋体预览 */
+
+  /* 字距 */
+  --ls-cjk: 0;
+  --ls-latin-display: -0.02em;
+  --ls-num: 0.01em;
+
+  /* 复合字型（直接 font: var(--type-*)） */
+  --type-meta:  var(--fw-book) var(--fs-xs)/var(--lh-xs) var(--font-ui);
+  --type-ui:    var(--fw-book) var(--fs-sm)/var(--lh-sm) var(--font-ui);
+  --type-ui-strong: var(--fw-medium) var(--fs-sm)/var(--lh-sm) var(--font-ui);
+  --type-body:  var(--fw-regular) var(--fs-body)/var(--lh-body) var(--font-ui);
+  --type-card-title: var(--fw-semibold) var(--fs-lg)/var(--lh-lg) var(--font-ui);
+  --type-note:  var(--fw-regular) var(--fs-note)/var(--lh-note) var(--font-note);
+  --type-mine:  var(--fw-regular) var(--fs-body)/1.65 var(--font-note);     /* 我的理解 */
+  --type-read:  var(--fw-text) var(--fs-read)/var(--lh-read) var(--font-ui);
+  --type-draft: var(--fw-read) var(--fs-draft)/var(--lh-draft) var(--font-read);
+  --type-card-draft: var(--fw-draft) 16px/28px var(--font-read);
+  --type-tag:   600 var(--fs-xs)/1 var(--font-num);
+  --type-kbd:   500 var(--fs-xs)/1 var(--font-num);
+}
+
+/* ---------- 4. 间距（4px 基） ---------- */
+:root {
+  --space-0: 0; --space-1: 2px; --space-2: 4px; --space-3: 6px; --space-4: 8px;
+  --space-5: 12px; --space-6: 16px; --space-7: 20px; --space-8: 24px; --space-9: 32px;
+  --space-10: 40px; --space-11: 48px; --space-12: 64px;
+  --gap-cards: 32px;     /* 卡片间距，与“间隔 32 px”文案联动（K9-10） */
+  --gap-thread: 48px;    /* 两张有连线的卡之间至少留出的线绳通道 */
+}
+
+/* ---------- 5. 圆角：纸是裁的，工具是模压的 ---------- */
+:root {
+  --radius-tag: 0;       /* 出处签：无圆角，只有切角 */
+  --radius-pin: 2px;     /* 贴在纸上的：图片、硫酸纸笔记 */
+  --radius-paper: 2px;   /* 台纸卡、文稿、链接卡 */
+  --radius-ctl: 7px;     /* 按钮、输入、菜单项 */
+  --radius-box: 8px;     /* 分组托盘 */
+  --radius-tool: 8px;    /* 工具条、操作条、导航、菜单、提示条 */
+  --radius-sheet: 10px;  /* 对话框、命令面板 */
+}
+
+/* ---------- 6. 阴影 / 材质（LOD 与平移时减层，见 §6.16） ---------- */
+:root {
+  --shadow-none: none;
+  --shadow-paper: inset 0 1px 0 var(--paper-top-hi), 0 0 0 1px var(--paper-edge), 0 1px 1px var(--shadow-paper-1), 0 3px 8px -3px var(--shadow-paper-2);
+  --shadow-paper-lift: 0 0 0 1px var(--border-hair), 0 2px 3px var(--shadow-c1), 0 10px 22px -8px var(--shadow-c2);
+  --shadow-fair: inset 0 1px 0 var(--paper-manuscript-hi), 0 0 0 1px var(--shadow-fair-edge), 0 1px 2px var(--shadow-fair-1), 0 12px 20px -12px var(--shadow-fair-2);
+  --shadow-image-lift: 0 1px 2px var(--shadow-c1), 0 10px 22px -10px var(--shadow-c2);
+  --shadow-tool: 0 0 0 1px var(--border-hair), 0 1px 2px var(--shadow-c1), 0 8px 24px -6px var(--shadow-c3), inset 0 1px 0 var(--border-inner-hi);
+  --shadow-panel: 0 0 0 1px var(--border-hair), 0 24px 60px -18px var(--shadow-c2);
+  --shadow-sheet: 0 0 0 1px var(--border-hair), 0 32px 80px -24px var(--shadow-c2), 0 2px 6px var(--shadow-c1);
+  --shadow-tray: inset 0 1px 2px light-dark(rgb(30 46 38 / .07), rgb(0 0 0 / .28)), inset 0 0 0 1px var(--border-hair);
+  /* 纸叠：上一稿从纸的下沿露出 8px（左右各收 4px），第三稿再露 7px（左右各收 9px）；色阶逐张降一档 + 1px 边。
+     不再用右下错位描边（1x 屏读成渲染缝）。稿次 n 露出 min(n-1, 2) 张；纸叠计入节点高度 */
+  --sheet-1: 0 12px 0 -4px var(--draft-sheet-1), 0 12px 0 -3px var(--draft-sheet-border);
+  --sheet-2: 0 12px 0 -4px var(--draft-sheet-1), 0 12px 0 -3px var(--draft-sheet-border), 0 24px 0 -9px var(--draft-sheet-2), 0 24px 0 -8px var(--draft-sheet-border);
+}
+
+/* ---------- 7. 层级 z-index ---------- */
+:root {
+  /* React Flow 视口内（同一层叠上下文） */
+  --z-flow-group: -1;          /* 分组托盘（K7） */
+  --z-flow-label: 2000;        /* EdgeLabelRenderer：连线标签永远在卡片之上 */
+  --z-flow-group-label: 2001;  /* 分组标签：永远可点可拖（CD-B2） */
+  /* 外壳（视口之外） */
+  --z-hud: 10;                 /* 工具条、导航、首次提示 */
+  --z-contextbar: 20;          /* 选区浮动操作条 */
+  --z-panel: 30;               /* 资料面板（阅读拆分、观看工作台） */
+  --z-focus-mode: 40;          /* 专注写作盖住侧栏与顶栏 */
+  --z-popover: 50;             /* 下拉、添加菜单、右键菜单（挂 body） */
+  --z-toast: 60;               /* 提示条：高于面板，低于模态（CV-M1） */
+  --z-modal: 100;              /* 对话框（showModal 进 top layer，此值给非 top-layer 回退） */
+  --z-viewer: 110;             /* 原图查看器 */
+  --z-tooltip: 120;
+}
+
+/* ---------- 8. 动效 ---------- */
+:root {
+  --ease-out:    cubic-bezier(.22, 1, .36, 1);   /* 出现、悬停 */
+  --ease-in-out: cubic-bezier(.65, 0, .35, 1);   /* 镜头飞行、光点行进 */
+  --ease-drawer: cubic-bezier(.32, .72, 0, 1);   /* 面板、拿起、专注模式 */
+  --ease-exit:   cubic-bezier(.4, 0, 1, 1);      /* 退出 */
+  --ease-swing:  cubic-bezier(.34, 1.56, .64, 1);/* 系签摆一下 */
+  --dur-instant: 0ms;      /* 键盘新建、撤销、工具切换、拖动跟手 */
+  --dur-fast:    120ms;    /* 悬停、淡入、按下 */
+  --dur-base:    180ms;    /* 菜单、提示条、落位 */
+  --dur-panel:   260ms;    /* 面板、拿起 */
+  --dur-camera:  320ms;    /* 镜头平移（远距离上限 480ms） */
+  --dur-tie:     420ms;    /* 系签：线绳画出 */
+  --dur-trace:   480ms;    /* 溯光：亮段走一段线（到达即打开工作台，CORE-11） */
+  --dur-afterglow: 900ms;  /* 走过的线退回原色（溯光总长 ≤ 2s） */
+}
+
+/* ---------- 9. 焦点环 ---------- */
+:root {
+  --focus-width: 2px;
+  --focus-offset: 2px;
+  --focus-shadow: 0 0 0 var(--focus-offset) var(--focus-gap), 0 0 0 calc(var(--focus-offset) + var(--focus-width)) var(--focus-ring);
+  --focus-node-width: 3px;     /* K8：画布节点 3px 轮廓 */
+  --focus-node-offset: 5px;    /* 落在选中墨线之外 */
+}
+
+/* ---------- 10. 布局与尺寸（组件层可直接用） ---------- */
+:root {
+  --sidebar-w: 240px;
+  --modal-backdrop-blur: 6.6px; /* 2026-10-10 用户批准 B；只供弹窗背景使用 */
+  --sidebar-rail-w: 56px;
+  --topbar-h: 52px;
+  --hud-inset: 16px;           /* 浮岛离画布边 */
+  --safe-gap: 24px;            /* 安全区内再留的呼吸 */
+  --toolbar-h: 48px;
+  --navigator-h: 40px;
+  --minimap-w: 208px;
+  --minimap-h: 132px;
+  --contextbar-h: 40px;
+  --contextbar-gap: 10px;      /* 离选区包围盒 */
+  --panel-w: 400px;            /* 停靠面板默认宽，可拖 360–560 */
+  --panel-w-reading: clamp(720px, 72%, 1040px); /* 占主区宽度；1440 窗口约 992 */
+  --tag-h: 24px;               /* 标准出处签：高 24 */
+  --tag-head: 18px;            /* 签头宽：切角 7.5 + 孔径 6.4 */
+  --tag-h-mini: 18px;          /* 小签：高 18，只有切角、没有孔（不系线） */
+  --tag-head-mini: 7px;
+  --tag-overhang: 0px;         /* 新出处印收在索引卡页眉内 */
+  --hit-min: 24px;             /* 屏幕命中区下限（KB-M3） */
+  --footer-band-h: 40px;       /* 写作页底部状态带 */
+  --z: 1;                      /* 画布缩放：只给描边类绘制属性用，onMove 写入 */
+  --z-tier: 1;                 /* 量化缩放：floor(zoom×20)/20，只在档位切换和 onMoveEnd 写入，供字号补偿 */
+}
+
+/* ---------- 11. 非颜色的主题差异（唯一允许的主题选择器块） ---------- */
+:root[data-theme="dark"] { --fw-draft: 450; --hl-from: 79%; --hl-to: 100%; --modal-backdrop-blur: 3px; --excerpt-mark-image: none; --excerpt-mark-decoration: underline; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme]) { --fw-draft: 450; --hl-from: 79%; --hl-to: 100%; --modal-backdrop-blur: 3px; --excerpt-mark-image: none; --excerpt-mark-decoration: underline; } }
+@media (max-resolution: 1.25dppx) {
+  :root { --fw-read: 440; --fw-card-serif: 470; }
+  :root[data-theme="dark"] { --fw-read: 420; --fw-card-serif: 450; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-panel: 0ms; --dur-camera: 0ms; --dur-tie: 0ms; --dur-trace: 0ms; --dur-afterglow: 240ms; }
+}
+
+}

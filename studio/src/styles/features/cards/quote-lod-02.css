@@ -1,0 +1,33 @@
+/* Index overview: 20×12 screen stamp outline, zhu top rule and whole source lines; no hole. */
+@layer features {
+  .field-card .field-card__overview--quote { border-top: 1px solid var(--zhu); }
+  .field-card .field-card__overview--quote .field-card__overview-content {
+    --o-sub: 0px;
+    --o-pad: clamp(0px, calc((100cqh - 22px) / 2), 8px);
+    padding: var(--o-pad) 6px 0 30px;
+  }
+  .field-card .field-card__overview-tag {
+    position: absolute;
+    top: clamp(0px, calc((100cqh - 12px) / 2), 12px);
+    left: 6px;
+    width: 20px;
+    height: 12px;
+    box-sizing: border-box;
+    border: 1px solid var(--zhu);
+    border-radius: var(--radius-stamp);
+    background: none;
+  }
+  .field-card.is-source-gone .field-card__overview-tag { border-color: var(--fg-3); border-style: dashed; }
+  .field-card .field-card__overview--quote h3 {
+    --o-max: 99;
+    font: 500 14px/22px var(--font-read);
+    --o-avail: max(0px, calc(100cqh - var(--o-pad) - 1px));
+    line-height: clamp(14px, calc(var(--o-avail) - 1px), 22px);
+    white-space: pre-wrap;
+    text-wrap: wrap;
+  }
+  @media (forced-colors: active) {
+    .field-card .field-card__overview--quote,
+    .field-card .field-card__overview-tag { border-color: CanvasText; }
+  }
+}

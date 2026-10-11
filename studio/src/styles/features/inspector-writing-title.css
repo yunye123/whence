@@ -1,0 +1,4 @@
+/* W1-E: features/inspector.css; original cascade position retained by styles/index.css. */
+@layer features {
+  .inspector-title-field--paper { font: var(--type-card-draft-title); color: var(--draft-fg); text-wrap: balance; }
+}

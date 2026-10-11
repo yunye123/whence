@@ -1,0 +1,78 @@
+/* W1-E: features/lod.css; original cascade position retained by styles/index.css. */
+@layer features {
+
+  /* 剪影层：盖住纸面区域；zoom 让里面的长度都是屏幕像素，size 容器让行数按可用高度取整 */
+  .field-card .field-card__overview {
+    position: absolute;
+    inset: 0 calc(var(--card-inset-right) * var(--z-tier)) calc(var(--card-inset-bottom) * var(--z-tier)) calc(var(--card-inset-left) * var(--z-tier));
+    z-index: 1;
+    display: block;
+    zoom: var(--lod-k);
+    container-type: size;
+    overflow: hidden;
+    border-radius: calc(var(--card-radius) * var(--z-tier));
+    background: none;
+    color: var(--fg-1);
+    cursor: grab;
+    animation: field-lod-in var(--dur-fast) var(--ease-out);
+  }
+  .field-card .field-card__overview:active { cursor: grabbing; }
+  @keyframes field-lod-in { from { opacity: 0; } }
+
+  .field-card .field-card__overview-content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: auto;
+    max-width: none;
+    height: 100%;
+    margin: 0;
+    /* 上边距随卡高收缩（矮卡至少放得下一行字，概览不出现空盒子）；下方只需留 4px，字不会贴边 */
+    --o-pad: clamp(2px, calc((100cqh - 18.5px) / 2), 8px);
+    padding: var(--o-pad) 8px 8px;
+    box-sizing: border-box;
+    border-radius: 0;
+    background: none;
+    color: var(--fg-1);
+  }
+  /* 主行：--o-avail 是留给它的高度，--o-max 是最多几行；--o-sub 是副行占的高度（放不下时为 0） */
+  .field-card .field-card__overview h3 {
+    --o-avail: calc(100cqh - var(--o-pad) - 4px - var(--o-sub, 0px));
+    --o-max: 2;
+    flex: none;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: min(var(--o-max), max(1, round(down, var(--o-avail) / 1lh, 1)));
+    max-height: round(down, var(--o-avail), 1lh);
+    margin: 0;
+    overflow: hidden;
+    font: var(--fw-semibold) var(--fs-sm)/1.32 var(--font-ui);
+    letter-spacing: 0;
+    color: var(--fg-1);
+    text-shadow: none;
+    overflow-wrap: anywhere;
+    text-wrap: balance;
+  }
+  .field-card .field-card__overview h3:lang(en) { font-family: var(--font-ui-latin); font-size: var(--fs-xs); word-break: normal; overflow-wrap: normal; }
+  .field-card .field-card__overview p {
+    display: block;
+    margin: 0;
+    overflow: visible;
+    font-size: inherit;
+    line-height: inherit;
+    white-space: normal;
+    opacity: 1;
+    -webkit-line-clamp: none;
+  }
+  .field-card .field-card__overview-sub {
+    flex: none;
+    margin-top: 4px;
+    overflow: hidden;
+    font: var(--fw-book) var(--fs-xs)/16px var(--font-ui);
+    color: var(--fg-3);
+    font-variant-numeric: tabular-nums;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

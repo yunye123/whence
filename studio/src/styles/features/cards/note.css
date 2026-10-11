@@ -1,0 +1,79 @@
+/* PLAN §2.4⑥: opaque WenKai note, optional normal-flow title and identical editor wrapping. */
+@layer features {
+  .field-card--note:not(.field-card--article) {
+    --card-tone: var(--note-tone-paper);
+    --card-radius: var(--radius-note);
+    --card-pad-x: 14px;
+    --card-bg: linear-gradient(var(--card-tone), var(--card-tone)), var(--paper-note);
+  }
+  .field-card--note.field-card--paper { --card-tone: var(--note-tone-paper); }
+  .field-card--note.field-card--butter { --card-tone: var(--note-tone-butter); }
+  .field-card--note.field-card--mint { --card-tone: var(--note-tone-mint); }
+  .field-card--note.field-card--lavender { --card-tone: var(--note-tone-lavender); }
+  .field-card--note.field-card--blue { --card-tone: var(--note-tone-blue); }
+  /* The header stays in the DOM even without a visible title. */
+  .field-card--note:not(.field-card--article) .field-card__header { position: static; height: auto; padding: 0; }
+  .field-card--note:not(.field-card--article)[data-has-title] .field-card__header { padding: 14px calc(var(--card-pad-x) + 52px) 0 var(--card-pad-x); }
+  .field-card--note:not(.field-card--article) .field-card__header h3:not(.sr-only) {
+    font: var(--type-card-note-title);
+    -webkit-line-clamp: 1;
+    line-height: 24px;
+    color: var(--fg-1);
+    text-wrap: wrap;
+  }
+  .field-card--note .field-card__note-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 14px var(--card-pad-x);
+    overflow: hidden;
+    box-shadow: none;
+    animation: none;
+    mask-image: none;
+  }
+  .field-card--note[data-has-title] .field-card__note-content { padding-top: 6px; }
+  .field-card--note .field-card__note-content[data-text-planned] {
+    container-type: size;
+    box-sizing: content-box;
+    height: var(--text-natural-block);
+    contain-intrinsic-block-size: var(--text-natural-block);
+  }
+  .field-card .field-card__note-preview,
+  .field-card .field-card__note-editor {
+    font: var(--type-card-note);
+    color: var(--fg-2);
+    letter-spacing: 0;
+    white-space: pre-wrap;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    line-break: strict;
+    text-wrap: wrap;
+    text-autospace: normal;
+    tab-size: 8;
+  }
+  .field-card .field-card__note-preview { min-height: 0; overflow: visible; }
+  .field-card .field-card__note-content[data-text-planned] .field-card__note-preview { max-height: max(0px, round(down, 100cqh, 1lh)); overflow: hidden; }
+  .field-card .field-card__note-preview.is-empty { color: var(--fg-3); }
+  .field-card .field-card__note-editor {
+    display: block;
+    width: 100%;
+    min-height: 22px;
+    margin: 0;
+    padding: 0;
+    resize: none;
+    overflow-y: auto;
+    scrollbar-width: none;
+    border: 0;
+    outline: none;
+    background: transparent;
+    box-shadow: none;
+    caret-color: var(--fg-1);
+  }
+  .field-card .field-card__note-editor:focus-visible { box-shadow: none; }
+  .field-card--note.is-editing .field-card__actions { opacity: 1; pointer-events: auto; }
+  .field-card--note:not(.field-card--article) .field-card__actions { top: 8px; right: 8px; }
+  /* Editing controls occupy their own row, above both titled and untitled paper. */
+  .field-card--note:not(.field-card--article).is-editing .field-card__actions { position: static; order: -1; flex: none; align-self: flex-end; margin: 8px 8px 0; max-width: calc(100% - 16px); flex-wrap: wrap; }
+  .field-card--note:not(.field-card--article).is-editing .field-card__note-content { padding-top: 6px; }
+  .field-card--note.is-editing .field-card__note-editor { max-height: 100%; }
+  @media (forced-colors: active) { .field-card .field-card__note-editor { caret-color: CanvasText; } }
+}

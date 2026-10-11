@@ -1,0 +1,29 @@
+/* PLAN §2.8: the first frame is desk colour; only the centred brand appears during a noticeable wait. */
+@layer base {
+  .boot-screen { min-height: 100dvh; background: var(--bg-canvas); color: var(--fg-1); }
+  .boot-screen__brand { display: inline-flex; align-items: center; gap: var(--space-5); color: var(--fg-1); opacity: 0; animation: boot-in var(--dur-base) var(--ease-out) 160ms forwards; }
+  .boot-screen__mark { display: inline-grid; position: relative; top: 2px; color: var(--fg-1); }
+  @keyframes boot-in { to { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .boot-screen__brand { opacity: 1; animation: none; } }
+
+  .recovery-screen { min-height: 100dvh; display: grid; place-items: center; width: 100%; margin: 0; padding: 32px; background: var(--bg-canvas); color: var(--fg-2); text-align: left; }
+  .recovery-screen__paper { width: min(100%, 528px); padding: 32px; background: var(--paper-manuscript); box-shadow: var(--shadow-fair); }
+  .recovery-screen__brand { display: inline-flex; align-items: center; gap: var(--space-4); color: var(--fg-1); margin-bottom: 32px; }
+  .recovery-screen__mark { display: inline-grid; position: relative; top: 2px; color: var(--fg-1); }
+  .recovery-screen h1 { margin: 0 0 24px; padding-bottom: 16px; position: relative; font: var(--fw-semibold) 18px/28px var(--font-read); color: var(--fg-1); letter-spacing: 0; }
+  .recovery-screen h1::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 6px; border-top: 2px solid var(--fg-1); border-bottom: 1px solid var(--fg-1); }
+  .recovery-screen p { margin: 0 0 24px; font: var(--fw-regular) 16px/28px var(--font-ui); color: var(--fg-2); text-wrap: pretty; }
+  .recovery-screen__details { margin-top: 24px; padding: 12px; width: 100%; background: var(--bg-shell-sunken); font: var(--fw-regular) 14px/22px var(--font-ui); color: var(--fg-2); }
+  .recovery-screen__details summary { cursor: pointer; min-height: 24px; width: fit-content; border-radius: var(--radius-ctl); }
+  .recovery-screen__details summary:focus-visible { outline: none; box-shadow: var(--focus-shadow); }
+  .recovery-screen__details pre { margin: 12px 0; max-height: 30vh; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font: var(--fw-regular) 12px/18px var(--font-mono); color: var(--fg-2); }
+  /* W2-E owns shared buttons; retain the primary action with the v2 neutral ink tokens here. */
+  .recovery-screen__paper .btn { font: var(--fw-semibold) 14px/22px var(--font-ui); }
+  .recovery-screen__paper .btn--primary { background: var(--action-bg); color: var(--fg-on-solid); }
+  .recovery-screen__paper .btn--primary:hover { background: var(--action-bg-hover); }
+  .recovery-screen__paper .btn--primary:focus-visible { box-shadow: var(--focus-shadow); }
+  .recovery-screen.boot-screen { display: block; position: relative; padding: 0; }
+  .recovery-screen.boot-screen .boot-screen__brand { position: absolute; left: round(down, 50% - 40px, 4px); top: calc(round(down, 50% - 16px, 4px) + 2px); }
+  html:has(.recovery-screen) { background: var(--bg-canvas); }
+  @media (max-width: 600px) { .recovery-screen { padding: 24px; } .recovery-screen__paper { padding: 24px; } }
+}

@@ -1,0 +1,115 @@
+/* PLAN §2.4④/2.5: index paper and a head-contained stamp. Original cascade slot retained. */
+@layer features {
+  .field-card--quote {
+    --card-bg: var(--paper-plain);
+    --card-inset-left: 0px;
+    --card-pad-x: 14px;
+  }
+  .field-card--quote .field-card__head,
+  .field-card--quote .field-card__surface > .field-card__header {
+    position: relative;
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 8px;
+    height: 38px;
+    padding: 0 calc(var(--card-pad-x) + 26px) 0 var(--card-pad-x);
+    border-bottom: calc(1px / var(--z-tier, 1)) solid var(--zhu);
+    cursor: grab;
+  }
+  .field-card--quote .field-card__head > .field-card__header {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    min-width: 0;
+    height: 100%;
+    padding: 0;
+  }
+  .field-card--quote .field-card__quote-source {
+    min-width: 0;
+    overflow: hidden;
+    font: var(--type-card-meta);
+    font-size: max(var(--fs-xs), calc(12px / var(--z-tier, 1)));
+    color: var(--fg-3);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .field-card--quote .field-card__citation {
+    display: inline-flex;
+    flex: none;
+    min-width: 0;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    text-align: left;
+    zoom: calc(1 / var(--z-tier, 1));
+  }
+  /* The stamp is already compensated; its text must not receive a second compensation. */
+  .field-card--quote .field-card__citation .tag { font-size: var(--fs-xs); }
+  .field-card--quote .field-card__citation.is-gone { cursor: default; }
+  .field-card--quote .field-card__quote-content {
+    flex: 0 1 auto;
+    min-height: 0;
+    max-height: calc(320px - 38px);
+    padding: 9px var(--card-pad-x) 12px;
+    overflow: hidden;
+    animation: none;
+    mask-image: none;
+  }
+  .field-card--quote .field-card__quote-content[data-text-planned] {
+    container-type: size;
+    box-sizing: content-box;
+    height: var(--text-natural-block);
+    max-height: calc(320px - 38px - 21px);
+    contain-intrinsic-block-size: var(--text-natural-block);
+    --mine-space: min(var(--mine-natural-block), max(0px, calc(100cqh - min(var(--quote-natural-block), 130px))));
+  }
+  .field-card--quote .field-card__quote-text {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 10;
+    max-height: 10lh;
+    margin: 0;
+    overflow: hidden;
+    font: var(--type-card-quote);
+    font-size: max(16px, calc(14px / var(--z-tier, 1)));
+    color: var(--fg-1);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    text-wrap: wrap;
+  }
+  .field-card--quote .field-card__quote-content[data-text-planned] .field-card__quote-text {
+    -webkit-line-clamp: max(1, round(down, calc((100cqh - var(--mine-space)) / 1lh), 1));
+    max-height: max(0px, round(down, calc(100cqh - var(--mine-space)), 1lh));
+  }
+  .field-card--quote .field-card__quote-text .is-placeholder { font-weight: var(--fw-regular); color: var(--fg-3); }
+  .field-card--quote .field-card__quote-note { margin-top: 6px; }
+  .field-card--quote .field-card__quote-note p {
+    display: block;
+    margin: 0;
+    font: var(--type-card-mine);
+    color: var(--fg-2);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    text-wrap: wrap;
+  }
+  .field-card--quote .field-card__quote-note-label { margin-right: 6px; font: var(--type-card-meta); font-size: max(12px, calc(12px / var(--z-tier, 1))); color: var(--fg-3); }
+  .field-card--quote .field-card__quote-content[data-text-planned] .field-card__quote-note {
+    max-height: max(0px, round(down, calc(var(--mine-space) - 6px), 22px));
+    margin-top: min(6px, var(--mine-space));
+    overflow: hidden;
+  }
+  .field-card--quote .field-card__footer { padding: 0 var(--card-pad-x) 12px; }
+  .field-card--quote .field-card__footer:empty { display: none; }
+  .field-card--quote.is-source-gone .field-card__quote-content { padding-top: 3px; padding-bottom: 3px; }
+  .field-card--quote.is-source-gone .field-card__footer { padding-bottom: 0; }
+  .field-card--quote .field-card__actions { top: 7px; }
+  .field-card--quote > .react-flow__handle-left { top: 19px; left: 0; }
+  .field-card--quote > .react-flow__handle-right { top: 19px; }
+  @media (forced-colors: active) {
+    .field-card--quote .field-card__head,
+    .field-card--quote .field-card__surface > .field-card__header { border-color: CanvasText; }
+  }
+}

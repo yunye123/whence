@@ -1,0 +1,5 @@
+/* W3-B: far article folder, title kept to whole lines on the inserted sheet. */
+@layer features {
+  .field-card .field-card__overview--article .field-card__overview-content { --o-sub: 0px; padding-top: calc(var(--o-pad) + 12px); }
+  .field-card .field-card__overview--article .field-card__overview-sub { display: none; }
+}

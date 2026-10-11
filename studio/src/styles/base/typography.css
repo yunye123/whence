@@ -1,0 +1,26 @@
+/* 全局排版：三种声音（P3）。别人的话 = --font-ui；我在想的 = --font-note；我写出来的 = --font-read。 */
+@layer base {
+  html {
+    font-family: var(--font-ui);
+    font-size: var(--fs-md);          /* 迁移期保持旧界面 14px 基准；各表面重写后显式使用 --type-* */
+    line-height: 1.5;
+    font-weight: var(--fw-book);
+    color: var(--fg-1);
+    background: var(--bg-canvas);
+    font-synthesis: none;
+    font-optical-sizing: auto;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    text-autospace: normal;          /* 中西文之间自动留空隙 */
+    text-spacing-trim: normal;       /* 中文标点挤压 */
+    line-break: strict;
+  }
+  body { background: var(--bg-canvas); color: var(--fg-1); }
+  :lang(en) { font-family: var(--font-ui-latin); }
+  ::selection { background: var(--text-selection); color: var(--text-selection-ink); }
+  ::placeholder { color: var(--fg-3); opacity: 1; }
+  .tabular { font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+  time, [data-timecode] { font-family: var(--font-mono, var(--font-num)); font-variant-numeric: tabular-nums; }
+  code, kbd, pre, samp { font-family: var(--font-code); }
+  kbd { font: var(--type-kbd); }
+}

@@ -1,0 +1,9 @@
+/* W1-E: features/lod.css; original cascade position retained by styles/index.css. */
+@layer features {
+
+  /* 图片：画面就是剪影；文件丢失时写明 */
+  .field-card .field-card__overview--image.has-picture { background: none; }
+  .field-card .field-card__overview--image:not(.has-picture) { background: var(--paper-wall); }
+  .field-card .field-card__overview--image:not(.has-picture) .field-card__overview-content { justify-content: center; }
+  .field-card .field-card__overview--image:not(.has-picture) h3 { font-weight: var(--fw-medium); color: var(--fg-3); }
+}

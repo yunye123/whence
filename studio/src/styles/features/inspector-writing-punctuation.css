@@ -1,0 +1,7 @@
+/* W1-E: features/inspector-writing.css; original cascade position retained by styles/index.css. */
+@layer features {
+
+  /* 来历文稿小卡这类短的宋体引文（DraftWords，INSP-32）：、，；： 的墨在左半格，收回右侧 0.3em 空白，与旁边黑体卡的标点节奏一致；
+     。与收尾引号保持全宽，上标照常收进句号的空白半边 */
+  .draft-punct { margin-right: -.3em; }
+}

@@ -1,0 +1,2 @@
+/* Note overview inherits the common root's paper edge and selection; no inset shadow. */
+@layer features { .field-card--note:not(.field-card--article)[data-lod="far"] { --card-radius: var(--radius-note); } }

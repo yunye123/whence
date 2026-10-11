@@ -1,0 +1,32 @@
+.x-import-panel {
+  min-width: 0;
+}
+
+.x-import-panel__label {
+  font-size: 12px;
+  font-weight: var(--fw-medium);
+  line-height: 1.6;
+}
+.x-import-panel__input:focus-visible {
+  outline-offset: 2px;
+}
+.x-import-panel__input:disabled { cursor: default; }
+.x-import-panel__spinner { flex-shrink: 0; margin-top: 2px; animation: x-import-panel-spin 1s linear infinite; }
+.x-import-panel .x-import-panel__cancel,
+.x-import-panel .x-import-panel__submit { min-height: 32px; font-size: var(--fs-ui); }
+.x-import-panel__submit { flex: 1; }
+.x-import-panel .x-import-panel__submit:disabled {
+  background: var(--bg-sunken);
+  border-color: var(--border-hair);
+  color: var(--fg-disabled);
+  box-shadow: none;
+  opacity: 1;
+  cursor: default;
+}
+.x-import-panel button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 3px; }
+
+@keyframes x-import-panel-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .x-import-panel__spinner { animation: none; } }
+@media (max-width: 480px) {
+  .x-import-panel .x-import-panel__cancel { padding-inline: 12px; }
+}

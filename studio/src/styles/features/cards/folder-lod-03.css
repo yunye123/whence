@@ -1,0 +1,5 @@
+/* W3-B: far folders keep the jacket and tab on the root, without a paper stack. */
+@layer features {
+  .field-card[data-stationery="folder"][data-lod="far"] { --card-extra: none; }
+  .field-card[data-stationery="folder"][data-lod="far"]:is(.is-in-tray, .is-in-tray > *) { --folder-tab-h: 0px; }
+}

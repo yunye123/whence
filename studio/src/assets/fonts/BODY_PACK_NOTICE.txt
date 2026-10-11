@@ -1,0 +1,64 @@
+Offline body packs, OFL-1.1
+
+These subsets contain the unchanged glyphs, variable axes, font names and
+metrics of the pinned Noto Sans SC 5.3.0, Noto Serif SC 5.3.0 and
+packages already included in this product. LXGW WenKai is unchanged.
+The charset is the 3755 GB2312 first-level Han characters, intersected with
+each existing fallback's real cmap and CSS range. UI fonts take precedence.
+Cross-slice packs use a fixed, independent general wordfreq ordering of the
+same GB2312 characters: the first 1024 form one primary pack, the remainder
+form 32-codepoint packs, with UI characters excluded. Their outlines come from the official
+Google Fonts complete Noto Sans SC 2.004 / Noto Serif SC 2.003 variable TTFs,
+verified against every original package slice, including continuous variation
+tuple deltas. Original webfont names, axes, metrics and BASE are preserved.
+fontTools retains the complete shaping closure; real browser shaping and
+product pixels are checked separately and must not be inferred from names.
+No product text or test fixture supplies the charset. All original coverage
+remains available in the UI, body and compacted local fallback binaries.
+
+Copyright and OFL notices are retained in each font's original name table
+and in LICENSES/noto-sans-sc.txt, LICENSES/noto-serif-sc.txt,
+LICENSES/lxgw-wenkai-screen.txt and the corresponding -ui notices.
+The Reserved Font Name 'Source' is not used as a family name.
+Noto original copyright retained in the fonts:
+(c) 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'.
+Provenance, package integrity, per-file hashes and reproducible policy:
+body-pack-source.json.gz, body-full-source.json and body-pack-manifest.json.gz.
+These two provenance files use reproducible gzip (mtime=0). Decompressed
+source-seal SHA-256 remains the approved original
+38983cfd50197b26335326b36ac3e3f5fdcf0371c6671e5f2da2dc18ff8459b3;
+compression changes no font bytes, coverage or source evidence.
+Auxiliary frequency ordering data, separate from the OFL font outlines:
+body-frequency-source.json and body-frequency-order.json, CC-BY-SA-4.0.
+Credit Robyn Speer, wordfreq, and the SUBTLEX authors including Marc Brysbaert;
+the publisher's complete original attribution is retained in LICENSES/wordfreq.txt.
+The derivative ranking weights every character occurrence in all 334609
+general Chinese words, filtered only by the fixed GB2312 level-1 charset.
+It never reads application examples, fixtures or user text.
+Only GB2312 level-1 Han is rerouted. Every original non-Han advertised range,
+including overlapping Latin/combining/punctuation ranges, keeps its original
+face and cascade order. No unique owner is assigned to these overlaps: the
+browser may select a common face for a complete base/mark cluster.
+Cold fallbacks preserve the real non-Han cmap, helpers and shaping closure of
+the approved baseline 2b55762a55fb8ac1b47806f7717cf8e8879d04cd. Each baseline
+binary is SHA-256 checked against body-pack-source.json before compaction.
+No separate punctuation or Latin hot pack is used.
+An original face with more than 128 advertised residual unified Han glyphs
+and a binary of at least 48 KiB gets sorted 32-codepoint cold Han shards.
+This uniform payload rule applies to every source face and reads no product
+text. The original non-Han cmap, helpers and advertised overlap remain in the
+parent, and each child keeps the original non-Han physical shaping helpers.
+All original rare Han coverage remains local; no font family is added.
+Each generated WOFF2 selects the smaller standard encoding with or without
+the optional hmtx transform. Decoded horizontal metrics are exactly equal;
+no glyph, axis, name, hinting or layout change is used to reduce bytes.
+Halfwidth Kana/Hangul stay in the original cold fallback.
+Bidi mirror helpers retained by fontTools are verified original glyphs and
+are not newly advertised. When a cold slice has no remaining actual glyph,
+its valid binary retains the deterministic first original glyph as an
+unadvertised helper for the original non-glyph CSS ranges; it is not a fake cmap.
+Reproduce ordering: python -B scripts/font-frequency-order.py
+Generate with verified local sources: python -B scripts/pack-body-fonts.py
+Bound oversized cold Han faces: python -B scripts/shard-cold-fonts.py
+Fetch missing pinned official data: python -B scripts/pack-body-fonts.py --fetch-source
+Route and verify assets: node scripts/copy-fonts.mjs

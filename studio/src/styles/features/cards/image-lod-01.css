@@ -1,0 +1,4 @@
+/* W1-E: features/lod.css; original cascade position retained by styles/index.css. */
+@layer features {
+  .flow-container.is-moving .react-flow__node > .field-card--image { box-shadow: none; transition: none; }
+}

@@ -1,0 +1,58 @@
+/* W1-E: features/inspector.css; original cascade position retained by styles/index.css. */
+@layer features {
+
+  /* ---------- 2. 观看工作台 §6.18.2 ---------- */
+  .inspector--video {
+    position: fixed;
+    inset: 0;
+    width: auto;
+    height: auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 56px minmax(0, 1fr);
+    background: var(--bg-canvas);
+    /* 整窗工作台自己从不滚动（clip 连脚本滚动也挡住）：左列里任何越界的绝对定位元素都不会再让整块连同头部被推上去 */
+    overflow: clip;
+  }
+  /* 保存失败时头部下方多一行（FD-02，见 inspector-video.css .watch-save-alert） */
+  .inspector--video:has(> .watch-save-alert) { grid-template-rows: 56px auto minmax(0, 1fr); }
+  .inspector--video .inspector-header { height: 56px; min-height: 56px; padding: 0 var(--space-7) 0 var(--space-5); background: var(--bg-shell); box-shadow: none; }
+  .inspector--video .inspector-head-title { flex: 0 1 auto; min-width: 0; max-width: 40%; }
+  .inspector--video .inspector-head-meta { flex: 1 1 auto; min-width: 0; overflow: hidden; }
+  .inspector--video .inspector-title-field--header { field-sizing: content; min-width: 4em; max-width: 100%; font: var(--fw-semibold) 23px/30px var(--font-read); }
+  .inspector-workbench {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr) 480px;
+    gap: var(--space-7);
+    padding: 0 var(--space-7) var(--space-6);
+    overflow: hidden;
+  }
+  .inspector-stage {
+    min-width: 0;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+  .inspector-side {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    border-radius: 2px;
+    background: var(--paper-plain);
+    box-shadow: var(--shadow-paper);
+    overflow: hidden;
+  }
+  .inspector-side > .inspector-transcript-section { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+  .inspector-side > .inspector-footer { min-height: 40px; padding-left: var(--space-6); }
+  @media (max-width: 1199px) {
+    .inspector-workbench { grid-template-columns: minmax(0, 1fr) minmax(340px, 42%); gap: var(--space-6); padding: 0 var(--space-6) var(--space-6); }
+  }
+  @media (max-width: 859px) {
+    .inspector-workbench { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(360px, 1fr); overflow-y: auto; }
+    .inspector-stage { overflow: visible; }
+  }
+}

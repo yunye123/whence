@@ -1,0 +1,5 @@
+/* W3-E: far lighttable keeps jacket/white-wall silhouette and an ink selected ring. */
+@layer features {
+  .field-card--frame[data-stationery][data-lod="far"] { --card-ambient: 0 0 transparent; }
+  .field-card--frame[data-stationery][data-lod="far"].is-selected { --card-edge: 0 0 transparent; }
+}

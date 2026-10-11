@@ -1,0 +1,7 @@
+/* Search is a reading surface: the user's words lead, location and actions stay quiet. */
+.workspace-search > header { flex: none; }
+.workspace-search select:focus-visible { outline-color: var(--focus-ring); }
+@media (max-width: 600px) {
+  .inspector-dialog.workspace-search { width: calc(100vw - 24px); height: calc(100dvh - 32px); max-height: calc(100dvh - 32px); }
+  .workspace-search > header { padding: 14px 16px 12px; }
+}

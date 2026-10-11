@@ -1,0 +1,5 @@
+/* W3-B: far link folder uses the same tab/jacket silhouette as text material. */
+@layer features {
+  .field-card .field-card__overview--link .field-card__overview-content { padding: calc(var(--o-pad) + 12px) 10px 8px; }
+  .field-card [data-folder-overview] h3 { -webkit-line-clamp: 2; }
+}

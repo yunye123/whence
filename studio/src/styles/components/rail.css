@@ -1,0 +1,41 @@
+/* 整宽工具条 §2.8：48px 占布局；中段始终留空位，提示消失后两端不移动。 */
+@layer components {
+  .canvas-rail {
+    position: relative; grid-row: 2; z-index: var(--z-hud); box-sizing: border-box;
+    display: grid; grid-template-columns: max-content minmax(0, 1fr) max-content; align-items: center;
+    gap: 4px; min-width: 0; height: var(--toolbar-h); padding: 0 12px;
+    border-top: 1px solid var(--border-hair); background: var(--bg-shell);
+  }
+  .canvas-rail__tools, .canvas-rail__navigation { min-width: 0; height: 100%; display: flex; align-items: center; }
+  .canvas-rail__hint { min-width: 0; overflow: hidden; }
+  .canvas-rail .canvas-hint {
+    position: static; inset: auto; transform: none; width: auto;
+    display: flex; align-items: center; justify-content: center; gap: 20px;
+    height: auto; margin: 0; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none;
+    font: 400 12px/18px var(--font-ui); color: var(--fg-3); white-space: nowrap; user-select: none; pointer-events: none;
+  }
+  .canvas-rail .canvas-hint > span { display: inline-flex; align-items: center; gap: 4px; }
+  .canvas-rail .canvas-hint kbd { margin: 0 2px; padding: 2px 5px; border: 0; background: none; box-shadow: none; font: 500 12px/18px var(--font-ui); }
+  /* 按实际画布宽度分档，不使用窗口宽度或 JS 断点。 */
+  @container canvas (max-width: 1120px) {
+    .canvas-toolbar__label { display: none; }
+    .canvas-toolbar__tool { width: 34px; padding: 0; }
+  }
+  @container canvas (max-width: 900px) { .canvas-rail .canvas-hint { display: none; } }
+  @container canvas (max-width: 560px) {
+    .canvas-rail .navigator__row { display: none; }
+    .canvas-rail .navigator__fold { display: inline-flex; }
+    .zoom-controls.is-unfolded .navigator__row {
+      position: absolute; right: 0; bottom: calc(100% + 12px); display: flex;
+      height: 40px; padding: 0 6px; border-radius: 8px; background: var(--bg-panel); box-shadow: var(--shadow-tool);
+    }
+    .zoom-controls.is-unfolded .navigator__map { bottom: calc(100% + 64px); }
+  }
+  @container canvas (max-width: 280px) {
+    .canvas-rail { padding-inline: 6px; }
+    .canvas-toolbar__tool { width: 28px; }
+    .canvas-toolbar__rule { margin-inline: 4px; }
+    .canvas-toolbar__add { padding-inline: 6px; }
+    .navigator__fold { padding-inline: 4px; }
+  }
+}

@@ -1,0 +1,10 @@
+/* 外壳网格：侧栏 / 主区（顶栏 + 画布）/ 停靠面板（§5.1）。
+   侧栏 ≥1280 宽 240、1000–1279 宽 220；<1000 是覆盖抽屉（带遮罩）。折叠不做 width 过渡，直接切换。
+   侧栏的 display / 内边距 / 底色写在 features/sidebar.css；这里只管位置、宽度与层级。 */
+/* W1-E: layout/shell.css; original cascade position retained by styles/index.css. */
+@layer layout {
+  .studio {
+    --sidebar-full-w: 240px;
+    --sidebar-w: var(--sidebar-full-w);
+  }
+}

@@ -1,0 +1,111 @@
+/* 提示条（§6.22）：队列最多 3 条、最新在下；在工具条上方 12px 并与可见画布同轴（位置由 JS 写 left / bottom），
+   画布不可见时改到面板页脚左侧。层级 --z-toast：高于面板，低于模态。 */
+@layer components {
+  .toast-stack {
+    position: fixed;
+    z-index: var(--z-toast);
+    left: 50%;
+    bottom: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: max-content;
+    max-width: min(560px, calc(100vw - 32px));
+    translate: -50% 0;
+    pointer-events: none;
+  }
+  /* 换位置（画布 ↔ 面板，或可见画布尺寸变化）时先淡出、到位后淡入，不在画面上跳（Toasts.tsx useToastAnchor） */
+  .toast-stack { transition: opacity var(--dur-fast) var(--ease-out); }
+  .toast-stack.is-moving { opacity: 0; }
+  .toast-stack--start { align-items: flex-start; translate: 0 0; }
+  .toast-stack--end { align-items: flex-end; translate: -100% 0; }
+  .toast-stack > * { pointer-events: auto; }
+
+  .toast-stack .toast,
+  .toast-stack .busy-toast {
+    position: relative;
+    inset: auto;
+    z-index: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-sizing: border-box;
+    min-height: 40px;
+    max-width: 100%;
+    margin: 0;
+    padding: 6px 14px;
+    border: 0;
+    border-radius: 8px;
+    background: var(--bg-panel);
+    box-shadow: var(--shadow-tool);
+    color: var(--fg-1);
+    font: 400 var(--fs-ui)/22px var(--font-ui);
+    letter-spacing: 0;
+    transform: none;
+    animation: toast-in var(--dur-base) var(--ease-out);
+  }
+  .toast-stack .toast:has(.toast__actions, .toast__close) { padding-right: 6px; }
+  /* 专注写作：提示条坐进状态带右端（带高 40，提示条 32、上下各留 4），不压稿纸和页边 */
+  .toast-stack--band .toast { min-height: 32px; padding-block: 2px; }
+  .toast-stack .toast.is-leaving { animation: toast-out 120ms var(--ease-exit) forwards; pointer-events: none; }
+
+  @keyframes toast-in { from { opacity: 0; translate: 0 8px; } }
+  @keyframes toast-out { to { opacity: 0; } }
+
+  .toast__message {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    color: var(--fg-1);
+    font: 400 var(--fs-ui)/22px var(--font-ui);
+    overflow-wrap: anywhere;
+    text-wrap: pretty;
+  }
+  .toast__message > .tag-static { margin-left: 6px; vertical-align: -4px; }
+  /* 窄画布条（阅读拆分）：一条提示只占一行，文字省略，出处签不掉到第二行 */
+  .toast-stack--compact .toast__message { display: flex; align-items: center; white-space: nowrap; }
+  .toast-stack--compact .toast__text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .toast-stack--compact .toast__message > .tag-static { flex: none; vertical-align: 0; }
+  .toast__icon { flex: none; color: var(--fg-1); }
+  .toast-stack .toast > svg.toast__icon { color: var(--fg-1); }
+
+  .toast__actions { display: flex; flex: none; align-items: center; gap: 2px; }
+  .toast-stack .toast .toast__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 28px;
+    min-width: 40px;
+    margin: 0;
+    padding: 0 10px;
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: transparent;
+    color: var(--fg-1);
+    font: 500 var(--fs-ui)/22px var(--font-ui);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .toast-stack .toast .toast__btn:hover { background: var(--bg-hover); }
+  .toast-stack .toast .toast__btn:active { background: var(--bg-pressed); }
+  .toast-stack .toast .toast__close {
+    display: inline-grid;
+    flex: none;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: transparent;
+    color: var(--fg-2);
+    cursor: pointer;
+  }
+  .toast-stack .toast .toast__close:hover { background: var(--bg-hover); color: var(--fg-1); }
+  .toast-stack :is(.toast__btn, .toast__close):focus-visible { outline: none; box-shadow: var(--focus-shadow); }
+
+  .toast-stack .busy-toast { color: var(--fg-2); }
+  .toast-stack .busy-toast > svg { flex: none; color: var(--fg-icon); }
+}

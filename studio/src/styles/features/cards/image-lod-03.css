@@ -1,0 +1,5 @@
+/* W3-E: far photo is only the picture, no paper mount or caption. */
+@layer features {
+  .field-card--image[data-stationery][data-lod="far"]::before { box-shadow: none; }
+  .field-card--image[data-stationery][data-lod="far"] .field-card__header { visibility: hidden; opacity: 0; }
+}

@@ -1,0 +1,57 @@
+/* 稿纸书桌 v2 / PLAN §2.9：中性面板、宋体标题、墨色动作。
+   --radius-sheet 的 14 → 10 由主整合者在合并本包时生效。
+   用户 2026-10-10 按 PLAN §2.2 批准 B：仅 .modal-backdrop 使用主题长度令牌。
+   背景用 transition（K8：减少动效时 animationName 必须是 none）。 */
+/* W1-E: components/dialog.css; original cascade position retained by styles/index.css. */
+@layer components {
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: var(--z-modal);
+    display: grid;
+    place-items: center;
+    padding: var(--space-8);
+    overflow: auto;
+    overscroll-behavior: contain;
+    background: var(--bg-scrim);
+    /* 保留批准源 alpha；绘制取最近 8bit 值，匹配 literal 原型的合成像素。 */
+    background-color: rgb(from var(--bg-scrim) r g b / calc(round(nearest, alpha * 255, 1) / 255));
+    backdrop-filter: blur(var(--modal-backdrop-blur));
+    animation: none;
+    opacity: 1;
+    transition: opacity var(--dur-base) var(--ease-out);
+  }
+  @starting-style { .modal-backdrop { opacity: 0; } }
+
+  .modal {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: min(640px, 100%);
+    max-width: 100%;
+    max-height: calc(100dvh - var(--space-8) * 2);
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-sheet);
+    background: var(--bg-panel);
+    color: var(--fg-1);
+    box-shadow: var(--shadow-sheet);
+    font: var(--fw-book) var(--fs-ui)/22px var(--font-ui);
+    letter-spacing: var(--ls-cjk);
+    text-align: left;
+    overflow: hidden;
+    opacity: 1;
+    transform: none;
+    transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out);
+  }
+  @starting-style { .modal { opacity: 0; transform: translateY(8px) scale(.98); } }
+  .modal-new { width: min(720px, 100%); }
+  .modal-import { width: min(680px, 100%); }
+  .modal-help { width: min(880px, 100%); }
+  @media (prefers-reduced-motion: reduce) {
+    .modal-backdrop { animation: none !important; transition: none; }
+    .modal { transition: none; }
+    @starting-style { .modal, .modal-backdrop { opacity: 1; transform: none; } }
+  }
+}

@@ -1,0 +1,17 @@
+/* W1-E: features/lod.css; original cascade position retained by styles/index.css. */
+@layer features {
+  .flow-container.is-moving .field-card__overview { animation: none; }
+
+  /* ===================================================================
+     2. 简化档（0.5–0.86）：悬停控件停用（由操作条提供），去环境层，小字按 --z-tier 补偿
+     =================================================================== */
+  .field-card:is([data-lod="simple"], [data-lod="far"]) { --lod-k: calc(1 / var(--z-tier)); }
+  .field-card:is([data-lod="simple"], [data-lod="far"]):not(.is-editing) .field-card__actions,   /* 原地编辑笔记时“完成”仍在 */
+  .field-card[data-lod="simple"] .field-card__image-expand,
+  .field-card[data-lod="simple"] .field-card__import-actions { display: none; }
+  .field-card[data-lod="simple"].is-editing .field-card__actions { zoom: var(--lod-k); }
+
+  .field-card[data-lod="simple"] {
+    --card-ambient: inset 0 1px 0 var(--paper-top-hi);
+  }
+}

@@ -1,0 +1,172 @@
+/* §6.3 稿纸书桌顶栏：外壳底，内边距 24 / 12，间距 14。整合者合并时令 --topbar-h = 52px。
+   另含保存失败与只读横幅（§5.3：画布容器顶部内 12px，居中，最宽 560）。 */
+@layer features {
+  /* 自定义属性在声明位置解析；局部间隙与双圈表达式必须一起声明。
+     控件本身也声明，避免合并 base 的 .btn / .icon-btn / .seg__item 后继承面板间隙。 */
+  .studio .topbar,
+  .studio .topbar :is(.btn, .icon-btn, .seg__item, .board-title) {
+    --focus-gap: var(--bg-shell);
+    --focus-shadow: 0 0 0 var(--focus-offset) var(--focus-gap), 0 0 0 calc(var(--focus-offset) + var(--focus-width)) var(--focus-ring);
+  }
+  .studio .topbar {
+    position: relative;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    flex: none;
+    gap: 14px;
+    height: var(--topbar-h);
+    min-height: 0;
+    padding: 0 12px 0 24px;
+    border: 0;
+    background: var(--bg-shell);
+    box-shadow: inset 0 -1px 0 var(--border-hair);
+    color: var(--fg-1);
+    font: var(--fw-book) var(--fs-ui)/var(--lh-ui) var(--font-ui);
+  }
+  .studio .topbar-left { display: flex; align-items: center; flex: 1 1 auto; gap: 14px; min-width: 0; }
+  .studio .topbar .sidebar-toggle { width: 32px; height: 32px; color: var(--fg-2); }
+  .studio .topbar .sidebar-toggle:hover:enabled { color: var(--fg-1); }
+
+  /* 画布名称：内容宽度，悬停才显出可编辑的底 */
+  .studio .topbar .board-title {
+    flex: 0 1 auto;
+    width: auto;
+    min-width: 120px;
+    max-width: 440px;
+    height: 32px;
+    margin: 0 0 0 -8px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: transparent;
+    color: var(--fg-1);
+    font: var(--fw-semibold) 18px/26px var(--font-read);
+    letter-spacing: .03em;
+    text-overflow: ellipsis;
+    field-sizing: content;
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .studio .topbar .board-title:hover:enabled { background: var(--bg-hover); border: 0; }
+  .studio .topbar .board-title:focus,
+  .studio .topbar .board-title:focus-visible {
+    --focus-gap: var(--paper-plain);
+    --focus-shadow: 0 0 0 var(--focus-offset) var(--focus-gap), 0 0 0 calc(var(--focus-offset) + var(--focus-width)) var(--focus-ring);
+    background: var(--paper-plain); border: 0; box-shadow: 0 0 0 1px var(--border-strong), var(--focus-shadow);
+  }
+  .studio .topbar .board-title:disabled { opacity: 1; color: var(--fg-1); cursor: default; }
+  .studio .topbar .board-title::placeholder { color: var(--fg-3); }
+  .studio .topbar .storage-folder-button { width: 28px; height: 28px; color: var(--fg-3); }
+  .studio .topbar .storage-folder-button:hover:enabled { color: var(--fg-1); }
+
+  /* 保存状态不依靠状态色；图标和文字始终留在 role=status 里（K3/C4）。 */
+  .studio .save-status {
+    display: inline-flex;
+    align-items: center;
+    flex: none;
+    gap: 6px;
+    min-width: 0;
+    font: var(--type-meta);
+    color: var(--fg-3);
+    white-space: nowrap;
+  }
+  .save-status__icon { flex: none; }
+  .save-status__text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .studio .save-status:is(.is-loading, .is-saving, .is-readonly) { color: var(--fg-1); }
+  .studio .save-status.is-error { color: var(--fg-1); font-weight: var(--fw-semibold); }
+
+  /* 视频导入任务：有任务时才出现的小按钮 */
+  .studio .topbar .video-import-activity { flex: none; height: 28px; min-height: 0; padding: 0 6px; gap: 5px; color: var(--fg-2); background: transparent; border-radius: var(--radius-icon); font: var(--type-meta); }
+  /* 显式复位 legacy 在 1250 / 1180px 下给所有任务 span 的 display:none。 */
+  .studio .topbar .video-import-activity > span { display: inline; }
+  .video-import-activity__count { flex: none; font: var(--fw-medium) var(--fs-xs)/var(--lh-xs) var(--font-mono); }
+  .video-import-activity__text { margin-left: -5px; white-space: pre; }
+  .studio .topbar .video-import-activity > svg { color: currentColor; }
+  .studio .topbar .video-import-activity:hover:enabled { background: var(--bg-hover); color: var(--fg-1); }
+  .studio .topbar .video-import-activity.is-active { color: var(--fg-1); background: transparent; }
+  .studio .topbar .video-import-activity.is-attention { color: var(--fg-1); font-weight: var(--fw-semibold); }
+  .studio .topbar .video-import-activity.is-attention .video-import-activity__count { font-weight: var(--fw-semibold); }
+
+  /* 右侧：撤销重做 | 画布 / 大纲 | 导出 */
+  .studio .topbar-actions { display: flex; align-items: center; flex: none; gap: 14px; }
+  .studio .topbar .history-actions { display: flex; align-items: center; gap: 2px; }
+  .topbar-rule { flex: none; width: 1px; height: 20px; background: var(--border-hair); }
+  .studio .topbar .view-switch { margin: 0; align-self: auto; background: var(--bg-shell-sunken); }
+  .studio .topbar .seg__item { height: 28px; padding: 0 11px; font: var(--fw-book) var(--fs-ui)/var(--lh-ui) var(--font-ui); }
+  .studio .topbar .seg__item[aria-pressed="true"] {
+    --focus-gap: var(--paper-plain);
+    --focus-shadow: 0 0 0 var(--focus-offset) var(--focus-gap), 0 0 0 calc(var(--focus-offset) + var(--focus-width)) var(--focus-ring);
+    background: var(--paper-plain); font-weight: var(--fw-semibold); box-shadow: var(--shadow-chip);
+  }
+  .studio .topbar .seg__item:focus-visible { box-shadow: var(--focus-shadow); }
+  .studio .topbar .seg__item[aria-pressed="true"]:focus-visible { box-shadow: var(--shadow-chip), var(--focus-shadow); }
+  .studio .topbar .seg__item > svg { display: block; }
+  .studio .topbar .export-trigger { height: 32px; min-height: 0; padding: 0 12px; gap: 7px; border-radius: 7px; background: var(--paper-plain); color: var(--fg-1); font: var(--fw-book) var(--fs-ui)/var(--lh-ui) var(--font-ui); box-shadow: var(--shadow-chip); }
+  .studio .topbar .export-trigger:hover:enabled { background: var(--paper-plain); box-shadow: var(--shadow-chip), inset 0 0 0 100px var(--bg-hover); }
+  .studio .topbar .export-trigger:active:enabled { background: var(--paper-plain); box-shadow: var(--shadow-chip), inset 0 0 0 100px var(--bg-pressed); }
+  .studio .topbar .export-trigger:focus-visible { box-shadow: var(--shadow-chip), var(--focus-shadow); }
+
+  /* 1000–1099：保存状态文字仅视觉隐藏，视频计数不隐藏。较小的抽屉窗口沿用。 */
+  @media (max-width: 1099px) {
+    .studio .topbar :is(.save-status__text, .video-import-activity__text) { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  }
+  @media (max-width: 860px) {
+    .studio .topbar { gap: 8px; padding-right: 8px; }
+    .studio .topbar-actions { gap: 8px; }
+    .studio .topbar .seg__item, .studio .topbar .export-trigger { padding: 0 8px; }
+    .studio .topbar :is(.seg__item, .export-trigger) > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  }
+  @media (max-width: 600px) {
+    .studio .topbar .history-actions, .studio .topbar .topbar-rule { display: none; }
+  }
+
+  @media (forced-colors: active) {
+    .studio .topbar { border-bottom: 1px solid CanvasText; }
+    .studio .topbar .topbar-rule { background: CanvasText; }
+    .studio .topbar :is(.seg__item[aria-pressed="true"], .export-trigger) { outline: 1px solid ButtonText; outline-offset: -1px; }
+    .studio .topbar :is(.seg__item, .export-trigger, .icon-btn, .board-title):focus-visible { outline: 2px solid Highlight; outline-offset: 2px; }
+  }
+
+  /* ---------- 状态横幅：保存失败、只读（登记为安全区顶部浮层） ---------- */
+  .studio .main-workspace > .status-banner,
+  .studio .main-workspace > .status-banner .btn {
+    --focus-gap: var(--bg-panel);
+    --focus-shadow: 0 0 0 var(--focus-offset) var(--focus-gap), 0 0 0 calc(var(--focus-offset) + var(--focus-width)) var(--focus-ring);
+  }
+  .studio .main-workspace > .status-banner {
+    position: absolute;
+    z-index: var(--z-hud);
+    top: calc(var(--topbar-h) + 12px);
+    left: calc(var(--strip-left, 0px) + var(--strip-width, 100%) / 2);   /* 画布条正中（StatusBanners 量出 --strip-*） */
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr);
+    align-items: start;
+    gap: 2px 10px;
+    width: max-content;
+    max-width: min(560px, calc(var(--strip-width, 100%) - 32px));
+    margin: 0;
+    padding: 10px 14px 10px 12px;
+    border: 0;
+    border-radius: var(--radius-tool);
+    background: var(--bg-panel);
+    box-shadow: var(--shadow-tool);
+    color: var(--fg-1);
+    font: var(--fw-book) var(--fs-ui)/var(--lh-ui) var(--font-ui);
+    transform: translateX(-50%);
+    animation: status-banner-in var(--dur-base) var(--ease-out);
+  }
+  /* 量到之前的估计：停靠面板按默认宽度让开 */
+  .studio.inspector-visible .main-workspace > .status-banner:not([style*="--strip-width"]) { left: calc(50% - var(--panel-w) / 2); }
+  @keyframes status-banner-in { from { opacity: 0; transform: translate(-50%, -4px); } }
+  .status-banner__icon { margin-top: 2px; color: var(--fg-1); }
+  .status-banner__body { display: grid; gap: 2px; min-width: 0; }
+  .status-banner__body > strong { font: var(--fw-semibold) var(--fs-ui)/var(--lh-ui) var(--font-ui); color: var(--fg-1); }
+  .status-banner__body > span { font: var(--type-meta); color: var(--fg-2); overflow-wrap: anywhere; }
+  .status-banner .cjk-wrap { word-break: keep-all; overflow-wrap: anywhere; line-break: strict; }
+  .status-banner .keep-together { text-wrap-mode: nowrap; }
+  .studio .status-banner .save-recovery-actions { grid-column: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; min-width: 0; max-width: 100%; }
+  /* 旧层给这里的按钮留了 36 高的最小值：横幅里按 .btn--sm 的 28 高排（与观看页的同一组出路一样高） */
+  .studio .status-banner .save-recovery-actions > .btn { min-width: 0; min-height: 0; line-height: var(--lh-xs); }
+  .studio .status-banner .save-recovery-actions > .btn > svg { color: currentColor; }
+}

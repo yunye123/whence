@@ -1,0 +1,73 @@
+/* W3-D · 版心稿纸。纸面与投影仍由卡壳根伪元素绘制。 */
+@layer features {
+  .field-card--draft {
+    --card-bg: var(--paper-manuscript);
+    --card-edge: 0 0 0 1px var(--shadow-fair-edge);
+    --card-ambient-rest: inset 0 1px 0 var(--paper-manuscript-hi), 0 1px 2px var(--shadow-fair-1), 0 12px 20px -12px var(--shadow-fair-2);
+    --card-ambient-lift: var(--card-ambient-rest);
+    --card-pad-x: 16px;
+    --card-radius: var(--radius-paper);
+  }
+  .field-card--draft .field-card__header { padding: 16px 16px 8px 44px; }
+  .field-card--draft .field-card__header h3:not(.sr-only) {
+    -webkit-line-clamp: 1;
+    font: var(--type-card-draft-title);
+    letter-spacing: .03em;
+    color: var(--fg-1);
+    text-wrap: wrap;
+  }
+  .field-card__draft-meta { display: flex; gap: 8px; margin-top: 3px; font: 400 12px/18px var(--font-ui); color: var(--fg-3); }
+  .field-card__draft-meta > span + span::before { content: '·'; margin-right: 8px; }
+  .field-card .field-card__draft-content { display: flex; flex-direction: column; flex: 0 1 auto; min-height: 0; width: 100%; padding: 0; overflow: visible; background: none; border: 0; }
+  .field-card__draft-rule { flex: none; height: 6px; margin: 0 16px 0 32px; border-top: 2px solid light-dark(var(--fg-1), var(--fg-2)); border-bottom: 1px solid var(--frame-line); }
+  .field-card__draft-frame { position: relative; min-height: 0; }
+  .field-card__draft-frame::after { content: ''; position: absolute; inset: 0 16px 8px 32px; border: 1px solid var(--frame-line); border-top: 0; pointer-events: none; }
+  .field-card__draft-preview { padding: 8px 28px 16px 44px; color: var(--fg-1); text-align: justify; text-wrap: wrap; }
+  .field-card__draft-paragraph > p, .field-card__draft-preview > .is-placeholder { font: var(--type-card-draft); margin: 0; overflow-wrap: anywhere; text-autospace: no-autospace; }
+  .field-card__draft-paragraph { position: relative; margin: 0 0 4px; }
+  .field-card__draft-paragraph.is-heading { margin-top: 12px; }
+  .field-card__draft-paragraph.is-heading > p { display: flex; align-items: center; gap: 10px; font: 600 14px/20px var(--font-ui); color: var(--fg-2); text-align: left; }
+  .field-card__draft-heading > time { margin-left: 0; flex: none; font: 400 12px/20px var(--font-num); color: var(--fg-3); }
+  .field-card__draft-paragraph.is-quoted { border-left: 2px solid var(--rule-paper); padding-left: 12px; text-align: left; }
+  .field-card__draft-paragraph.is-quoted > p { font-weight: 500; }
+  .field-card__draft-pn { position: absolute; left: -41px; top: 3px; width: 22px; height: 22px; font: 500 12px/22px var(--font-num); text-align: center; color: var(--fg-3); border-radius: 50%; }
+  .field-card__draft-pn::before { content: attr(data-pn); }
+  .is-quoted > .field-card__draft-pn { left: -43px; }
+  .field-card--draft .field-card__ref.field-card__draft-pn.is-cited { color: var(--fg-1); font-weight: 600; border: 1px solid var(--zhu); background: var(--paper-manuscript); line-height: 20px; }
+  .field-card__draft-cite { display: flex; align-items: center; gap: 8px; height: 26px; margin: 0; font: 400 12px/20px var(--font-ui); color: var(--fg-3); }
+  .field-card__draft-cite > span:last-child { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .field-card__draft-stamp { flex: none; max-width: 60%; }
+  .field-card__draft-more { display: block; border: 0; background: none; padding: 0; font: 400 12px/20px var(--font-ui); color: var(--fg-3); text-align: left; white-space: nowrap; }
+  .field-card__draft-more:hover { color: var(--fg-1); }
+  .field-card__draft-paragraph.is-simple-only { display: none; }
+  .field-card--draft[data-lod="full"] .field-card__draft-paragraph.is-excerpt > p { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: var(--draft-excerpt-lines); max-height: calc(var(--draft-excerpt-lines) * 1lh); overflow: hidden; }
+  .field-card__draft-preview.has-excerpt > .field-card__draft-more { white-space: normal; }
+  .field-card__draft-content[data-draft-plan="deferred"] .field-card__draft-preview { max-height: 204px; overflow: hidden; }
+  .field-card__draft-content[data-draft-plan="deferred"] .field-card__draft-paragraph { display: none; }
+  .field-card__draft-content[data-draft-plan="deferred"] .field-card__draft-paragraph.is-first-prose { display: block; }
+  .field-card__draft-content[data-draft-plan="deferred"] .is-first-prose > p { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+  .field-card__draft-preview > .is-placeholder { font: 400 12px/20px var(--font-ui); color: var(--fg-3); text-align: left; }
+  .field-card__keep, .field-card__draft-preview .keep-together { white-space: nowrap; }
+  .field-card__draft-references { padding: 0 16px 8px 44px; min-width: 0; }
+  .field-card__draft-references > h4 { display: flex; justify-content: space-between; margin: 0; font: 600 12px/24px var(--font-ui); color: var(--fg-3); }
+  .field-card__draft-references > h4 > span { font-weight: 400; }
+  .field-card__footnotes { display: block; margin: 0; padding: 0; list-style: none; }
+  .field-card__footnote { position: relative; display: block; min-width: 0; }
+  .field-card .field-card__footnote-btn { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0; height: 24px; padding: 0; border: 0; border-radius: var(--radius-paper); background: none; font: 400 12px/24px var(--font-ui); color: var(--fg-3); text-align: left; white-space: nowrap; }
+  .field-card__footnote-btn:not(.is-gone):hover { color: var(--fg-1); background: var(--bg-hover); }
+  .field-card__footnote-n { position: absolute; left: -44px; width: 28px; text-align: center; font: 500 12px/24px var(--font-num); }
+  .field-card__footnote-icon { flex: none; width: 8px; height: 8px; fill: var(--fg-3); }
+  .field-card__footnote-location { flex: none; max-width: 42%; overflow: hidden; text-overflow: ellipsis; font-family: var(--font-num); color: var(--fg-2); }
+  .field-card__footnote-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .field-card__footnote-where { display: flex; flex: none; align-items: center; gap: 5px; }
+  .field-card__footnote-where::after { content: attr(data-pn); display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--fg-3); color: var(--fg-2); font: 500 12px/1 var(--font-num); }
+  .field-card__footnote-btn.is-gone { cursor: default; border-bottom: 1px dashed var(--fg-3); }
+  .field-card__footnote-btn.is-gone .field-card__footnote-location { color: var(--fg-3); }
+  .field-card--draft[data-lod="full"] :is(.field-card__draft-meta, .field-card__draft-pn, .field-card__draft-cite, .field-card__draft-more, .field-card__draft-references > h4, .field-card__footnote-btn, .field-card__footnote-n, .field-card__draft-heading > time, .is-placeholder) { font-size: max(12px, calc(12px / var(--z-tier, 1))); }
+  .field-card--draft[data-lod="full"] .field-card__footnote-where::after { font-size: max(12px, calc(12px / var(--z-tier, 1))); }
+  .field-card__draft-preview > .is-placeholder { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; max-height: 40px; overflow: hidden; }
+  .field-card__footnote-btn, .field-card__draft-more { position: relative; }
+  .field-card--draft[data-lod="full"] :is(.field-card__footnote-btn, .field-card__draft-more)::before { content: ''; position: absolute; left: 0; top: 50%; width: 100%; height: max(100%, calc(24px / var(--z-tier, 1))); transform: translateY(-50%); }
+  .field-card--draft .field-card__eyelet { position: absolute; left: -44px; top: 50%; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  .field-card--draft .field-card__actions { top: 16px; right: 12px; }
+}

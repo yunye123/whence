@@ -1,0 +1,20 @@
+@layer features {
+  .field-card--draft[data-lod="simple"][data-lod-frame] .field-card__draft-content { flex: 1 1 0; }
+  .field-card--draft[data-lod="simple"][data-lod-frame] .field-card__draft-frame { flex: 1; overflow: hidden; }
+  .field-card--draft[data-lod="simple"][data-lod-frame] .field-card__draft-frame::after { border-width: calc(1px / var(--z-tier)); border-top: 0; }
+  .field-card--draft[data-lod="simple"][data-lod-frame] .field-card__draft-preview { max-height: none; }
+  .field-card--draft[data-lod="simple"][data-lod-frame] .field-card__draft-meta { display: none; }
+  .field-card--draft[data-lod="simple"][data-lod-frame] .field-card__draft-preview { padding-top: 4px; padding-bottom: 8px; }
+  .field-card--draft[data-lod="simple"][data-lod-frame] .field-card__draft-paragraph { display: none; }
+  .field-card--draft[data-lod="simple"][data-lod-frame] .field-card__draft-paragraph.is-first-prose { display: block; border: 0; padding: 0; margin: 0; }
+  .field-card--draft[data-lod="simple"][data-lod-frame] .is-first-prose > p { zoom: max(1, calc(12 / 16 / var(--z-tier))); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; max-height: 2lh; overflow: hidden; text-align: left; }
+  .field-card--draft[data-lod="simple"][data-lod-frame] :is(.field-card__draft-pn, .field-card__draft-cite, .field-card__draft-preview > .field-card__draft-more) { display: none; }
+  .field-card--draft[data-lod="simple"][data-lod-frame] .field-card__draft-references { zoom: var(--lod-k); flex: none; padding: 0 8px 4px 12px; }
+  .field-card--draft[data-lod="simple"][data-lod-frame] .field-card__draft-references > h4 { display: none; }
+  .field-card--draft[data-lod="simple"][data-lod-frame] .field-card__draft-preview > .is-placeholder { zoom: var(--lod-k); display: block; white-space: nowrap; text-overflow: ellipsis; line-height: 16px; max-height: 16px; overflow: hidden; }
+  .field-card--draft[data-lod="simple"][data-lod-frame] .field-card__draft-references .field-card__draft-more::before { content: ''; position: absolute; inset: -2px 0; }
+  .field-card--draft[data-lod="simple"][data-lod-frame] .field-card__footnote-n { position: static; flex: none; width: 10px; }
+  .field-card--draft[data-lod="simple"][data-lod-frame] .field-card__footnote-btn { gap: 5px; }
+  .field-card--draft[data-lod="simple"][data-lod-frame] .field-card__footnote-where { font-size: 0; gap: 0; }
+  .field-card--draft[data-lod="simple"][data-lod-frame] .field-card__eyelet { left: -12px; }
+}

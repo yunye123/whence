@@ -1,0 +1,25 @@
+/* PLAN 2.11: vermilion tracing and stamp wash, no hole, swing, scale or blur. */
+@layer features {
+  .field-trace { pointer-events: none; }
+  .field-trace__walk { fill: none; stroke: var(--zhu); stroke-linecap: round; }
+  .field-trace__comet { fill: none; stroke: var(--zhu); stroke-linecap: butt; }
+  .field-trace__dot { fill: var(--zhu); stroke: var(--bg-canvas); }
+  .field-trace-stamp { position: relative; }
+  .field-trace-stamp::after {
+    content: ''; position: absolute; inset: 0; border-radius: inherit;
+    background: var(--zhu-wash); opacity: 0; pointer-events: none;
+  }
+  .field-trace-start { background: var(--zhu-wash); }
+  .field-trace-pass { outline: calc(1.5px / var(--z, 1)) solid var(--zhu); outline-offset: 0; }
+  .field-trace-arrival { outline: calc(2px / var(--z, 1)) solid var(--zhu); outline-offset: 1px; }
+  .field-trace-arrival:is(mark) { box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+  .field-trace-arrival:is(.field-card__rail, .field-card__length-rail) { outline: none; }
+  .field-trace-arrival:is(.field-card__rail, .field-card__length-rail)::after {
+    content: ''; position: absolute; top: 0; bottom: 0; left: var(--trace-left, 0);
+    width: var(--trace-width, 0); min-width: 3px; border-radius: 1px;
+    outline: calc(2px / var(--z, 1)) solid var(--zhu); outline-offset: 1px; pointer-events: none;
+  }
+  @media (forced-colors: active) {
+    .field-trace-arrival, .field-trace-pass { outline-color: Highlight; }
+  }
+}

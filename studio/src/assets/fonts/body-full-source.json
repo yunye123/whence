@@ -1,0 +1,27 @@
+{
+  "schema": "field-body-full-source-v1",
+  "families": [
+    {
+      "directory": "noto-sans-sc",
+      "repository": "https://github.com/google/fonts",
+      "commit": "a85815a42757630ce188fdad368c2dfc444d4773",
+      "file": "NotoSansSC[wght].ttf",
+      "bytes": 17772300,
+      "sha256": "a3041811a78c361b1de50f953c805e0244951c21c5bd412f7232ef0d899af0da",
+      "gitBlobSha1": "fb0637bafbcd804fe32152370a1225990745b4bc",
+      "url": "https://raw.githubusercontent.com/google/fonts/a85815a42757630ce188fdad368c2dfc444d4773/ofl/notosanssc/NotoSansSC%5Bwght%5D.ttf",
+      "blobUrl": "https://api.github.com/repos/google/fonts/git/blobs/fb0637bafbcd804fe32152370a1225990745b4bc"
+    },
+    {
+      "directory": "noto-serif-sc",
+      "repository": "https://github.com/google/fonts",
+      "commit": "8b0a1d0f5983c89bc2b93f1b5fb55f9e252744b5",
+      "file": "NotoSerifSC[wght].ttf",
+      "bytes": 25125512,
+      "sha256": "050080d9255a86808f2945bffac582b31ef32bc36411ce29563b4961670c66f9",
+      "gitBlobSha1": "eab063faf229160a52d3760f5555150e4eb9e5bf",
+      "url": "https://raw.githubusercontent.com/google/fonts/8b0a1d0f5983c89bc2b93f1b5fb55f9e252744b5/ofl/notoserifsc/NotoSerifSC%5Bwght%5D.ttf",
+      "blobUrl": "https://api.github.com/repos/google/fonts/git/blobs/eab063faf229160a52d3760f5555150e4eb9e5bf"
+    }
+  ]
+}

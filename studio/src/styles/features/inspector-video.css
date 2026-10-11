@@ -1,0 +1,964 @@
+/* 观看工作台（DESIGN_SYSTEM §6.18.2）——播放器、句子刻度轨、控制行、来历、逐字稿、校对。
+   外壳（inspector.css）负责整窗网格 1fr 480 与左右两栏；这里只写两栏里面的东西。
+   - 左栏 .inspector-stage：播放器块 .inspector-watch 钉在顶部（PV-B1），下面的来历、观看笔记等在左栏内滚动；
+     竖屏（data-orientation=portrait）时左栏分成“画面列 + 资料列”，不套 16:9 黑框（PV-M2）。
+   - 右栏 .inspector-side：逐字稿头部 52、列表自滚动、选区下方一行操作、页脚 40。
+   旧样式里带强制优先级的类（.inspector-transcript-text、.inspector-timecode、.inspector-small-button 等）已改用新类名绕开。 */
+@layer features {
+  .inspector--video {
+    /* 播放器块除画面外的高度：时间轴 12 + 56，控制行 10 + 36，下边距 12 */
+    --watch-chrome: 128px;
+    --watch-chrome-portrait: 176px;
+    /* 横屏时给下方来历与笔记留出的可视高度：常见窗口（≤ 900 高）里画面撑满列宽，高窗口才多留 */
+    --watch-room: clamp(96px, calc(26dvh - 100px), 200px);
+  }
+  /* 旧样式 button:disabled{opacity:.36}：禁用态改由文字色表达（§6.1） */
+  .inspector--video button:disabled { opacity: 1; }
+
+  /* 中文短文字只在词间换行（§3.4；断点由 Words / wordPieces 插入） */
+  .inspector--video .cjk-wrap { word-break: keep-all; overflow-wrap: anywhere; line-break: strict; }
+
+  /* ---------- 左栏 ---------- */
+  .inspector--video .inspector-stage {
+    /* --video-ratio 由 VideoMediaPanel 写在左列上：画面宽受高度预算约束时，左列其余内容与画面同宽，右侧留白成为整齐的一条 */
+    --watch-w: min(100%, calc((100dvh - 56px - var(--space-6) - var(--watch-chrome) - var(--watch-room)) * var(--video-ratio, 1.7778)));
+    container: watch-stage / inline-size;
+    padding-bottom: var(--space-9);
+    scroll-padding-top: var(--space-8);
+  }
+  .inspector--video .inspector-stage > .inspector-section { padding-inline: 0; }
+  /* 左列在窗口底边渐隐（INSP-14）：内容没到头时不再被硬切；滚到底时最后 32 是留白，不受影响 */
+  .inspector--video .inspector-stage { mask-image: linear-gradient(to bottom, currentColor calc(100% - var(--space-8)), transparent); }
+  .inspector--video .inspector-stage:not(:has(> .inspector-watch[data-orientation="portrait"])) > * { max-width: var(--watch-w); }
+
+  .inspector-watch {
+    --watch-w: min(100%, calc((100dvh - 56px - var(--space-6) - var(--watch-chrome) - var(--watch-room)) * var(--video-ratio, 1.7778)));
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: var(--space-5);
+    background: var(--bg-canvas);
+  }
+  .inspector-watch[data-scrolled] { box-shadow: 0 1px 0 var(--border-hair); }
+
+  /* 画面：按视频原比例，横屏撑满列宽（受高度预算约束），竖屏见下方两列布局 */
+  .inspector--video .inspector-player {
+    position: relative;
+    display: block;
+    flex: none;
+    width: var(--watch-w);
+    min-height: 0;
+    margin: 0;
+    aspect-ratio: var(--video-ratio, 1.7778);
+    border-radius: var(--radius-photo);
+    background: var(--bg-viewer);
+    box-shadow: 0 0 0 1px var(--border-hair);
+    overflow: hidden;
+  }
+  .inspector--video .inspector-player video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    aspect-ratio: auto;
+    object-fit: contain;
+    background: transparent;
+    cursor: pointer;
+  }
+  .inspector--video .inspector-player video:focus-visible { outline: none; }
+
+  /* 未播放：海报 + 播放钮（可访问名“播放视频”） */
+  .inspector--video .inspector-play-placeholder {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    background: var(--bg-viewer);
+    color: var(--media-fg);
+    cursor: pointer;
+  }
+  .inspector--video .inspector-play-placeholder img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .watch-poster__play {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--media-button-bg);
+    color: var(--media-button-fg);
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+  .watch-poster__play svg { margin-left: 2px; fill: currentColor; }
+  .watch-poster__label {
+    position: absolute;
+    left: 14px;
+    bottom: 14px;
+    display: inline-flex;
+    align-items: center;
+    height: 26px;
+    padding: 0 10px;
+    border-radius: var(--radius-ctl);
+    background: var(--media-chip);
+    color: var(--media-fg);
+    font: var(--fw-medium) var(--fs-xs)/1 var(--font-ui);
+  }
+  .inspector--video .inspector-play-placeholder:hover .watch-poster__play { transform: scale(1.06); }
+  .inspector--video .inspector-play-placeholder:focus-visible { outline: none; box-shadow: inset 0 0 0 3px var(--focus-ring); }
+
+  /* 没有可播放的视频：安静的凹面，不是一块黑屏 */
+  .inspector--video .inspector-player:has(> .inspector-media-empty) { background: var(--bg-sunken); box-shadow: inset 0 0 0 1px var(--border-hair); }
+  .inspector--video .inspector-media-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-4);
+    min-height: 0;
+    padding: var(--space-8);
+    color: var(--fg-icon);
+    text-align: center;
+  }
+  .inspector--video .inspector-media-empty strong { font: var(--fw-semibold) var(--fs-md)/var(--lh-md) var(--font-ui); color: var(--fg-1); }
+  .inspector--video .inspector-media-empty span { max-width: 30em; font: var(--fw-book) var(--fs-ui)/23px var(--font-ui); color: var(--fg-2); }
+
+  /* 保存失败（FD-02）：整窗工作台盖住了顶栏的保存状态和画布横幅，失败原因与下一步写在头部下方，直到保存恢复。
+     与画布横幅同一套表达：提示条底 + 红色图标 + “保存失败” + 原因 + 按钮；占自己的一行，不盖住任何内容。 */
+  .watch-save-alert {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3) var(--space-5);
+    margin: 0 var(--space-7) var(--space-5);
+    padding: var(--space-4) var(--space-5);
+    border-radius: var(--radius-tool);
+    background: var(--bg-panel);
+    box-shadow: var(--shadow-tool);
+    color: var(--fg-1);
+    animation: inspector-fade var(--dur-base) var(--ease-out) backwards;
+  }
+  .watch-save-alert__icon { flex: none; color: var(--status-danger-fg); }
+  .watch-save-alert__text { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-4); flex: 1 1 260px; min-width: 0; margin: 0; }
+  .watch-save-alert__text strong { flex: none; font: var(--fw-medium) var(--fs-ui)/23px var(--font-ui); color: var(--status-danger-fg); }
+  .watch-save-alert__text span { min-width: 0; font: var(--type-meta); color: var(--fg-2); overflow-wrap: anywhere; }
+  .watch-save-alert__actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); margin-left: auto; }
+  .watch-save-alert__actions .btn { flex: none; }
+
+  /* 空视频卡就地填充（FV-M5）：选择本机视频 / 粘贴视频链接 / 拖入文件 */
+  .watch-fill { transition: background-color var(--dur-fast) var(--ease-out); }
+  .watch-fill.is-dropping { background: var(--bg-hover); box-shadow: inset 0 0 0 1.5px var(--border-strong); border-radius: inherit; }
+  .watch-fill__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-4); margin-top: var(--space-2); }
+  .watch-fill__link { display: flex; align-items: center; gap: var(--space-3); width: min(100%, 480px); margin-top: var(--space-2); }
+  .watch-fill__link .input { flex: 1 1 auto; min-width: 0; }
+  .watch-fill__link .btn { flex: none; }
+  .watch-fill__hint { max-width: 34em; margin: 0; font: var(--type-meta); color: var(--fg-2); }
+  .watch-fill__hint.is-error { color: var(--status-danger-fg); }
+
+  /* 画面上的“播放中”与字幕（不铺黑条，两层文字阴影） */
+  .watch-onair {
+    position: absolute;
+    left: 14px;
+    top: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 26px;
+    padding: 0 10px;
+    border-radius: var(--radius-ctl);
+    background: var(--media-chip);
+    color: var(--media-fg);
+    font: var(--fw-medium) var(--fs-xs)/1 var(--font-ui);
+    pointer-events: none;
+  }
+  .watch-onair::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--fg-1); }
+  .watch-caption {
+    position: absolute;
+    left: 6%;
+    right: 6%;
+    bottom: 28px;
+    margin: 0;
+    color: var(--media-fg);
+    font: var(--fw-medium) 18px/28px var(--font-ui);
+    text-align: center;
+    text-shadow: var(--media-text-shadow);
+    text-wrap: balance;
+    pointer-events: none;
+  }
+  .inspector-watch[data-orientation="portrait"] .watch-caption { bottom: 22px; font-size: 16px; }
+
+  /* ---------- 时间轴 = 句子刻度轨（高 56：签 0–24，轨 28–36，刻度 44–56） ---------- */
+  .watch-timeline { position: relative; flex: none; width: var(--watch-w); height: 56px; margin-top: var(--space-5); --progress: 0%; }
+  .watch-timeline__flags { position: absolute; left: 0; right: 0; top: 0; height: 24px; }
+  .watch-timeline__flag { position: absolute; top: 0; z-index: 1; }
+  .watch-timeline__picked { position: absolute; top: 3px; font: var(--type-meta); color: var(--fg-2); white-space: nowrap; pointer-events: none; }
+  .watch-track {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 20px;
+    height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    touch-action: none;
+    outline: none;
+  }
+  .watch-track:focus-visible { box-shadow: var(--focus-shadow); }
+  .watch-timeline[data-disabled] .watch-track { cursor: default; }
+  .watch-rail { position: absolute; left: 0; right: 0; top: 8px; height: 8px; pointer-events: none; }
+  .watch-rail > i { position: absolute; top: 0; bottom: 0; border-radius: 1px; background: var(--rail-seg); }
+  .watch-rail > .watch-rail__bar { left: 0; width: 100%; border-radius: 2px; }
+  .watch-rail--played { clip-path: inset(0 calc(100% - var(--progress)) 0 0); }
+  .watch-rail--played > i { background: var(--rail-played); }
+  .watch-rail--marks > i.is-used { background: var(--hl); }
+  .watch-rail--marks > i.is-picked { background: color-mix(in srgb, var(--fg-1) 62%, transparent); }
+  .watch-rail--marks > i.is-now { background: var(--fg-1); }
+  .watch-playhead {
+    position: absolute;
+    top: 2px;
+    left: var(--progress);
+    width: 2px;
+    height: 20px;
+    margin-left: -1px;
+    border-radius: 1px;
+    background: var(--fg-1);
+    pointer-events: none;
+  }
+  .watch-scale { position: absolute; left: 0; right: 0; top: 44px; height: 12px; font: 500 var(--fs-xs)/12px var(--font-num); color: var(--fg-3); pointer-events: none; }
+  .watch-scale > span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; }
+  .watch-scale > span[data-edge="start"] { transform: none; }
+  .watch-scale > span[data-edge="end"] { transform: translateX(-100%); }
+  /* 悬停提示坐在签那一行上，签暂时淡出（INSP-27）：不再压住出处签，也不越过画面底边 */
+  .watch-timeline__flags, .watch-timeline__picked { transition: opacity var(--dur-fast) var(--ease-out); }
+  .watch-timeline:has(.watch-scrub-tip) :is(.watch-timeline__flags, .watch-timeline__picked) { opacity: 0; }
+  .watch-scrub-tip {
+    position: absolute;
+    bottom: calc(100% - var(--space-1));
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    max-width: min(320px, 90%);
+    height: 28px;
+    padding: 0 var(--space-4);
+    border-radius: var(--radius-ctl);
+    background: var(--bg-panel);
+    box-shadow: var(--shadow-tool);
+    color: var(--fg-1);
+    font: var(--type-meta);
+    white-space: nowrap;
+    transform: translateX(-50%);
+    pointer-events: none;
+  }
+  .watch-scrub-tip > .tabular { font-weight: var(--fw-semibold); }
+  .watch-scrub-tip__line { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--fg-2); }
+
+  /* ---------- 控制行 ---------- */
+  .watch-controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-1); width: var(--watch-w); margin-top: var(--space-3); }
+  .watch-transport {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: var(--action-soft-bg);
+    color: var(--fg-1);
+    cursor: pointer;
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .watch-transport svg { fill: currentColor; }
+  .watch-transport:hover:enabled { background: var(--action-soft-bg-hover); }
+  .watch-transport:active:enabled { transition-duration: 0ms; }
+  .watch-transport:focus-visible { box-shadow: var(--focus-shadow); }
+  .watch-transport:disabled { background: var(--bg-sunken); color: var(--fg-disabled); cursor: default; }
+  .watch-clock { display: inline-flex; align-items: baseline; gap: var(--space-2); margin: 0 var(--space-5) 0 var(--space-4); color: var(--fg-1); white-space: nowrap; }
+  .watch-clock__now { font: 500 var(--fs-clock)/1 var(--font-num); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .watch-clock__total { font: 500 var(--fs-xs)/1 var(--font-num); font-variant-numeric: tabular-nums; color: var(--fg-3); }
+  .watch-controls .btn { color: var(--fg-2); }
+  .watch-controls .btn:hover:enabled { color: var(--fg-1); }
+  .watch-controls .btn:disabled { color: var(--fg-disabled); }
+  .watch-controls__end { display: flex; align-items: center; gap: var(--space-1); margin-left: auto; }
+  .watch-rate { min-width: 62px; justify-content: center; font-family: var(--font-num); font-variant-numeric: tabular-nums; }   /* 按最宽的“1.25×”留宽，切换倍速时左边的按钮不再被推动 */
+
+  /* 头部元信息：采集日期、原视频链接（插槽 header-meta，与外壳的平台、时长同一节奏） */
+  .inspector--video .inspector-slot--header-meta { gap: var(--space-5); }
+  .watch-collected { flex: none; }
+  .watch-source-link { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--fg-2); font: var(--type-meta); text-decoration: none; border-radius: 4px; }
+  .watch-source-link:hover { color: var(--fg-1); text-decoration: underline; text-underline-offset: 3px; }
+  .watch-source-link:focus-visible { box-shadow: var(--focus-shadow); outline: none; }
+  .inspector-player .watch-source-link { margin-top: var(--space-1); }
+
+  /* ---------- 竖屏：画面单独成列，资料在右侧（PV-M2） ----------
+     宽窗（逐字稿固定 480 时）左列分成“画面列 + 资料列”；窄窗里左列太窄放不下两列，画面按原比例限高、居中，资料在下方。 */
+  .inspector-watch[data-orientation="portrait"] {
+    --watch-w: min(100%, calc((100dvh - 56px - var(--space-6) - var(--watch-chrome-portrait) - var(--watch-room)) * var(--video-ratio)));
+    align-items: center;
+  }
+  @media (min-width: 1200px) {
+    .inspector--video .inspector-stage:has(> .inspector-watch[data-orientation="portrait"]) {
+      display: grid;
+      grid-template-columns: max-content minmax(0, 1fr);
+      grid-template-rows: repeat(12, min-content) 1fr;
+      column-gap: var(--space-8);
+      align-content: start;
+    }
+    .inspector--video .inspector-stage:has(> .inspector-watch[data-orientation="portrait"]) > * { grid-column: 2; min-width: 0; }
+    .inspector--video .inspector-stage > .inspector-watch[data-orientation="portrait"] {
+      --watch-w: max(280px, min(52cqw, calc((100dvh - 56px - var(--space-6) - var(--watch-chrome-portrait)) * var(--video-ratio))));
+      grid-column: 1;
+      grid-row: 1 / -1;
+      align-self: start;
+      align-items: stretch;
+      width: var(--watch-w);
+    }
+    /* 右侧资料列的第一块贴着画面顶边，不再画分隔线 */
+    .inspector--video .inspector-stage > .inspector-watch[data-orientation="portrait"] + * { margin-top: 0; padding-top: 0; box-shadow: none; }
+    /* 资料列与画面列同高（QA round 3 P6）：新视频只有笔记、来源链接和标签时，列下方不再空着大半屏。
+       来历、处理状态等依次排在前 9 行；观看笔记占第 10 行（1fr），来源链接与标签占最后两行，标签的底边与播放控制行的底边对齐。
+       列高由内容区决定：VideoMediaPanel 写入 --watch-tail，让舞台的下内边距正好等于控制行以下的高度。资料多于画面时，笔记回到最小高度，列照常滚动。 */
+    .inspector--video .inspector-stage:has(> .inspector-watch[data-orientation="portrait"]) {
+      grid-template-rows: repeat(9, min-content) 1fr min-content min-content;
+      padding-bottom: var(--watch-tail, var(--space-9));
+    }
+    .inspector--video .inspector-stage:has(> .inspector-watch[data-orientation="portrait"]) > .watch-notes { grid-row: 10; display: flex; flex-direction: column; }
+    .inspector--video .inspector-stage:has(> .inspector-watch[data-orientation="portrait"]) > .watch-notes + * { grid-row: 11; }
+    .inspector--video .inspector-stage:has(> .inspector-watch[data-orientation="portrait"]) > .watch-notes + * + * { grid-row: 12; }
+    .inspector--video .inspector-stage:has(> .inspector-watch[data-orientation="portrait"]) .watch-notes__field { flex: 1 1 auto; max-height: none; }
+  }
+  /* 竖屏画面列较窄：控制行折成两行，左右各自对齐（播放 + 时间 ··· 上一句 下一句 / 后退 + 倍速 ··· 字幕 音量 全屏） */
+  .inspector-watch[data-orientation="portrait"] .watch-clock { margin-right: 0; }
+  .inspector-watch[data-orientation="portrait"] .watch-clock + .watch-step { margin-left: auto; }
+  .inspector-watch[data-orientation="portrait"] .watch-controls__end { flex-basis: 100%; margin-left: 0; }
+  .inspector-watch[data-orientation="portrait"] .watch-controls__end > .watch-rate + .icon-btn { margin-left: auto; }
+  /* 很窄的 9:16 画面列：“上一句 / 下一句”只留图标（可访问名不变），控制行仍是两行 */
+  .watch-controls { container: watch-controls / inline-size; }
+  @container watch-controls (max-width: 340px) {
+    .watch-step__label { display: none; }
+    .watch-step.btn { width: 32px; padding: 0; justify-content: center; }
+  }
+
+  /* ---------- 来历：从这段视频摘出的句子写进了哪份文稿哪一段 ---------- */
+  .watch-origin { container: watch-origin / inline-size; margin-top: var(--space-6); padding-top: var(--space-5); box-shadow: inset 0 1px 0 var(--border-hair); }
+  .watch-origin__head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-4); min-height: 28px; }
+  .watch-origin__head h3 { margin: 0; font: var(--fw-medium) var(--fs-ui)/23px var(--font-ui); color: var(--fg-1); }
+  .watch-origin__count, .watch-origin__summary { font: var(--type-meta); color: var(--fg-3); }
+  .watch-origin__find { margin-left: auto; }
+  /* INSP-14：左栏放不下第一行卡片时（1366×768），来历收成标题这一行摘要，“展开”后在左栏内滚到卡片 */
+  .watch-origin__toggle { margin-left: auto; gap: var(--space-2); color: var(--fg-2); }
+  .watch-origin__toggle svg { transition: transform var(--dur-fast) var(--ease-out); }
+  .watch-origin__toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+  .watch-origin__toggle + .watch-origin__find { margin-left: 0; }
+  .watch-origin.is-collapsed { padding-bottom: var(--space-2); }
+  .watch-origin__list { display: flex; flex-direction: column; gap: var(--space-6); margin: var(--space-5) 0 0; padding: 0; list-style: none; }
+  .watch-origin__list[hidden] { display: none; }
+  .watch-origin__row { display: grid; grid-template-columns: minmax(0, 1fr) 44px minmax(0, 1fr); align-items: start; }
+  .watch-origin__quote {
+    position: relative;
+    min-width: 0;
+    margin-left: 0;
+    padding: 0 var(--space-6) var(--space-5);
+    border-top: 2px solid var(--zhu);
+    border-radius: 2px;
+    background: var(--paper-plain);
+    box-shadow: var(--shadow-paper);
+  }
+  .watch-origin__tag { display: flex; align-items: center; height: 42px; min-width: 0; }
+  .watch-origin__quote p {
+    margin: 0;
+    color: var(--fg-1);
+    font: var(--fw-medium) 16px/26px var(--font-read);
+    text-wrap: pretty;
+    overflow-wrap: anywhere;
+  }
+  .watch-origin__thread { position: relative; align-self: stretch; }
+  .watch-origin__thread svg { position: absolute; left: 0; top: 15px; width: 100%; height: 12px; overflow: visible; }
+  .watch-origin__thread line { stroke: var(--zhu); stroke-width: 1.5; stroke-dasharray: 5 4; }
+  .watch-origin__drafts { display: flex; flex-direction: column; gap: var(--space-6); min-width: 0; }
+  .watch-origin__draft {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-1);
+    width: 100%;
+    margin: 0;
+    padding: var(--space-5) var(--space-6) var(--space-5);
+    border: 0;
+    border-radius: 2px;
+    background: var(--paper-manuscript);
+    box-shadow: var(--shadow-fair);
+    color: var(--draft-fg);
+    font: inherit;
+    text-align: left;
+    transition: box-shadow var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+  }
+  .watch-origin__draft.is-stacked { margin-bottom: 0; }
+  button.watch-origin__draft { cursor: pointer; }
+  button.watch-origin__draft:hover { transform: translateY(-1px); box-shadow: var(--shadow-paper-lift); }
+  button.watch-origin__draft.is-stacked:hover { box-shadow: var(--shadow-paper-lift); }
+  button.watch-origin__draft:focus-visible { outline: none; box-shadow: var(--shadow-fair), var(--focus-shadow); }
+  .watch-origin__draft-title { color: var(--fg-1); font: var(--fw-semibold) 18px/26px var(--font-read); text-wrap: balance; }
+  .watch-origin__draft-where { display: flex; flex-wrap: wrap; gap: 0 var(--space-5); font: var(--type-meta); color: var(--fg-3); }
+  .watch-origin__draft-text { margin-top: var(--space-3); color: var(--fg-1); font: var(--fw-draft) 16px/28px var(--font-read); text-wrap: pretty; overflow-wrap: anywhere; }
+  .watch-origin__position { display: inline-flex; align-items: center; gap: var(--space-2); }
+  .watch-origin__paragraph { display: inline-grid; place-items: center; min-width: 22px; height: 22px; padding-inline: 2px; border: 1.5px solid var(--zhu); border-radius: 50%; color: var(--fg-2); font: 500 var(--fs-xs)/1 var(--font-mono); }
+  .watch-origin__ref { margin-left: 2px; color: var(--fg-2); font: 600 var(--fs-xs)/1 var(--font-num); vertical-align: .55em; }
+  .watch-origin__ref.is-after-punct { margin-left: -6.4px; }
+  .watch-origin__unused { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-3); margin: 0; padding: var(--space-5) var(--space-6); border-radius: var(--radius-paper); box-shadow: inset 0 0 0 1px var(--border-hair); font: var(--type-meta); color: var(--fg-3); }
+  .watch-origin__unused > p { margin: 0; }
+  /* “补一个镜头”往返中：配给这一行（主）/ 另起一行写进原话 */
+  .watch-origin__trip { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .watch-origin__row:not(.is-written) .watch-origin__thread { visibility: hidden; }
+  @container watch-origin (max-width: 560px) {
+    .watch-origin__row { grid-template-columns: minmax(0, 1fr); }
+    .watch-origin__thread { height: 18px; margin-left: var(--space-8); }
+    .watch-origin__thread svg { display: none; }
+    .watch-origin__row.is-written .watch-origin__thread::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; border-left: 1.5px dashed var(--zhu); }
+    .watch-origin__row:not(.is-written) .watch-origin__thread { display: none; }
+    .watch-origin__drafts { margin-left: var(--space-8); }
+    .watch-origin__unused { margin: var(--space-3) 0 0; padding: 0; box-shadow: none; }
+  }
+
+  /* ---------- 处理状态、观看笔记（左栏下方） ---------- */
+  .inspector--video .inspector-import-status {
+    margin: var(--space-6) 0 0;
+    padding: var(--space-5) var(--space-6);
+    border: 0;
+    border-radius: var(--radius-tool);
+    background: var(--bg-panel);
+    box-shadow: 0 0 0 1px var(--border-hair);
+  }
+  .inspector--video .inspector-import-heading { display: flex; align-items: center; gap: var(--space-4); color: var(--fg-2); }
+  .inspector--video .inspector-import-heading strong { font: var(--fw-medium) var(--fs-ui)/23px var(--font-ui); color: var(--fg-1); }
+  .inspector--video .inspector-import-heading > span { margin-left: auto; font: var(--type-meta); color: var(--fg-2); }
+  .inspector--video .inspector-import-status--failed .inspector-import-heading svg,
+  .inspector--video .inspector-import-status--interrupted .inspector-import-heading svg { color: var(--status-danger-fg); }
+  .inspector--video .inspector-import-status--completed .inspector-import-heading svg { color: var(--status-success-fg); }
+  .inspector--video .inspector-import-status > p { margin: var(--space-3) 0 0; font: var(--type-meta); color: var(--fg-2); }
+  .inspector--video .inspector-import-status > p.inspector-import-error { color: var(--status-danger-fg); }
+  .inspector--video .inspector-import-status progress {
+    display: block;
+    width: 100%;
+    height: 4px;
+    margin-top: var(--space-4);
+    border: 0;
+    border-radius: 2px;
+    appearance: none;
+    background: var(--rail-bg);
+    overflow: hidden;
+  }
+  .inspector--video .inspector-import-status progress::-webkit-progress-bar { background: var(--rail-bg); }
+  .inspector--video .inspector-import-status progress::-webkit-progress-value { background: var(--fg-2); }
+  .inspector--video .inspector-import-actions { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-4); font: var(--type-meta); color: var(--fg-3); }
+  .inspector--video .inspector-native-warning { margin: var(--space-5) 0 0; font: var(--type-meta); color: var(--status-warning-fg); }
+
+  .inspector--video .watch-notes { margin-top: var(--space-6); padding: var(--space-5) 0 0; box-shadow: inset 0 1px 0 var(--border-hair); }
+  .inspector--video .watch-notes__label { display: block; margin-bottom: var(--space-4); font: var(--fw-medium) var(--fs-ui)/23px var(--font-ui); color: var(--fg-1); }
+  .watch-notes__field {
+    display: block;
+    width: 100%;
+    min-height: 104px;
+    max-height: 420px;
+    field-sizing: content;
+    margin: 0;
+    padding: var(--space-5) var(--space-6);
+    border: 0;
+    border-radius: var(--radius-note);
+    background: var(--paper-note);
+    box-shadow: inset 0 0 0 1px var(--rule-paper);
+    color: var(--note-fg);
+    font: var(--fw-regular) var(--fs-ui)/23px var(--font-note);
+    resize: vertical;
+    outline: none;
+  }
+  .watch-notes__field::placeholder { color: var(--fg-3); }
+
+  /* 标签：工作台里是一行安静的元信息，不是整宽的灰底表单（INSP-14）；说明文字只留给读屏 */
+  .inspector--video .inspector-stage > .inspector-tags {
+    position: relative;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: var(--space-5);
+    margin-top: var(--space-6);
+    padding-top: var(--space-5);
+    box-shadow: inset 0 1px 0 var(--border-hair);
+  }
+  .inspector--video .inspector-tags > .inspector-field-label { margin: 0; font: var(--fw-medium) var(--fs-ui)/23px var(--font-ui); color: var(--fg-1); }
+  .inspector--video .inspector-tags > .input { height: 30px; padding-inline: var(--space-4); background: transparent; box-shadow: none; }
+  .inspector--video .inspector-tags > .input:hover:not(:focus):not(:read-only) { background: var(--bg-hover); }
+  .inspector--video .inspector-tags > .input:focus { background: var(--paper-plain); box-shadow: 0 0 0 1px var(--border-strong), var(--focus-shadow); }
+  .inspector--video .inspector-tags > .inspector-field-hint { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  /* 跳到逐字稿（INSP-12）：只在键盘聚焦时出现在左上角 */
+  .watch-skip {
+    position: absolute;
+    top: var(--space-3);
+    left: var(--space-5);
+    z-index: 5;
+    height: 32px;
+    padding: 0 var(--space-6);
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: var(--bg-panel);
+    box-shadow: var(--shadow-tool);
+    color: var(--fg-1);
+    font: var(--fw-medium) var(--fs-ui)/23px var(--font-ui);
+    transform: translateY(calc(-100% - var(--space-6)));
+    opacity: 0;
+    pointer-events: none;
+  }
+  .watch-skip:focus-visible { transform: none; opacity: 1; pointer-events: auto; box-shadow: var(--shadow-tool), var(--focus-shadow); }
+  .watch-notes__field:focus-visible { box-shadow: inset 0 0 0 1px var(--border-strong), var(--focus-shadow); }
+
+  /* ---------- 右栏：逐字稿 ---------- */
+  .inspector--video .inspector-side > .inspector-transcript-section {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+  }
+  .watch-tr-head {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    height: 52px;
+    padding: 0 56px 0 var(--space-7);
+    box-shadow: inset 0 -1px 0 var(--border-hair);
+  }
+  .watch-tr-head h3 { margin: 0; color: var(--fg-1); font: var(--fw-semibold) var(--fs-ui)/23px var(--font-ui); white-space: nowrap; }
+  .watch-tr-head__count { font: var(--type-meta); color: var(--fg-3); white-space: nowrap; }
+  .inspector--video .watch-search {
+    flex: 0 1 152px;
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 96px;
+    height: 30px;
+    margin-left: auto;
+    padding: 0 var(--space-2) 0 var(--space-4);
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: var(--bg-sunken);
+    box-shadow: inset 0 0 0 1px var(--border-hair);
+    color: var(--fg-icon);
+    transition: flex-basis var(--dur-fast) var(--ease-out);
+  }
+  .inspector--video .watch-search:focus-within { flex-basis: 208px; border: 0; box-shadow: inset 0 0 0 1px var(--border-strong), var(--focus-shadow); }
+  .inspector--video .watch-search input { flex: 1; min-width: 0; height: 100%; padding: 0; border: 0; background: none; color: var(--fg-1); font: var(--fw-book) var(--fs-ui)/23px var(--font-ui); outline: none; box-shadow: none; }
+  .inspector--video .watch-search input::placeholder { color: var(--fg-3); }
+  .watch-search__count { flex: none; font: var(--type-meta); color: var(--fg-3); }
+  .watch-follow { display: inline-flex; align-items: center; gap: var(--space-4); flex: none; font: var(--type-meta); color: var(--fg-2); white-space: nowrap; }
+  .watch-follow__label { cursor: pointer; user-select: none; }
+  .watch-tr-head:not(:has(.watch-search)) .watch-follow { margin-left: auto; }
+
+  /* 字幕与转写工具：摘要按钮坐在头部右端，展开的内容在头部下方占位（不盖住任何句子） */
+  .inspector--video .inspector-transcript-tools { margin: 0; padding: 0; border: 0; }
+  .inspector--video .inspector-transcript-tools[open] > summary > svg { transform: none; }
+  .inspector--video .inspector-transcript-tools > summary { position: absolute; top: 10px; right: var(--space-5); list-style: none; }
+  .inspector--video .inspector-transcript-tools > summary::-webkit-details-marker { display: none; }
+  .inspector--video .inspector-transcript-tools[open] > summary { background: var(--bg-pressed); color: var(--fg-1); }
+  .watch-tools { padding: var(--space-5) var(--space-7); background: var(--bg-sunken); box-shadow: inset 0 -1px 0 var(--border-hair); }
+  .watch-tools > p { margin: 0; font: var(--type-meta); color: var(--fg-2); }
+  .watch-tools__actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-4); }
+  .watch-tools .watch-tools__hint { margin-top: var(--space-4); color: var(--fg-3); }
+
+  /* 列表区是尺寸容器：句末留出半屏空白，最后几句也能停在正中（PV-B1“当前句居中”） */
+  .watch-tr-body { position: relative; flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; container: watch-list / size; }
+  .inspector--video .watch-transcript {
+    flex: 1 1 auto;
+    min-height: 0;
+    margin: 0;
+    padding: var(--space-3) 0 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+    scroll-padding-block: var(--space-11);
+  }
+  .inspector--video .watch-transcript::after { content: ''; display: block; height: max(var(--space-10), calc(50cqh - 26px)); }
+  .watch-chunk { display: block; }
+  .watch-chunk.is-open { display: contents; }
+  .watch-transcript__empty { margin: 0; padding: var(--space-8) var(--space-7); font: var(--fw-book) var(--fs-ui)/23px var(--font-ui); color: var(--fg-2); }
+  .watch-transcript__end { display: flex; align-items: center; gap: var(--space-4); margin: var(--space-6) var(--space-7) 0 42px; color: var(--fg-3); font: var(--type-meta); user-select: none; }
+  .watch-transcript__end::before { content: ''; width: 24px; border-top: 1px solid var(--border-hair); }
+
+  /* 行：勾选圈 20 · 时间码 44 · 正文 · 已摘录 / 校对；左缘 3px 竖轨（与时间轴同一条轨，所有状态画在同一个 x 上） */
+  .inspector--video .inspector-transcript-line {
+    position: relative;
+    display: grid;
+    grid-template-columns: 20px 46px minmax(0, 1fr) auto;
+    align-items: start;
+    column-gap: var(--space-4);
+    padding: 7px var(--space-5) 7px 14px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .inspector--video .inspector-transcript-line::before {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 3px;
+    bottom: 3px;
+    width: 2px;
+    border-radius: 1px;
+    background: transparent;
+  }
+  .inspector--video .inspector-transcript-line:hover { background: var(--bg-hover); }
+  .inspector--video .inspector-transcript-line.is-used::before { top: 0; bottom: 0; }
+  .inspector--video .inspector-transcript-line.is-used-start::before { top: 3px; }
+  /* 区间内相邻两行的竖轨接成一条：只在区间首尾留圆角（INSP-33） */
+  .inspector--video .inspector-transcript-line.is-used:has(+ .inspector-transcript-line.is-used:not(.is-used-start))::before { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  .inspector--video .inspector-transcript-line.is-used:not(.is-used-start)::before { border-top-left-radius: 0; border-top-right-radius: 0; }
+  .inspector--video .inspector-transcript-line.is-selected { background: var(--bg-hover); }
+  .inspector--video .inspector-transcript-line.is-selected::before { background: var(--fg-2); }
+  .inspector--video .inspector-transcript-line.is-current { background: var(--paper-manuscript); }
+  .inspector--video .inspector-transcript-line.is-current::before { background: var(--fg-1); }
+  .inspector--video .inspector-transcript-line.is-editing { background: var(--bg-selected); }
+  .inspector--video .inspector-transcript-line:has(.watch-line__text:focus-visible) { outline: 2px solid var(--focus-ring); outline-offset: -4px; box-shadow: inset 0 0 0 2px var(--paper-plain); }
+
+  .inspector--video .inspector-line-check {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 26px;
+    padding: 0;
+    border: 0;
+    background: none;
+    opacity: 0;
+    cursor: pointer;
+    transition: opacity var(--dur-fast) var(--ease-out);
+  }
+  .inspector--video .inspector-line-check::before { content: ''; position: absolute; inset: -1px -2px; }
+  .inspector--video .inspector-line-check > span {
+    display: grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    box-shadow: inset 0 0 0 1.5px var(--fg-icon);
+    color: var(--paper-plain);
+  }
+  .inspector--video .inspector-transcript-line:is(:hover, :focus-within) .inspector-line-check,
+  .inspector--video .watch-transcript.is-selecting .inspector-line-check { opacity: 1; }
+  .inspector--video .inspector-transcript-line.is-selected .inspector-line-check > span { background: var(--fg-1); box-shadow: none; }
+  .inspector--video .inspector-line-check:hover > span { box-shadow: inset 0 0 0 1.5px var(--fg-1); }
+  .inspector--video .inspector-transcript-line.is-selected .inspector-line-check:hover > span { box-shadow: none; }
+  .inspector--video .inspector-line-check:focus-visible { outline: none; box-shadow: none; }
+  .inspector--video .inspector-line-check:focus-visible > span { box-shadow: inset 0 0 0 1.5px var(--fg-icon), var(--focus-shadow); }
+
+  .watch-line__time {
+    display: block;
+    height: 26px;
+    padding: 0;
+    border: 0;
+    border-radius: 4px;
+    background: none;
+    color: var(--fg-3);
+    font: 500 var(--fs-xs)/26px var(--font-num);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: var(--ls-num);
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .watch-line__time:hover:enabled { color: var(--fg-1); text-decoration: underline; text-underline-offset: 3px; }
+  .watch-line__time:disabled { color: var(--fg-3); cursor: default; }
+  .watch-line__time:focus-visible { outline: none; box-shadow: var(--focus-shadow); }
+  .inspector-transcript-line.is-used .watch-line__time { color: var(--fg-2); }
+  .inspector-transcript-line.is-current .watch-line__time { color: var(--fg-1); }
+
+  .watch-line__text {
+    display: block;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 3px;
+    background: none;
+    color: var(--fg-transcript);
+    font: var(--fw-text) 16px/28px var(--font-ui);
+    letter-spacing: var(--ls-cjk);
+    text-align: left;
+    /* 逐字稿折行（QA round 3 P5）：keep-all 只在标点、空格和行内 <wbr> 处断行。<wbr> 由 transcript-wrap.ts 按列宽估算后插入——
+       按短语断不多占一行、也不留不到半行的首行时，只在短语之间断（“坐下就吃，/ 不多说话。”）；否则在词与词之间断，
+       行写满再换（不再出现“脑海中的转场、”这样的短首行，也不在“教程文 / 档”词中断）。anywhere 只作兜底，pretty 避免末行孤字。
+       <wbr> 不含文字，DOM 文字仍与原句逐字一致（测试与脚本按原句查找） */
+    word-break: keep-all;
+    line-break: strict;
+    text-wrap: pretty;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+    user-select: text;
+    cursor: pointer;
+  }
+  .watch-line__text:focus-visible { outline: none; box-shadow: none; }
+  .inspector-transcript-line.is-current .watch-line__text { color: var(--fg-1); font-weight: var(--fw-semibold); }
+  .inspector-transcript-line.is-used .watch-line__text > .watch-line__original {
+    background: linear-gradient(to bottom, transparent var(--hl-from), var(--hl) var(--hl-from), var(--hl) var(--hl-to), transparent var(--hl-to));
+    box-decoration-break: clone;
+    padding-inline: 1px;
+    color: var(--fg-1);
+  }
+  .watch-hit { padding: 0 1px; border-radius: 2px; background: var(--text-selection); color: inherit; }
+
+  .watch-line__aside { display: flex; align-items: center; gap: var(--space-2); height: 26px; }
+  .watch-line__flag { font: var(--type-meta); color: var(--fg-2); white-space: nowrap; }
+  .inspector--video .inspector-line-edit {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 24px;
+    height: 24px;
+    margin: 0 -4px 0 0;
+    padding: 0;
+    border: 0;
+    border-radius: 5px;
+    background: none;
+    color: var(--fg-icon);
+    opacity: 0;
+    cursor: pointer;
+    transition: opacity var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+  }
+  /* 只读窗口、转写进行中：校对按钮禁用，仍只在悬停这一句时出现（`.inspector--video button:disabled` 的 opacity 1 不该让 23 支笔一起亮着） */
+  .inspector--video .inspector-line-edit:disabled:not(.is-corrected) { opacity: 0; }
+  .inspector--video .inspector-line-edit.is-corrected { opacity: 1; color: var(--fg-3); }
+  .inspector--video .inspector-transcript-line:is(:hover, :focus-within) .inspector-line-edit { opacity: 1; }
+  .inspector--video .inspector-line-edit:hover:enabled { background: var(--bg-hover); color: var(--fg-1); }
+  .inspector--video .inspector-line-edit:disabled { color: var(--fg-disabled); cursor: default; }
+  .inspector--video .inspector-line-edit:focus-visible { opacity: 1; outline: none; box-shadow: var(--focus-shadow); }
+
+  /* 选区下方嵌一行操作（白色浮起，左缩进 42，不遮挡任何句子） */
+  .watch-selection {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: var(--space-1) var(--space-5) var(--space-4) 42px;
+    padding: var(--space-2) var(--space-2) var(--space-2) var(--space-5);
+    border-radius: 8px;
+    background: var(--bg-panel);
+    box-shadow: var(--shadow-tool);
+    animation: watch-rise var(--dur-fast) var(--ease-out) backwards;
+    /* 选区一直延伸到列表下方时，操作行停在列表底边上，始终够得着 */
+    position: sticky;
+    bottom: var(--space-3);
+    z-index: 1;
+    container: watch-selection / inline-size;
+  }
+  /* 时间范围从不截断（FV-M8）：放不下时“已选 N 句”和范围上下两行；按钮都不收缩 */
+  .watch-selection__what { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: var(--space-3); min-width: 0; margin-right: auto; color: var(--fg-2); font: var(--type-meta); }
+  .watch-selection__count, .watch-selection__range { white-space: nowrap; }
+  .watch-selection__what b { color: var(--fg-1); font-weight: var(--fw-semibold); }
+  .watch-selection__range { color: var(--fg-2); }
+  .watch-selection > :is(button, .btn) { flex: none; }
+  .watch-selection > .btn { padding-inline: var(--space-4); }
+  .watch-selection__excerpt kbd { margin-left: var(--space-1); }
+  /* “补一个镜头”往返（§6.29）：“摘录到画布”只留图标，让“另起一行写进原话 / 配给这一行”说全 */
+  .watch-selection.is-trip > .watch-selection__excerpt { width: 28px; padding: 0; justify-content: center; }
+  .watch-selection.is-trip .watch-selection__excerpt :is(.watch-selection__excerpt-label, kbd) { display: none; }
+  /* 窄列：“摘录并写理解”“另起一行写进原话”只留图标（名称与提示保留），更窄时收起 E 提示 */
+  @container watch-selection (max-width: 380px) {
+    .watch-selection__label { display: none; }
+    .watch-selection__annotate, .watch-selection > .watch-selection__newline { width: 28px; padding: 0; justify-content: center; }
+  }
+  @container watch-selection (max-width: 290px) {
+    .watch-selection__excerpt kbd { display: none; }
+  }
+  .watch-selection-host { position: sticky; top: 0; z-index: 1; padding-top: var(--space-2); background: var(--paper-plain); }
+
+  .watch-return {
+    position: absolute;
+    left: 50%;
+    bottom: var(--space-6);
+    z-index: 2;
+    height: 32px;
+    padding: 0 var(--space-6);
+    border: 0;
+    border-radius: var(--radius-tool);
+    background: var(--bg-panel);
+    box-shadow: var(--shadow-tool);
+    color: var(--fg-1);
+    font: var(--fw-medium) var(--fs-ui)/23px var(--font-ui);
+    white-space: nowrap;
+    cursor: pointer;
+    transform: translateX(-50%);
+    animation: watch-rise-centered var(--dur-base) var(--ease-out) backwards;
+  }
+  .watch-return:hover { background: var(--bg-panel); box-shadow: var(--shadow-tool), inset 0 0 0 100px var(--bg-hover); }
+  .watch-return:focus-visible { outline: none; box-shadow: var(--shadow-tool), var(--focus-shadow); }
+  /* 校对时对话框就在这一句下方，“回到当前句”先让位 */
+  .watch-tr-body:has(.inspector-transcript-line.is-editing) .watch-return { visibility: hidden; }
+
+  /* 没有逐字稿：主动作就在这里（PV-M3） */
+  .watch-tr-empty {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-4);
+    min-height: 0;
+    padding: var(--space-9) var(--space-9) var(--space-12);
+    color: var(--fg-icon);
+    text-align: center;
+  }
+  .watch-tr-empty h4 { margin: var(--space-2) 0 0; color: var(--fg-1); font: var(--fw-semibold) var(--fs-md)/var(--lh-md) var(--font-ui); }
+  .watch-tr-empty > p { max-width: 26em; margin: 0; color: var(--fg-2); font: var(--fw-book) var(--fs-ui)/23px var(--font-ui); text-wrap: pretty; }
+  /* 主动作在前：没有本机转写时“导入字幕”是次级实底并排第一；转写按钮的原因写在按钮行下方（不是只挂在一个按钮下） */
+  .watch-tr-empty__actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-4); max-width: 26em; margin-top: var(--space-4); }
+  .watch-tr-empty .field-card__transcribe { display: contents; }
+  .watch-tr-empty .field-card__transcribe > button { order: 2; }
+  .watch-tr-empty__actions.is-native .field-card__transcribe > button { order: 0; }
+  .watch-tr-empty__subtitles { order: 1; }
+  .watch-tr-empty .field-card__transcribe > p { order: 3; flex-basis: 100%; margin: 0; color: var(--fg-3); font: var(--type-meta); text-wrap: pretty; }
+  /* 本机转写进行中：进度（“已转写到 0:12 / 2:41”）就写在这一栏，左栏不再重复（QA polish 1） */
+  .watch-tr-empty.is-processing .field-card__transcribe > p { color: var(--fg-2); }
+
+  /* 已有逐字稿时重新转写：头部下方一行进度，旧句子照常可读 */
+  .watch-tr-progress {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-height: 36px;
+    padding: var(--space-2) var(--space-6) var(--space-2) var(--space-7);
+    box-shadow: inset 0 -1px 0 var(--border-hair);
+    color: var(--fg-icon);
+    font: var(--type-meta);
+  }
+  .watch-tr-progress strong { color: var(--fg-1); font: var(--fw-medium) var(--fs-ui)/23px var(--font-ui); white-space: nowrap; }
+  .watch-tr-progress [role="status"] { min-width: 0; margin-left: auto; overflow: hidden; color: var(--fg-2); text-overflow: ellipsis; white-space: nowrap; }
+
+  /* 页脚 40：怎么选 · 全选 / 清除 · 已校对 12 / 42 */
+  .inspector--video .inspector-side > .inspector-excerpt-footer {
+    justify-content: flex-start;
+    gap: var(--space-3);
+    height: 40px;
+    min-height: 40px;
+    padding: 0 var(--space-6) 0 var(--space-7);
+  }
+  .watch-foot__hint { min-width: 0; margin: 0; color: var(--fg-3); font: var(--type-meta); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .watch-foot__hint b { color: var(--fg-1); font-weight: var(--fw-semibold); }
+  .watch-foot__select.btn { height: 26px; padding: 0 var(--space-3); color: var(--fg-2); }
+  /* “补一个镜头”往返中：把正在播放的这一句配给这一行，或另起一行写进原话（§6.29） */
+  .watch-foot__write.btn, .watch-foot__newline.btn { flex: none; height: 26px; padding: 0 var(--space-3); }
+  .watch-foot__newline.btn { margin-left: auto; }
+  .watch-foot__progress { display: inline-flex; align-items: center; gap: var(--space-3); flex: none; margin-left: auto; color: var(--fg-3); font: var(--type-meta); white-space: nowrap; }
+  .watch-foot__progress > .tabular { color: var(--fg-2); }
+  .watch-meter { position: relative; width: 56px; height: 4px; margin-left: var(--space-2); border-radius: 2px; background: var(--bg-pressed); overflow: hidden; }
+  .watch-meter > i { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 2px; background: var(--fg-2); }
+
+  /* ---------- 头部：复制全文 · 导出逐字稿（插槽 header-actions） ---------- */
+  .watch-output { display: flex; align-items: center; gap: var(--space-2); }
+  .inspector--video .inspector-transcript-export { position: relative; margin: 0; }
+  .inspector--video .inspector-transcript-export > summary { list-style: none; cursor: pointer; }
+  .inspector--video .inspector-transcript-export > summary::-webkit-details-marker { display: none; }
+  .inspector--video .inspector-transcript-export[open] > summary { box-shadow: inset 0 0 0 1px var(--border-strong), inset 0 0 0 100px var(--bg-pressed); }
+  .inspector--video .inspector-transcript-export-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    z-index: var(--z-popover);
+    width: 272px;
+    padding: var(--space-3);
+    border: 0;
+    border-radius: var(--radius-tool);
+    background: var(--bg-panel);
+    box-shadow: var(--shadow-tool);
+    animation: watch-rise var(--dur-base) var(--ease-out) backwards;
+  }
+  .inspector--video .inspector-transcript-export-menu > p { margin: 0; padding: var(--space-3) var(--space-4) var(--space-4); color: var(--fg-3); font: var(--type-meta); }
+  .watch-menu__group { display: flex; flex-direction: column; }
+  .watch-menu__group[hidden] { display: none; }
+  .watch-menu__hint { margin: 0; padding: var(--space-3) var(--space-4); color: var(--fg-2); font: var(--type-meta); }
+  .watch-menu__group > button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    height: 32px;
+    padding: 0 var(--space-4);
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: transparent;
+    color: var(--fg-1);
+    font: var(--fw-book) var(--fs-ui)/23px var(--font-ui);
+    text-align: left;
+    cursor: pointer;
+  }
+  .watch-menu__group > button:hover:enabled { background: var(--bg-hover); }
+  .watch-menu__group > button:focus-visible { outline: none; box-shadow: var(--focus-shadow); }
+  .watch-menu__group > button:disabled { color: var(--fg-disabled); cursor: default; }
+  .watch-menu__group > button > span { color: var(--fg-3); font: var(--type-meta); }
+  .inspector--video .inspector-transcript-export-menu > hr { height: 1px; margin: var(--space-2) var(--space-3); border: 0; background: var(--border-hair); }
+  .inspector--video .inspector-transcript-export-menu > small { display: block; padding: var(--space-4) var(--space-4) var(--space-2); color: var(--fg-3); font: var(--type-meta); }
+
+  /* ---------- 校对：仍是原生模态（保护链不变），但就地打开在这句下方，背景只轻轻压暗（PV-m2） ---------- */
+  dialog.inspector-dialog.watch-correct-dialog { width: min(480px, calc(100vw - 32px)); padding: var(--space-1) var(--space-7) var(--space-6); }
+  dialog.inspector-dialog.watch-correct-dialog::backdrop { background: color-mix(in srgb, var(--bg-scrim) 34%, transparent); }
+  dialog.inspector-dialog.watch-correct-dialog > header { min-height: 48px; margin-bottom: 0; }
+  dialog.inspector-dialog.watch-correct-dialog > header h2 { font: var(--fw-semibold) 18px/26px var(--font-read); }
+  @supports (anchor-name: --watch-correction) {
+    .inspector--video .inspector-transcript-line.is-editing { anchor-name: --watch-correction; }
+    dialog.inspector-dialog.watch-correct-dialog {
+      position-anchor: --watch-correction;
+      inset: auto;
+      top: anchor(bottom);
+      left: anchor(left);
+      width: max(400px, anchor-size(width));
+      max-height: min(460px, calc(100dvh - 32px));
+      margin: 6px 0 0;
+      position-try-fallbacks: flip-block;
+    }
+    /* 锚点那一句不在窗口里时（INSP-01），退回居中的对话框，而不是跟着锚点跑出屏幕 */
+    dialog.inspector-dialog.watch-correct-dialog.is-floating { inset: 0; width: min(480px, calc(100vw - 32px)); height: fit-content; margin: auto; }
+  }
+  .watch-correct__lead { margin: 0 0 var(--space-5); color: var(--fg-2); font: var(--type-meta); }
+  .watch-correct__time { margin-right: var(--space-5); color: var(--fg-1); font-weight: var(--fw-semibold); }
+  .watch-correct__field { display: grid; gap: var(--space-3); color: var(--fg-2); font: var(--fw-medium) var(--fs-ui)/23px var(--font-ui); }
+  .watch-correct__field textarea {
+    display: block;
+    width: 100%;
+    min-height: 84px;
+    max-height: 30vh;
+    field-sizing: content;
+    padding: var(--space-4) var(--space-5);
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: var(--bg-sunken);
+    box-shadow: inset 0 0 0 1px var(--border-hair);
+    color: var(--fg-1);
+    font: var(--fw-text) var(--fs-ui)/23px var(--font-ui);
+    resize: vertical;
+    outline: none;
+  }
+  .watch-correct__field textarea:focus-visible { box-shadow: inset 0 0 0 1px var(--border-strong), var(--focus-shadow); }
+  .watch-correct__original { margin-top: var(--space-5); padding: var(--space-5); border-radius: var(--radius-ctl); background: var(--bg-sunken); }
+  .watch-correct__original h3 { margin: 0 0 var(--space-3); color: var(--fg-2); font: var(--fw-medium) var(--fs-ui)/23px var(--font-ui); }
+  .watch-correct__original blockquote { max-height: 140px; margin: 0 0 var(--space-4); overflow: auto; color: var(--fg-1); font: var(--fw-text) var(--fs-ui)/23px var(--font-ui); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .watch-correct__original small { display: block; margin-top: var(--space-3); color: var(--fg-3); font: var(--type-meta); }
+  .watch-correct__note { margin: var(--space-5) 0 0; color: var(--fg-3); font: var(--type-meta); }
+  .watch-correct__error { margin: var(--space-4) 0 0; color: var(--status-danger-fg); font: var(--type-meta); }
+  dialog.watch-correct-dialog > footer, dialog.watch-replace-dialog > footer { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-6); }
+  .watch-correct__keys { display: inline-flex; align-items: center; gap: var(--space-2); margin-right: auto; color: var(--fg-3); font: var(--type-meta); }
+  dialog.watch-replace-dialog { width: min(480px, calc(100vw - 32px)); }
+  dialog.watch-replace-dialog .inspector-dialog-description { margin: 0; color: var(--fg-1); font: var(--fw-text) var(--fs-ui)/23px var(--font-ui); }
+
+  @keyframes watch-rise { from { opacity: 0; transform: translateY(4px); } }
+  @keyframes watch-rise-centered { from { opacity: 0; transform: translate(-50%, 4px); } }
+}

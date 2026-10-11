@@ -1,0 +1,310 @@
+/* W1-E: components/dialog.css; original cascade position retained by styles/index.css. */
+@layer components {
+  .modal-imports { width: min(640px, 100%); }
+
+  .modal-header {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    min-height: 56px;
+    padding: 14px 64px 10px 24px;
+  }
+  .modal-title, .modal .modal-title {
+    margin: 0;
+    font: var(--fw-semibold) var(--fs-h3)/26px var(--font-read);
+    letter-spacing: 0;
+    color: var(--fg-1);
+  }
+  .modal-subtitle, .modal .modal-subtitle {
+    margin: 0;
+    font: var(--type-meta);
+    color: var(--fg-3);
+  }
+  .modal-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+  }
+  .modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: var(--space-3) var(--space-8) var(--space-8);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+  /* 对话框里的说明文字只在词间换行（§3.4；断点由 Words 插入，如导入对话框的“图片和视频”不再断成“视 / 频”） */
+  .modal .cjk-wrap { word-break: keep-all; overflow-wrap: anywhere; line-break: strict; }
+  .modal-footer, .modal .modal-footer {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-4);
+    min-height: 64px;
+    margin: 0;
+    padding: var(--space-4) var(--space-8);
+    flex-wrap: wrap;
+    box-shadow: inset 0 1px 0 var(--border-hair);
+  }
+  .modal-footer-hint, .modal .modal-footer > .modal-footer-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-right: auto;
+    min-width: 0;
+    font: var(--type-meta);
+    color: var(--fg-3);
+  }
+  .modal-footer-hint svg { flex: none; color: var(--fg-icon); }
+
+  /* 原生 <dialog>（InspectorDialog：搜索、目录恢复、画布管理等）共用同一张纸 */
+  dialog.inspector-dialog {
+    max-width: calc(100vw - 32px);
+    max-height: calc(100dvh - var(--space-8) * 2);
+    margin: auto;
+    padding: var(--space-3) var(--space-8) var(--space-8);
+    border: 0;
+    border-radius: var(--radius-sheet);
+    background: var(--bg-panel);
+    color: var(--fg-1);
+    box-shadow: var(--shadow-sheet);
+    font: var(--fw-book) var(--fs-ui)/22px var(--font-ui);
+    letter-spacing: var(--ls-cjk);
+    overflow: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+  dialog.inspector-dialog[open] { animation: none; }
+  dialog.inspector-dialog::backdrop { background: var(--bg-scrim); backdrop-filter: none; }
+  dialog.inspector-dialog > header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-5);
+    min-height: 56px;
+    margin: 0 calc(-1 * var(--space-5)) 0 0;
+    padding: 0;
+  }
+  dialog.inspector-dialog > header h2 {
+    margin: 0;
+    font: var(--fw-semibold) var(--fs-h3)/26px var(--font-read);
+    letter-spacing: 0;
+    color: var(--fg-1);
+  }
+  dialog.inspector-dialog > header .inspector-icon-button {
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-ctl);
+    color: var(--fg-2);
+  }
+  dialog.inspector-dialog > header .inspector-icon-button:hover { background: var(--bg-hover); color: var(--fg-1); }
+  dialog.inspector-dialog button:disabled { opacity: 1; }
+
+  /* ---- 按钮的零权重兜底（§6.1）：button.css 落地后以它为准，这里只保证对话框里不会出现无样式按钮 ---- */
+  :where(.modal, dialog.inspector-dialog) :where(.btn) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 32px;
+    min-height: 0;
+    padding: 0 12px;
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: transparent;
+    color: var(--fg-1);
+    font: var(--fw-medium) var(--fs-ui)/22px var(--font-ui);
+    white-space: nowrap;
+    box-shadow: none;
+    cursor: pointer;
+    opacity: 1;
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  :where(.modal, dialog.inspector-dialog) :where(.btn) svg { flex: none; color: var(--fg-icon); }
+  :where(.modal, dialog.inspector-dialog) :where(.btn:hover:enabled) { background: var(--bg-hover); }
+  :where(.modal, dialog.inspector-dialog) :where(.btn:active:enabled) { background: var(--bg-pressed); transition-duration: 0ms; }
+  :where(.modal, dialog.inspector-dialog) :where(.btn--line) {
+    background: var(--paper-manuscript);
+    box-shadow: var(--shadow-chip);
+  }
+  :where(.modal, dialog.inspector-dialog) :where(.btn--line:hover:enabled) { background: var(--paper-manuscript); box-shadow: inset 0 0 0 1px var(--fg-icon); }
+  :where(.modal, dialog.inspector-dialog) :where(.btn--soft) {
+    background: var(--action-soft-bg);
+    color: var(--action-soft-fg);
+    font-weight: var(--fw-semibold);
+  }
+  :where(.modal, dialog.inspector-dialog) :where(.btn--soft) svg { color: var(--fg-1); }
+  :where(.modal, dialog.inspector-dialog) :where(.btn--soft:hover:enabled) { background: var(--action-soft-bg-hover); }
+  :where(.modal, dialog.inspector-dialog) :where(.btn--primary) {
+    background: var(--action-bg);
+    color: var(--action-fg);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--action-fg) 8%, transparent);
+  }
+  :where(.modal, dialog.inspector-dialog) :where(.btn--primary) svg { color: inherit; }
+  :where(.modal, dialog.inspector-dialog) :where(.btn--primary:hover:enabled) { background: var(--action-bg-hover); }
+  :where(.modal, dialog.inspector-dialog) :where(.btn--primary kbd) { color: var(--action-fg); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--action-fg) 24%, transparent); }
+  :where(.modal, dialog.inspector-dialog) :where(.btn--sm) { height: 28px; padding: 0 10px; font-size: var(--fs-xs); }
+  :where(.modal, dialog.inspector-dialog) :where(.btn:disabled) {
+    background: transparent;
+    color: var(--fg-disabled);
+    box-shadow: inset 0 0 0 1px var(--border-hair);
+    cursor: not-allowed;
+  }
+  :where(.modal, dialog.inspector-dialog) :where(.btn:disabled) svg { color: var(--fg-disabled); }
+  :where(.modal, dialog.inspector-dialog) :where(.icon-btn) {
+    display: inline-grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: transparent;
+    color: var(--fg-2);
+    cursor: pointer;
+    opacity: 1;
+  }
+  :where(.modal, dialog.inspector-dialog) :where(.icon-btn:hover:enabled) { background: var(--bg-hover); color: var(--fg-1); }
+  :where(.modal, dialog.inspector-dialog) :where(.icon-btn:disabled) { color: var(--fg-disabled); cursor: not-allowed; }
+
+  /* kbd（§6.1）：透明底 + 发丝内框，永远不叠悬停底 */
+  :where(.modal, dialog.inspector-dialog) kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    border: 0;
+    border-radius: 4px;
+    background: var(--paper-plain);
+    box-shadow: inset 0 0 0 1px var(--border-hair);
+    color: var(--fg-2);
+    font: var(--type-kbd);
+    white-space: nowrap;
+  }
+
+  /* 表单字段：标签 12 --fg-2，输入高 32/40，凹面底 + 发丝框，焦点见 §3.10 */
+  .dialog-field { display: grid; gap: var(--space-3); margin: 0; }
+  .dialog-field > span, .dialog-label {
+    font: var(--fw-medium) var(--fs-xs)/var(--lh-xs) var(--font-ui);
+    color: var(--fg-2);
+  }
+  .dialog-input, .dialog-field input, .dialog-field textarea {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    height: 40px;
+    margin: 0;
+    padding: 0 12px;
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: var(--bg-sunken);
+    box-shadow: inset 0 0 0 1px var(--border-hair);
+    color: var(--fg-1);
+    font: var(--fw-regular) var(--fs-ui)/22px var(--font-ui);
+    outline: none;
+    transition: box-shadow var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+  }
+  .dialog-field textarea { height: auto; min-height: 104px; max-height: min(260px, 35dvh); padding: 10px 12px; resize: vertical; font-size: var(--fs-ui); line-height: 23px; }
+  .dialog-input:hover:enabled, .dialog-field :is(input, textarea):hover:enabled { box-shadow: inset 0 0 0 1px var(--border-strong); }
+  .dialog-input:focus-visible, .dialog-field :is(input, textarea):focus-visible { background: var(--paper-manuscript); box-shadow: 0 0 0 1px var(--border-strong), var(--focus-shadow); }
+  .dialog-field :is(input, textarea):disabled { color: var(--fg-disabled); }
+  .dialog-field :is(input, textarea)::placeholder { color: var(--fg-3); }
+  .dialog-hint { margin: 0; font: var(--type-meta); color: var(--fg-3); }
+  .dialog-error { margin: 0; font: var(--type-meta); color: var(--status-danger-fg); overflow-wrap: anywhere; }
+  .dialog-section-title {
+    margin: 0 0 var(--space-4);
+    font: var(--fw-medium) var(--fs-xs)/var(--lh-xs) var(--font-ui);
+    color: var(--fg-3);
+  }
+
+  /* 分段选择（§6.20.1 版式、底色、格式）：凹槽里一枚抬起的纸片表示当前项 */
+  :where(.modal, dialog.inspector-dialog) .seg-ctl {
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    border-radius: 8px;
+    background: var(--bg-sunken);
+    box-shadow: inset 0 0 0 1px var(--border-hair);
+  }
+  :where(.modal, dialog.inspector-dialog) .seg-ctl > button {
+    flex: 1 1 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 0;
+    height: 28px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: transparent;
+    color: var(--fg-2);
+    font: var(--fw-medium) var(--fs-ui)/22px var(--font-ui);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  :where(.modal, dialog.inspector-dialog) .seg-ctl > button:hover:not([aria-checked="true"]) { color: var(--fg-1); background: var(--bg-hover); }
+  /* 选中项：加粗 + 图标灰的细边（对底槽 4:1 以上），扫一眼就知道选的是哪项（DLG-19，与 .seg__item 一致）。 */
+  :where(.modal, dialog.inspector-dialog) .seg-ctl > button[aria-checked="true"] {
+    background: var(--paper-manuscript);
+    color: var(--fg-1);
+    font-weight: var(--fw-semibold);
+    box-shadow: 0 0 0 1px var(--fg-icon), 0 1px 2px var(--shadow-c1);
+  }
+  :where(.modal, dialog.inspector-dialog) .seg-ctl > button:focus-visible { box-shadow: var(--focus-shadow); }
+  /* 文字按加粗后的宽度占位：选中项加粗时，分段里的其他项不跟着挪动。 */
+  :where(.modal, dialog.inspector-dialog) .seg-ctl__label { display: inline-grid; }
+  :where(.modal, dialog.inspector-dialog) .seg-ctl__label::after { content: attr(data-label); height: 0; overflow: hidden; visibility: hidden; font-weight: var(--fw-semibold); }
+
+  /* 勾选框：16 方框，勾上时墨色实底 */
+  :where(.modal, dialog.inspector-dialog) .dialog-check {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-4);
+    min-height: 28px;
+    font: var(--fw-book) var(--fs-ui)/22px var(--font-ui);
+    color: var(--fg-1);
+    cursor: pointer;
+  }
+  :where(.modal, dialog.inspector-dialog) .dialog-check input {
+    appearance: none;
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    border-radius: 4px;
+    background: transparent;
+    box-shadow: inset 0 0 0 1.5px var(--fg-icon);
+    cursor: pointer;
+  }
+  :where(.modal, dialog.inspector-dialog) .dialog-check input:checked { background: var(--fg-1); box-shadow: none; }
+  :where(.modal, dialog.inspector-dialog) .dialog-check input:checked::after {
+    content: '';
+    width: 8px;
+    height: 4px;
+    margin-top: -2px;
+    border-left: 2px solid var(--bg-panel);
+    border-bottom: 2px solid var(--bg-panel);
+    transform: rotate(-45deg);
+  }
+  :where(.modal, dialog.inspector-dialog) .dialog-check input:focus-visible { box-shadow: inset 0 0 0 1.5px var(--fg-icon), var(--focus-shadow); }
+
+  /* Scope dialog typography/material above shared controls; W2-E owns those controls. */
+  :is(.modal, dialog.inspector-dialog) .btn { font: var(--fw-medium) var(--fs-ui)/22px var(--font-ui); }
+  :is(.modal, dialog.inspector-dialog) .btn--line { background: var(--paper-manuscript); box-shadow: var(--shadow-chip); }
+  :is(.modal, dialog.inspector-dialog) .btn--line:hover:enabled { background: var(--paper-manuscript); box-shadow: inset 0 0 0 1px var(--fg-icon), var(--shadow-chip); }
+  :is(.modal, dialog.inspector-dialog) .btn--line:focus-visible { box-shadow: var(--shadow-chip), var(--focus-shadow); }
+  :is(.modal, dialog.inspector-dialog) .btn--primary { background: var(--action-bg); color: var(--action-fg); }
+  :is(.modal, dialog.inspector-dialog) .btn--primary:hover:enabled { background: var(--action-bg-hover); }
+  :is(.modal, dialog.inspector-dialog) .btn:disabled { color: var(--fg-disabled); background: var(--bg-sunken); box-shadow: inset 0 0 0 1px var(--border-hair); }
+  :is(.modal, dialog.inspector-dialog) kbd { background: var(--paper-plain); font: var(--fw-medium) var(--fs-xs)/18px var(--font-mono); }
+}

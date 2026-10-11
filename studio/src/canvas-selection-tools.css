@@ -1,0 +1,13 @@
+.canvas-shell .selection-tools.field-selection-tools {
+  align-items: center;
+  gap: 5px;
+}
+.canvas-shell .selection-tools.field-selection-tools.is-multiple { flex-wrap: wrap; justify-content: center; }
+.field-selection-tools button { font: inherit; }
+.field-selection-tools button:disabled { color: var(--fg-disabled); cursor: default; }
+.field-selection-tools button:focus-visible { outline-offset: 1px; }
+.field-card-dialog__label :is(input, select) { font: inherit; }
+.field-card-dialog__dimensions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.field-card-dialog__error { margin: 16px 0 0; color: var(--fg-1); font-size: var(--fs-ui); line-height: 1.7; }
+.field-card-dialog__actions { display: flex; justify-content: flex-end; }
+.field-card-dialog__actions > button { font: inherit; }

@@ -1,0 +1,219 @@
+/* 原图查看器（§6.19）：整窗看片暗场 --bg-viewer（不随主题），图像居中；底部中央缩放工具条（高 40、圆角 10），
+   下方缩略图条（56 高，当前图 1.5px 白框）；右侧可收起的信息栏 280。图片不加滤镜（K8）。 */
+@layer features {
+  dialog.inspector-dialog.viewer {
+    --viewer-info-w: 280px;
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: var(--bg-viewer);
+    color: var(--viewer-fg);
+    box-shadow: none;
+    overflow: hidden;
+    opacity: 1;
+    transition: opacity var(--dur-base) var(--ease-out);
+  }
+  @starting-style { dialog.inspector-dialog.viewer[open] { opacity: 0; } }
+  dialog.inspector-dialog.viewer[open] { display: block; }
+  dialog.inspector-dialog.viewer::backdrop { background: var(--bg-viewer); }
+  dialog.inspector-dialog.viewer > header {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 3;
+    min-height: 0;
+    margin: 0;
+  }
+  dialog.inspector-dialog.viewer > header h2 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  dialog.inspector-dialog.viewer > header .inspector-icon-button { width: 32px; height: 32px; border-radius: var(--radius-ctl); color: var(--viewer-fg-2); }
+  dialog.inspector-dialog.viewer > header .inspector-icon-button:hover { background: var(--viewer-rule); color: var(--viewer-fg); }
+  /* 唯一的“关闭原图”固定在看片区右上，与 ⓘ 同组（ⓘ 在左、× 在右），信息栏展开时也不挪进信息栏（DLG-10）。 */
+  dialog.inspector-dialog.viewer:has(.viewer__layout.has-info) > header { right: calc(var(--viewer-info-w) + var(--space-5)); }
+  /* 查看器不随主题，焦点色也不随主题：暗场上用看片区的前景色（DLG-18）。 */
+  dialog.inspector-dialog.viewer :focus-visible { box-shadow: 0 0 0 2px var(--bg-viewer), 0 0 0 4px var(--viewer-fg); }
+
+  .viewer__layout { display: grid; grid-template-columns: minmax(0, 1fr); width: 100%; height: 100%; }
+  .viewer__layout.has-info { grid-template-columns: minmax(0, 1fr) var(--viewer-info-w); }
+  .viewer__stage { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: 56px minmax(0, 1fr) 56px auto; min-width: 0; min-height: 0; }
+
+  /* 右侧留出“关闭原图”（32 + 两侧 12）的位置，ⓘ 紧挨在它左边。 */
+  .viewer__top { display: flex; align-items: center; gap: var(--space-5); min-width: 0; padding: 0 calc(32px + var(--space-5) * 2) 0 var(--space-8); }
+  .viewer__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: var(--fw-semibold) var(--fs-ui)/22px var(--font-ui); color: var(--viewer-fg); }
+  .viewer__where, .viewer__count { flex: none; font: var(--type-meta); color: var(--viewer-fg-2); }
+  .viewer__count { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .viewer__btn {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    width: 32px;
+    height: 32px;
+    margin-left: auto;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: transparent;
+    color: var(--viewer-fg-2);
+    cursor: pointer;
+  }
+  .viewer__btn:hover, .viewer__btn[aria-pressed="true"] { background: var(--viewer-rule); color: var(--viewer-fg); }
+
+  .viewer__frame { position: relative; min-width: 0; min-height: 0; padding: 0 var(--space-12); }
+  .viewer__viewport {
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 2px;
+    background: transparent;
+    cursor: zoom-in;
+    outline: none;
+  }
+  .viewer__viewport::-webkit-scrollbar { display: none; }
+  .viewer__viewport.can-pan { cursor: grab; }
+  .viewer__viewport.can-pan:active { cursor: grabbing; }
+  /* 查看区：键盘操作（1、0、←、→）不画框；只在用 Tab 进入时画一圈细内描边（DLG-18）。 */
+  dialog.inspector-dialog.viewer .viewer__viewport:focus-visible { box-shadow: none; }
+  dialog.inspector-dialog.viewer .viewer__viewport.is-tab-focus { box-shadow: inset 0 0 0 1px var(--viewer-fg); }
+  .viewer__canvas { display: grid; place-items: center; }
+  .viewer__canvas img { display: block; max-width: none; filter: none; box-shadow: 0 0 0 1px var(--viewer-rule); user-select: none; }
+  .viewer__error { display: grid; place-items: center; height: 100%; margin: 0; font: var(--fw-book) var(--fs-ui)/22px var(--font-ui); color: var(--viewer-fg-2); text-align: center; }
+  .viewer__nav {
+    position: absolute;
+    top: 50%;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    margin-top: -20px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--viewer-bar);
+    color: var(--viewer-fg);
+    cursor: pointer;
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .viewer__nav:hover { background: var(--viewer-rule); }
+  .viewer__nav--prev { left: var(--space-6); }
+  .viewer__nav--next { right: var(--space-6); }
+
+  .viewer__tools {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    justify-self: center;
+    align-self: center;
+    height: 40px;
+    padding: 0 6px;
+    border-radius: var(--radius-tool);
+    background: var(--viewer-bar);
+  }
+  .viewer__tool {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 30px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: transparent;
+    color: var(--viewer-fg);
+    font: var(--fw-medium) var(--fs-ui)/22px var(--font-ui);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .viewer__tool--icon { width: 30px; padding: 0; justify-content: center; }
+  .viewer__tool--ratio { font: var(--fw-medium) var(--fs-xs)/18px var(--font-mono); font-variant-numeric: tabular-nums; }
+  .viewer__tool:hover:enabled:not([aria-disabled="true"]) { background: var(--viewer-rule); }
+  .viewer__tool[aria-pressed="true"] { box-shadow: inset 0 0 0 1px var(--viewer-rule); }
+  .viewer__tool:disabled, .viewer__tool[aria-disabled="true"] { color: var(--viewer-fg-2); cursor: default; }
+  .viewer__rule { width: 1px; height: 18px; margin: 0 4px; background: var(--viewer-rule); }
+  .viewer__zoom { min-width: 48px; font: var(--fw-medium) var(--fs-xs)/18px var(--font-mono); font-variant-numeric: tabular-nums; color: var(--viewer-fg); text-align: center; }
+  .viewer__px { padding: 0 8px; font: var(--fw-medium) var(--fs-xs)/18px var(--font-mono); font-variant-numeric: tabular-nums; color: var(--viewer-fg-2); white-space: nowrap; }
+
+  .viewer__strip {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    height: 80px;
+    padding: 0 var(--space-8) var(--space-6);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .viewer__strip > :first-child { margin-left: auto; }
+  .viewer__strip > :last-child { margin-right: auto; }
+  .viewer__thumb {
+    flex: none;
+    padding: 0;
+    border: 0;
+    border-radius: 2px;
+    background: transparent;
+    opacity: .55;
+    cursor: pointer;
+    transition: opacity var(--dur-fast) var(--ease-out);
+  }
+  /* 窄竖图不小于 32 宽（命中区 ≥ 24，DLG-11）：不足时整图 contain，左右用工具条底色补齐。 */
+  .viewer__thumb img { display: block; height: 48px; width: auto; min-width: 32px; max-width: 120px; object-fit: contain; border-radius: 2px; background: var(--viewer-bar); filter: none; }
+  /* 放不下时，被截的一侧渐隐 24px，提示还能滚动。 */
+  .viewer__strip.fade-start { mask-image: linear-gradient(to right, transparent, var(--bg-viewer) var(--space-8)); }
+  .viewer__strip.fade-end { mask-image: linear-gradient(to left, transparent, var(--bg-viewer) var(--space-8)); }
+  .viewer__strip.fade-start.fade-end { mask-image: linear-gradient(to right, transparent, var(--bg-viewer) var(--space-8), var(--bg-viewer) calc(100% - var(--space-8)), transparent); }
+  .viewer__thumb:hover { opacity: .85; }
+  .viewer__thumb[aria-current="true"] { opacity: 1; outline: 1.5px solid var(--viewer-fg); outline-offset: 2px; }
+  .viewer__help { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  .viewer__info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-7);
+    min-height: 0;
+    padding: 18px var(--space-7) var(--space-7);
+    overflow-y: auto;
+    background: var(--viewer-bar);
+    scrollbar-width: thin;
+    scrollbar-color: var(--viewer-rule) transparent;
+  }
+  .viewer__info-title { display: flex; align-items: center; height: 28px; margin: 0; font: var(--fw-medium) var(--fs-ui)/22px var(--font-ui); color: var(--viewer-fg); }
+  .viewer__field h4 { margin: 0 0 var(--space-3); font: var(--type-meta); color: var(--viewer-fg-2); }
+  .viewer__field p { margin: 0; font: var(--fw-book) var(--fs-ui)/22px var(--font-ui); color: var(--viewer-fg); }
+  .viewer__num, .viewer__field .viewer__num { font: var(--fw-medium) var(--fs-xs)/18px var(--font-mono); font-variant-numeric: tabular-nums; display: flex; flex-wrap: wrap; gap: 0 var(--space-5); }
+  .viewer__dim, .viewer__field .viewer__dim { color: var(--viewer-fg-2); }
+  .viewer__source, .viewer__field .viewer__source { word-break: break-all; font: var(--fw-regular) var(--fs-xs)/18px var(--font-mono); }
+  /* 主色：5 个 16px 色块 + 十六进制值，点按复制（§6.19） */
+  .viewer__swatches { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2) var(--space-5); }
+  .viewer__swatch {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    min-width: 0;
+    height: 28px;
+    padding: 0 var(--space-3) 0 var(--space-2);
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: transparent;
+    color: var(--viewer-fg-2);
+    font: var(--fw-medium) var(--fs-xs)/18px var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    cursor: copy;
+  }
+  .viewer__swatch i { flex: none; width: 16px; height: 16px; border-radius: 3px; box-shadow: inset 0 0 0 1px var(--viewer-rule); }
+  .viewer__swatch span { overflow: hidden; white-space: nowrap; }
+  .viewer__swatch:hover { background: var(--viewer-rule); color: var(--viewer-fg); }
+  .viewer__mine, .viewer__field .viewer__mine { font: var(--fw-regular) var(--fs-ui)/23px var(--font-note); color: var(--viewer-fg); }
+}

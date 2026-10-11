@@ -1,0 +1,56 @@
+/* §3.10 焦点环：2px 间隙 + 2px 墨圈。节点保留 K8 的 3px 外轮廓。 */
+@layer base {
+  :focus { outline: none; }
+  :is(button, a, summary, [role="button"], [role="menuitem"], [role="option"], [role="tab"], [tabindex]):focus-visible {
+    outline: none;
+    box-shadow: var(--focus-shadow);
+  }
+  :is(input, textarea, select, [contenteditable="true"]):focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 1px var(--border-strong), var(--focus-shadow);
+  }
+  .react-flow__node:focus-visible {
+    outline: var(--focus-node-width) solid var(--focus-ring);
+    outline-offset: var(--focus-node-offset);
+    box-shadow: none;
+  }
+  /* A focused full-size photo exposes its caption, including a tight tray's
+     temporary caption. Draw around that visible box without resizing the node. */
+  .react-flow__node-card:has(> .field-card--image[data-lod="full"]):focus-visible { outline: none; }
+  .react-flow__node-card:has(> .field-card--image[data-lod="full"]):focus-visible::after {
+    content: "";
+    position: absolute;
+    top: calc(-1 * var(--focus-node-offset));
+    left: calc(-1 * var(--focus-node-offset));
+    right: calc(-1 * var(--focus-node-offset));
+    bottom: calc(-1 * (var(--focus-node-offset) + var(--photo-caption-height, 24px)));
+    outline: var(--focus-node-width) solid var(--focus-ring);
+    pointer-events: none;
+  }
+  /* 画布容器本身不显示焦点框，焦点交给卡片（KB-M3） */
+  .react-flow__pane:focus-visible, .react-flow:focus-visible, [data-testid="canvas"]:focus-visible { outline: none; box-shadow: none; }
+  .react-flow__edge:focus-visible .react-flow__edge-path { stroke: var(--focus-ring); stroke-width: 2.5px; }
+}
+
+/* 局部双圈使用各自表面色，不把书桌色间隙带进菜单或纸片按钮。
+   自定义属性在声明处解析，所以同步重申 --focus-shadow，而非只改 --focus-gap。 */
+@layer base {
+  :is(.field-menu, .action-menu, .selection-tools, .workspace-search, .status-banner--desk, .field-card-dialog, .btn, .icon-btn, .input, .seg__item, .switch) {
+    --focus-gap: var(--bg-panel);
+    --focus-shadow: 0 0 0 var(--focus-offset) var(--focus-gap), 0 0 0 calc(var(--focus-offset) + var(--focus-width)) var(--focus-ring);
+  }
+}
+
+/* 系统高对比模式会去掉 box-shadow，轮廓为控件与纸边保底。 */
+@layer utilities {
+  @media (forced-colors: active) {
+    :is(button, a, summary, input, textarea, select, [role="button"], [role="menuitem"], [role="option"], [role="tab"], [tabindex], [contenteditable="true"]):focus-visible {
+      outline: 2px solid Highlight;
+      outline-offset: 2px;
+    }
+    .react-flow__node:focus-visible { outline-width: var(--focus-node-width); outline-offset: var(--focus-node-offset); }
+    .react-flow__node-card:has(> .field-card--image[data-lod="full"]):focus-visible { outline: none; }
+    .react-flow__node-card:has(> .field-card--image[data-lod="full"]):focus-visible::after { outline-color: Highlight; }
+    .field-card { outline: 1px solid CanvasText; }
+  }
+}

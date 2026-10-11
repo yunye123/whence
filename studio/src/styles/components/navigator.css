@@ -1,0 +1,42 @@
+/* 稿纸书桌 §6.5：rail 右段，独立小地图弹层登记安全区。 */
+@layer components {
+  .zoom-controls {
+    position: relative; inset: auto; transform: none; z-index: var(--z-hud);
+    display: flex; align-items: center; width: auto; height: 100%; margin: 0; padding: 0;
+    border: 0; border-radius: 0; background: transparent; box-shadow: none;
+    color: var(--fg-2); font: 400 var(--fs-ui)/1 var(--font-ui);
+  }
+  .navigator__row, .navigator__group { display: flex; align-items: center; gap: 2px; }
+  .navigator__row { height: 100%; padding: 0; }
+  .navigator__rule { flex: none; width: 1px; height: 20px; margin: 0 6px; background: var(--border-hair); }
+  .navigator__btn, .zoom-controls .zoom-value, .navigator__fold {
+    position: relative; flex: none; margin: 0; padding: 0; border: 0; border-radius: var(--radius-icon); background: transparent;
+  }
+  .navigator__btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 32px; height: 32px; color: var(--fg-2); }
+  .navigator__btn > svg { display: block; width: 17px; height: 17px; }
+  .navigator__btn:hover, .zoom-controls .zoom-value:hover, .navigator__fold:hover { background: var(--bg-hover); color: var(--fg-1); }
+  .navigator__btn[aria-pressed="true"] { color: var(--fg-1); }
+  .navigator__btn:active, .zoom-controls .zoom-value:active, .navigator__fold:active { background: var(--bg-pressed); }
+  .navigator__btn[aria-disabled="true"] { background: transparent; color: var(--fg-disabled); cursor: default; }
+  .zoom-controls .zoom-value { width: 50px; height: 32px; font: 500 12px/32px var(--font-mono); color: var(--fg-1); text-align: center; font-variant-numeric: tabular-nums; }
+  .navigator__snap { width: auto; padding: 0 8px; font: 400 var(--fs-ui)/1 var(--font-ui); }
+  .navigator__snap-dot { width: 6px; height: 6px; border-radius: 50%; box-shadow: inset 0 0 0 1px var(--fg-3); }
+  .navigator__snap[aria-pressed="true"] .navigator__snap-dot { background: var(--fg-1); box-shadow: none; }
+  .navigator__fold { display: none; align-items: center; gap: 4px; height: 32px; padding: 0 8px 0 10px; font: 500 12px/1 var(--font-mono); color: var(--fg-1); }
+  .navigator__fold-chevron { flex: none; color: var(--fg-icon); }
+  .navigator__fold[aria-expanded="true"] .navigator__fold-chevron { rotate: 180deg; }
+  .navigator__fold[aria-expanded="true"] { background: var(--bg-pressed); }
+  .navigator__map {
+    position: absolute; right: 0; bottom: calc(100% + 12px); box-sizing: border-box;
+    width: 220px; padding: 6px; border-radius: 8px; background: var(--bg-panel); box-shadow: var(--shadow-tool);
+  }
+  .navigator__map .react-flow__minimap { position: static; z-index: auto; display: block; height: var(--minimap-h); margin: 0; border: 0; border-radius: 6px; overflow: hidden; box-shadow: none; background: var(--bg-panel); outline: 1px solid var(--border-hair); outline-offset: -1px; cursor: pointer; }
+  .navigator__map .react-flow__minimap-svg { display: block; background: var(--bg-shell-sunken); }
+  .navigator__map .react-flow__minimap-mask { fill: var(--mm-mask); stroke: var(--fg-1); stroke-width: 1.5px; vector-effect: non-scaling-stroke; }
+  .navigator__map .react-flow__minimap-node { stroke: none; }
+  .navigator__map .mm-node--quote { opacity: .8; }
+  .navigator__map .mm-node--draft { stroke: var(--border-strong); stroke-width: 1px; vector-effect: non-scaling-stroke; }
+  .navigator__map .mm-node--frame { fill: none; stroke: var(--border-strong); stroke-width: 1px; vector-effect: non-scaling-stroke; }
+  .navigator__map .react-flow__minimap-node.selected:not(g), .navigator__map .mm-node__ring { stroke: var(--fg-1); stroke-width: 1px; vector-effect: non-scaling-stroke; }
+  .navigator__map .mm-node__ring { fill: none; }
+}

@@ -1,0 +1,36 @@
+/* §6.1 输入框与表单字段：中性凹槽、墨色双圈焦点（§3.10）。 */
+@layer components {
+  .field { display: grid; gap: 6px; min-width: 0; }
+  .field__label { font: var(--type-meta); font-weight: var(--fw-medium); color: var(--fg-2); }
+  .field__hint { font: var(--type-meta); color: var(--fg-3); }
+  .field__error { font: var(--type-meta); color: var(--status-danger-fg); }
+
+  .input {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    height: 32px;
+    min-height: 0;
+    margin: 0;
+    padding: 0 10px;
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: var(--bg-sunken);
+    box-shadow: inset 0 0 0 1px var(--border-hair);
+    color: var(--fg-1);
+    font: var(--type-ui);
+    font-size: var(--fs-ui);
+    line-height: 22px;
+    outline: none;
+    transition: box-shadow var(--dur-fast) var(--ease-out), background-color var(--dur-fast) var(--ease-out);
+  }
+  textarea.input { height: auto; min-height: 64px; padding: 6px 10px; resize: vertical; line-height: var(--lh-sm); field-sizing: content; }
+  select.input { padding-right: 28px; cursor: pointer; }
+  .input::placeholder { color: var(--fg-3); opacity: 1; }
+  .input:hover:enabled { box-shadow: inset 0 0 0 1px var(--border-strong); }
+  .input:focus, .input:focus-visible { background: var(--bg-panel); box-shadow: inset 0 0 0 1px var(--border-strong), var(--focus-shadow); }
+  .input:disabled, .input[readonly] { color: var(--fg-2); cursor: default; }
+  .input[aria-invalid="true"] { box-shadow: inset 0 0 0 1px var(--status-danger-fg); }
+  .input[aria-invalid="true"]:focus-visible { box-shadow: inset 0 0 0 1px var(--fg-1), var(--focus-shadow); }
+  .input--lg { height: 40px; padding: 0 12px; font: var(--type-body); }
+}

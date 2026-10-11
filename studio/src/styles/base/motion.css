@@ -1,0 +1,38 @@
+/* 减少动效（§7，CORE-39）：位移、缩放、飞行归零，透明度与颜色的过渡保留。
+   - 过渡：只允许不带位移的属性（透明度、颜色、描边、可见性），transform / translate / scale 的变化直接到位；
+   - 关键帧动画压到 0.01ms，菜单与提示条换成 120ms 纯淡入，对话框淡入淡出 120ms；
+   - 时长令牌 --dur-panel / --dur-camera / --dur-tie / --dur-trace 已在 tokens 中归零。 */
+@layer base {
+  :root {
+    --dur-stamp-in: 120ms;
+    --dur-stamp-hold: 240ms;
+    --dur-stamp-out: 360ms;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :root { --dur-stamp-in: 0ms; --dur-stamp-hold: 240ms; --dur-stamp-out: 0ms; }
+    *, *::before, *::after {
+      transition-property: opacity, color, background-color, border-color, outline-color, fill, stroke, visibility !important;
+      animation-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+    }
+    .field-menu, .action-menu, .selection-tools, .toast-stack .toast:not(.is-leaving) {
+      animation-name: field-fade-in !important;
+      animation-duration: var(--dur-fast) !important;
+    }
+    .toast-stack .toast.is-leaving { animation-duration: var(--dur-fast) !important; }
+    .modal, .modal-backdrop { transition-duration: var(--dur-fast) !important; }
+  }
+  @keyframes field-fade-in { from { opacity: 0; } }
+}
+
+/* §7 动效编排在减少动效时的替代（trace 包追加）：
+   - 对话框背景不做动画（K8 断言 animationName === 'none'；旧样式 theme.css 里也有一份，清理阶段删掉旧的后靠这里）。
+   - 溯光：不行进，来源处静态亮起 240ms 后淡出、直接定位；系签：线直接出现、签不摆；
+     新卡落位：无位移、1200ms 外环保留（只是透明度变化）。这三项由 src/canvas/trace-player.ts 判断减少动效后执行，
+     外环用 Web Animations 播放。 */
+@layer base {
+  @media (prefers-reduced-motion: reduce) {
+    .modal-backdrop { animation: none !important; }
+  }
+}

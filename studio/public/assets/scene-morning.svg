@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" role="img" aria-labelledby="title desc">
+  <title id="title">原创演示插画：清晨的光</title><desc id="desc">陶土色墙面，窗边的晨光，桌上的咖啡与一枝绿叶。此图为演示分镜，并非视频素材。</desc>
+  <defs>
+    <linearGradient id="wall" x2="1" y2="1"><stop stop-color="#e3c9ac"/><stop offset="1" stop-color="#b99176"/></linearGradient>
+    <linearGradient id="light" x2="1" y2=".8"><stop stop-color="#fff4ce" stop-opacity=".83"/><stop offset="1" stop-color="#fff4ce" stop-opacity=".08"/></linearGradient>
+    <linearGradient id="window" x2="0" y2="1"><stop stop-color="#a6bec0"/><stop offset="1" stop-color="#e9e1c6"/></linearGradient>
+  </defs>
+  <path fill="url(#wall)" d="M0 0h800v500H0z"/>
+  <path fill="#926e56" d="M0 0h248v342H0z"/>
+  <path fill="url(#window)" d="M0 0h226v318H0z"/>
+  <path fill="#7e9791" d="M0 183l48-39 48 23 43-38 87 65v124H0z" opacity=".65"/>
+  <path fill="#eee4ce" d="M73 0h12v321H73zM0 154h226v12H0z"/>
+  <path fill="#d6b893" d="M0 317h250v25H0z"/>
+  <path fill="url(#light)" d="M83 166L667 500H179L0 319V166z"/>
+  <path fill="#aa7855" d="M0 400l582-60 218 69v91H0z"/>
+  <path fill="#d6aa79" d="M0 400l582-60 218 69-495 70z"/>
+  <path fill="#755b48" d="M346 370l237 8 60 38-275-9z" opacity=".18"/>
+  <ellipse cx="381" cy="391" rx="73" ry="20" fill="#f0e2c3"/>
+  <ellipse cx="381" cy="388" rx="53" ry="13" fill="#c5a580"/>
+  <path d="M419 333c50-10 51 48 9 47" fill="none" stroke="#f6e9cd" stroke-width="14"/>
+  <path fill="#f4e5c7" d="M334 326h95l-10 56c-12 20-64 20-75 0z"/>
+  <ellipse cx="381" cy="326" rx="48" ry="14" fill="#c3a47d"/>
+  <ellipse cx="381" cy="328" rx="39" ry="10" fill="#6e4834"/>
+  <path d="M373 296c-17-26 11-28 0-52m23 48c-11-22 10-31 1-44" stroke="#fff6dd" stroke-width="3" fill="none" opacity=".45"/>
+  <path fill="#c5ac89" d="M616 244h46l11 126c-9 10-48 10-56 0z"/>
+  <path d="M641 264c-8-52 5-94 12-123" stroke="#536c54" stroke-width="4" fill="none"/>
+  <path fill="#78896a" d="M646 209c-48-4-52-48-52-48 42 0 54 28 52 48m3-26c2-39 42-53 42-53-1 33-17 48-42 53m-10 56c-40 0-46-28-46-28 32-7 41 4 46 28"/>
+  <text x="740" y="455" text-anchor="end" fill="#f5e6ca" font-family="sans-serif" font-size="11" letter-spacing="3" opacity=".7">MORNING STUDY / 01</text>
+</svg>

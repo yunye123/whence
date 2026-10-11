@@ -1,0 +1,3 @@
+@layer features {
+  .field-card--draft[data-lod="far"] { --card-extra: none; }
+}

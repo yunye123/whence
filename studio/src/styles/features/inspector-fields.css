@@ -1,0 +1,111 @@
+/* W1-E: features/inspector.css; original cascade position retained by styles/index.css. */
+@layer features {
+  .inspector-example {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    margin: 0;
+    padding: 0 var(--space-3);
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--border-hair);
+    color: var(--fg-3);
+    font: var(--type-meta);
+    white-space: nowrap;
+  }
+  .inspector-title-area--article > .inspector-example, .inspector-title-area--paper > .inspector-example { margin-bottom: var(--space-4); }
+
+  /* ---------- 滚动区与内容列（停靠的默认值） ---------- */
+  .inspector-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+  .inspector-layout { min-height: 100%; }
+  .inspector-column { min-width: 0; }
+  :where(.inspector--docked) .inspector-layout { padding: var(--space-3) 0 var(--space-9); }
+  :where(.inspector--docked) .inspector-scroll { background: var(--inspector-paper); }
+  :where(.inspector) .inspector-section { padding: var(--space-6) var(--space-8); }
+  :where(.inspector) .inspector-section + .inspector-section { box-shadow: inset 0 1px 0 var(--border-hair); }
+  :where(.inspector) .inspector-section-heading h3 { font: var(--type-ui-strong); color: var(--fg-1); }
+  :where(.inspector) .inspector-section-heading > span { font: var(--type-meta); color: var(--fg-3); }
+  :where(.inspector) .inspector-section > label { display: block; margin-bottom: var(--space-4); font: var(--type-ui-strong); color: var(--fg-2); }
+
+  /* ---------- 页脚（sticky：位于滚动区之外） ---------- */
+  .inspector-footer {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-5);
+    min-height: 56px;
+    padding: var(--space-4) var(--space-5) var(--space-4) var(--space-8);
+    border: 0;
+    background: var(--bg-shell);
+    box-shadow: inset 0 1px 0 var(--border-hair);
+    color: var(--fg-2);
+    font: var(--type-meta);
+  }
+
+  /* ---------- 1. 停靠面板 §6.18.1 ---------- */
+  .inspector--docked {
+    flex: none;
+    width: clamp(360px, var(--inspector-w, var(--panel-w)), 560px);
+    border-left: 1px solid var(--border-hair);
+    overflow: visible;
+  }
+  .inspector-resize {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(-1 * var(--hit-min) / 2);
+    z-index: 2;
+    width: var(--hit-min);
+    cursor: col-resize;
+    touch-action: none;
+  }
+  .inspector-resize::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(var(--hit-min) / 2 - 1px);
+    width: 2px;
+    background: transparent;
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .inspector-resize:hover::after, .inspector.is-resizing .inspector-resize::after { background: var(--border-strong); transition-delay: 80ms; }
+  .inspector-resize:focus-visible { box-shadow: none; }
+  .inspector-resize:focus-visible::after { background: var(--focus-ring); }
+  /* 1000–1279：面板 360，不可拖；< 1000：覆盖在画布上，左侧加遮罩（点遮罩关闭） */
+  @media (max-width: 1279px) {
+    .inspector--docked { width: 360px; }
+    .inspector-resize { display: none; }
+  }
+  @media (max-width: 999px) {
+    .inspector--docked {
+      position: absolute;
+      inset: 0 0 0 auto;
+      width: min(400px, calc(100% - var(--space-11)));
+      border-left: 0;
+      box-shadow: var(--shadow-panel);
+    }
+    .inspector--docked::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 100%;
+      bottom: 0;
+      width: 100vw;
+      background: var(--bg-scrim);
+      cursor: pointer;
+      animation: inspector-fade var(--dur-base) var(--ease-out) backwards;
+    }
+  }
+}

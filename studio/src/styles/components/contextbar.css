@@ -1,0 +1,288 @@
+/* 选区浮动操作条（§6.6）与操作菜单（§6.21 的卡片“…”、操作条“更多 / 对齐 / 排列”）。
+   操作条在视口变换层之外，字号固定 14px、scale 恒为 1（K8）；位置由 JS 写 transform，这里只管外观。 */
+@layer components {
+  /* ---------------------------------------------------------------- 操作条 */
+  .selection-tools {
+    --enter-y: 4px;
+    position: absolute;
+    z-index: var(--z-contextbar);
+    top: 0;
+    left: 0;
+    right: auto;
+    bottom: auto;
+    display: block;
+    width: max-content;
+    max-width: calc(100% - 16px);
+    height: var(--contextbar-h);
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-tool);
+    background: var(--bg-panel);
+    color: var(--fg-1);
+    box-shadow: var(--shadow-tool);
+    font: var(--type-ui-strong);
+    font-size: var(--fs-ui);
+    line-height: 22px;
+    white-space: nowrap;
+    touch-action: none;
+    overflow: visible;
+    opacity: 1;
+    transition: opacity var(--dur-fast) var(--ease-out);
+    animation: selection-tools-in var(--dur-fast) var(--ease-out);
+  }
+  .selection-tools[data-placement="below"] { --enter-y: -4px; }
+  .selection-tools[data-placement="hidden"] { visibility: hidden; }
+  /* 拖动、平移、框选进行中淡出，结束后回来；溯光期间隐藏；卡片右键菜单、连线标签框打开时让位（关闭后回来） */
+  .selection-tools[data-gesture="true"],
+  [data-tracing="true"] .selection-tools,
+  body:has(> .action-menu--context) .selection-tools,
+  .studio:has(.field-edge-editor) .selection-tools {
+    opacity: 0;
+    pointer-events: none;
+    transition-duration: 80ms;
+  }
+  /* 展开阅读或写作时与其他画布浮层一起隐藏（K8） */
+  .studio:has(.inspector--reading-expanded, .inspector--writing-expanded) .selection-tools { display: none; }
+
+  @keyframes selection-tools-in {
+    from { opacity: 0; translate: 0 var(--enter-y); }
+  }
+
+  /* 指向选区包围盒中心的小尖角：同底色 + 1px 发丝 */
+  .selection-tools::before, .selection-tools::after {
+    content: '';
+    position: absolute;
+    left: var(--arrow-x, 50%);
+    bottom: -6px;
+    width: 10px;
+    height: 7px;
+    margin-left: -5px;
+    background: var(--border-strong);
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+    pointer-events: none;
+  }
+  .selection-tools::after { width: 8px; height: 6px; margin-left: -4px; bottom: -5px; background: var(--bg-panel); }
+  .selection-tools[data-placement="below"]::before, .selection-tools[data-placement="below"]::after {
+    top: -6px;
+    bottom: auto;
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  }
+  .selection-tools[data-placement="below"]::after { top: -5px; }
+  .selection-tools:is([data-placement="pinned"], [data-placement="hidden"])::before,
+  .selection-tools:is([data-placement="pinned"], [data-placement="hidden"])::after { display: none; }
+
+  .selection-tools__row {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 100%;
+    padding: 0 4px;
+    border-radius: inherit;
+    overflow-x: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+  }
+  .selection-tools__row::-webkit-scrollbar { display: none; }
+
+  .selection-tools .selection-tools__btn {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-width: 32px;
+    min-height: 0;
+    height: 32px;
+    margin: 0;
+    padding: 0 10px;
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: transparent;
+    color: var(--fg-1);
+    font: var(--type-ui-strong);
+    font-size: var(--fs-ui);
+    line-height: 22px;
+    letter-spacing: 0;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .selection-tools .selection-tools__btn:hover { background: var(--bg-hover); color: var(--fg-1); }
+  .selection-tools .selection-tools__btn:active,
+  .selection-tools .selection-tools__btn[aria-expanded="true"] { background: var(--bg-pressed); transition-duration: 0ms; }
+  .selection-tools .selection-tools__btn[aria-disabled="true"] { color: var(--fg-disabled); background: transparent; cursor: default; }
+  /* 三选一（分组版式）：当前一项按下，底色 + 1px --fg-icon 内框（与工具条按下态同一做法） */
+  .selection-tools .selection-tools__btn[aria-pressed="true"] { background: var(--paper-plain); box-shadow: inset 0 0 0 1px var(--fg-icon); }
+  .selection-tools .selection-tools__btn[aria-pressed="true"] .selection-tools__icon { color: var(--fg-1); }
+  .selection-tools .selection-tools__btn[aria-pressed="true"]:focus-visible { box-shadow: inset 0 0 0 1px var(--fg-icon), var(--focus-shadow); }
+  .selection-tools .selection-tools__btn:focus-visible { outline: none; box-shadow: var(--focus-shadow); }
+
+  .selection-tools__icon { display: inline-flex; flex: none; color: var(--fg-2); }
+  .selection-tools__btn[aria-disabled="true"] .selection-tools__icon,
+  .selection-tools__btn[aria-disabled="true"] .selection-tools__chevron { color: var(--fg-disabled); }
+  .selection-tools__chevron { flex: none; margin-left: -3px; color: var(--fg-2); }
+  .selection-tools .selection-tools__btn--icon { width: 32px; padding: 0; color: var(--fg-2); }
+  .selection-tools .selection-tools__btn--icon:hover { color: var(--fg-1); }
+  /* 首项用无框小出处印，与动作字留 8px。 */
+  .selection-tools .selection-tools__btn--lead { gap: 8px; }
+  .selection-tools__btn--lead .tag { pointer-events: none; }
+
+  .selection-tools__rule { flex: none; width: 1px; height: 18px; margin: 0 4px; background: var(--border-hair); }
+  .selection-tools__count {
+    flex: none;
+    padding: 0 6px 0 8px;
+    color: var(--fg-2);
+    font: var(--type-ui);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------------------------------------------------------------- 菜单（挂 body，固定 14px） */
+  .action-menu {
+    --menu-enter-y: -4px;
+    position: fixed;
+    z-index: var(--z-popover);
+    top: 0;
+    left: 0;
+    box-sizing: border-box;
+    min-width: 220px;
+    max-width: min(360px, calc(100vw - 16px));
+    max-height: 70vh;
+    margin: 0;
+    padding: 6px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border: 0;
+    border-radius: var(--radius-tool);
+    background: var(--bg-panel);
+    box-shadow: var(--shadow-tool);
+    color: var(--fg-1);
+    font: var(--type-ui);
+    font-size: var(--fs-ui);
+    line-height: 22px;
+    letter-spacing: 0;
+    transform-origin: top center;
+    animation: action-menu-in var(--dur-base) var(--ease-out);
+    scrollbar-width: thin;
+  }
+  .action-menu[data-side="top"] { --menu-enter-y: 4px; transform-origin: bottom center; }
+  @keyframes action-menu-in {
+    from { opacity: 0; translate: 0 var(--menu-enter-y); scale: .98; }
+  }
+
+  .action-menu .action-menu__item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 34px;
+    margin: 0;
+    padding: 0 8px 0 10px;
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: transparent;
+    color: var(--fg-1);
+    font: var(--type-ui);
+    font-size: var(--fs-ui);
+    line-height: 22px;
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .action-menu .action-menu__item:hover,
+  .action-menu .action-menu__item:focus { background: var(--bg-hover); outline: none; }
+  .action-menu .action-menu__item:focus-visible { box-shadow: var(--focus-shadow); }
+  .action-menu .action-menu__item:active { background: var(--bg-pressed); }
+  .action-menu .action-menu__item.has-detail { min-height: 46px; padding-block: 5px; }
+  .action-menu .action-menu__item[aria-disabled="true"] { color: var(--fg-3); cursor: default; }
+  .action-menu .action-menu__item[aria-disabled="true"]:hover { background: transparent; }
+  .action-menu .action-menu__item.is-danger { color: var(--status-danger-fg); }
+
+  .action-menu__icon { display: inline-flex; flex: none; color: var(--fg-icon); }
+  .action-menu__item.is-danger .action-menu__icon { color: var(--status-danger-fg); }
+  .action-menu__item[aria-disabled="true"] .action-menu__icon { color: var(--fg-disabled); }
+  .action-menu__label { display: flex; flex: 1; flex-direction: column; gap: 1px; min-width: 0; }
+  .action-menu__label > small { color: var(--fg-3); font: var(--type-meta); }
+  .action-menu__item[aria-disabled="true"] .action-menu__label > small { color: var(--fg-3); }
+  .action-menu__why { flex: none; margin-left: 12px; color: var(--fg-3); font: var(--type-meta); }
+  .action-menu__kbd {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    margin-left: 12px;
+    padding: 0 5px;
+    border-radius: 4px;
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--border-hair);
+    color: var(--fg-2);
+    font: var(--type-kbd);
+  }
+  .action-menu__item.is-danger .action-menu__kbd { color: var(--fg-2); }
+  .action-menu__sep { height: 1px; margin: 6px 4px; background: var(--border-hair); }
+  .action-menu__heading { padding: 8px 10px 4px; color: var(--fg-3); font: var(--type-meta); white-space: normal; }
+
+  /* 卡片“…”菜单打开时，触发按钮保持按下态 */
+  .field-card__menu-wrap .field-card__icon-button[aria-expanded="true"] { background: var(--bg-pressed); }
+
+  /* ---------------------------------------------------------------- 连线模式（§6.4 连线 C）
+     操作条变成这个模式的提示；画布上的卡片换成十字光标，点按即选为起点或终点 */
+  .selection-tools__hint {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 7px;
+    padding: 0 6px 0 8px;
+    color: var(--fg-1);
+    font: var(--type-ui-strong);
+    font-size: var(--fs-ui);
+    line-height: 22px;
+  }
+  body[data-connect-picking] .react-flow__node,
+  body[data-connect-picking] .react-flow__node * { cursor: crosshair; }
+
+  /* ---------------------------------------------------------------- 连接、调整尺寸对话框（卡片操作）
+     正文与标题同一左缘（对话框内边距 24），控件用 §6.1 输入框，页脚按钮用 .btn */
+  .field-card-dialog form { padding: 0; }
+  .field-card-dialog .field-card-dialog__source { margin: 4px 0 16px; color: var(--fg-2); font: var(--type-ui); overflow-wrap: anywhere; }
+  .field-card-dialog .field-card-dialog__label { display: flex; flex-direction: column; gap: 6px; min-width: 0; color: var(--fg-1); font: var(--type-ui-strong); }
+  .field-card-dialog .field-card-dialog__label :is(input, select) {
+    box-sizing: border-box;
+    width: 100%;
+    height: 36px;
+    min-height: 0;
+    padding: 0 10px;
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: var(--bg-sunken);
+    box-shadow: inset 0 0 0 1px var(--border-hair);
+    color: var(--fg-1);
+    font: var(--type-ui);
+  }
+  .field-card-dialog .field-card-dialog__label :is(input, select):hover { box-shadow: inset 0 0 0 1px var(--border-strong); }
+  .field-card-dialog .field-card-dialog__label :is(input, select):focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--border-strong), var(--focus-shadow); }
+  .field-card-dialog .field-card-dialog__label > small { color: var(--fg-3); font: var(--type-meta); }
+  .field-card-dialog .field-card-dialog__dimensions { gap: 16px; }
+  .field-card-dialog .field-card-dialog__error { margin: 12px 0 0; color: var(--status-danger-fg); font: var(--type-ui); }
+  .field-card-dialog .field-card-dialog__actions { gap: 8px; padding-top: 24px; }
+}
+
+/* W2-E 横幅只管表面；位置与安全区继续由现有 topbar 和 StatusBanners 管理。
+   限定专属类，防止覆盖其他包的外壳。 */
+@layer states {
+  .status-banner.status-banner--desk {
+    background: var(--bg-panel);
+    color: var(--fg-1);
+    box-shadow: var(--shadow-tool);
+    font-size: var(--fs-ui);
+    line-height: 22px;
+  }
+  .status-banner.status-banner--desk .status-banner__icon { color: var(--fg-1); }
+  .status-banner.status-banner--desk .status-banner__body > strong {
+    font-size: var(--fs-ui);
+    line-height: 22px;
+  }
+}

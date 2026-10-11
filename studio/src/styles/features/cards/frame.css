@@ -1,0 +1,93 @@
+/* W3-E: jacket + neutral proof sheet. Original prefix/import position retained. */
+@layer features {
+  .field-card.field-card--frame[data-stationery] {
+    --card-bg: var(--paper-jacket);
+    --card-radius: 0 3px 3px 3px;
+    min-width: 0;
+    min-height: 0;
+    border: 0;
+    border-radius: 0 3px 3px 3px;
+    background: none;
+    box-shadow: none;
+    pointer-events: none;
+  }
+  /* Root paints a 1px proof-sheet edge, no blurred insert shadow. Jacket left/bottom by 8px.
+     Node geometry and membership stay the raw stored box. */
+  .field-card--frame[data-stationery][data-lod]::before {
+    border-top-left-radius: 0;
+    background:
+      linear-gradient(var(--paper-wall), var(--paper-wall)) 9px 1px / calc(100% - 10px) calc(100% - 10px) no-repeat,
+      linear-gradient(var(--paper-edge), var(--paper-edge)) 8px 0 / calc(100% - 8px) calc(100% - 8px) no-repeat,
+      var(--paper-jacket);
+    mask-image: none;
+  }
+  .field-card--frame[data-stationery] .field-card__surface > .field-card__header,
+  .field-card--frame[data-stationery] .field-card__header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: auto;
+    min-width: 0;
+    max-width: 100%;
+    height: 24px;
+    min-height: 0;
+    margin: 0;
+    padding: 0 12px 0 10px;
+    border-radius: 5px 5px 0 0;
+    background: var(--paper-jacket);
+    box-shadow: none;
+    transform: translateY(-100%);
+    pointer-events: auto;
+    white-space: nowrap;
+  }
+  .field-card--frame:not(.is-readonly, .is-hand) .field-card__header:hover { background: var(--paper-jacket); cursor: grab; }
+  .field-card--frame.is-readonly .field-card__header { cursor: default; }
+  .field-card--frame[data-stationery] .field-card__header h3:not(.sr-only) {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    font: 600 14px/20px var(--font-ui);
+    color: var(--fg-1);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .field-card__frame-glyph { flex: none; color: var(--fg-3); }
+  .field-card__frame-count {
+    flex: none;
+    padding-left: 9px;
+    border-left: 1px solid var(--rule-paper);
+    font: 400 12px/14px var(--font-ui);
+    color: var(--fg-3);
+  }
+  .field-card--frame[data-lod="full"] .field-card__frame-count {
+    font-size: max(var(--fs-xs), calc(12px / var(--z-tier, 1)));
+  }
+  /* K7/CD-B2: same 8px drag ring; interior passes through to cards/canvas. */
+  .field-card__tray-edge {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: auto;
+    cursor: grab;
+    clip-path: polygon(evenodd,
+      0 0, 100% 0, 100% 100%, 0 100%, 0 0,
+      8px 8px, 8px calc(100% - 8px), calc(100% - 8px) calc(100% - 8px), calc(100% - 8px) 8px, 8px 8px);
+  }
+  .field-card--frame.is-readonly .field-card__tray-edge { cursor: default; }
+  .field-card--frame[data-stationery] .field-card__actions {
+    top: -24px;
+    left: var(--tab-w, 0px);
+    right: auto;
+    bottom: auto;
+    height: 24px;
+    padding: 0;
+    background: var(--paper-jacket);
+  }
+  .field-card--frame:is(:hover, :focus-within, .is-selected) .field-card__actions { pointer-events: auto; }
+  .field-card--frame .field-card__resize-line,
+  .field-card--frame .field-card__resize-handle { pointer-events: auto; }
+}

@@ -1,0 +1,5 @@
+/* W3-E: simple tier keeps raw photo geometry, hides caption and print number. */
+@layer features {
+  .field-card--image[data-stationery][data-lod="simple"] .field-card__header { visibility: hidden; opacity: 0; }
+  .field-card--image[data-stationery][data-lod="simple"]::before { box-shadow: none; }
+}

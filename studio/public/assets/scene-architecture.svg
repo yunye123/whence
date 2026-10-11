@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 520" role="img" aria-labelledby="title desc">
+  <title id="title">原创演示插画：光经过的地方</title><desc id="desc">柔和的米白建筑、赭色拱门与下午斜斜的影子。</desc>
+  <defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#afc2c5"/><stop offset="1" stop-color="#dee0d5"/></linearGradient><linearGradient id="arch" x2="1" y2="0"><stop stop-color="#674d41"/><stop offset="1" stop-color="#94725e"/></linearGradient></defs>
+  <path fill="url(#sky)" d="M0 0h700v520H0z"/>
+  <circle cx="549" cy="90" r="37" fill="#efe5c6"/>
+  <path fill="#d6c6b1" d="M0 116h462v404H0z"/>
+  <path fill="#eee4d4" d="M142 77h347v443H142z"/>
+  <path fill="#c9b399" d="M489 77l77 51v392h-77z"/>
+  <path fill="#e6d7c1" d="M124 77h382v17H124z"/>
+  <path fill="url(#arch)" d="M225 424V258a92 92 0 0 1 184 0v166z"/>
+  <path fill="#b9906e" d="M225 424V258a92 92 0 0 1 184 0v21a78 78 0 0 0-152 0v145z"/>
+  <path fill="#d0b99b" d="M257 282h152v142H257z"/>
+  <path fill="#f0e4ca" d="M257 282l152 81v61H257z"/>
+  <path fill="#bba082" d="M0 424h700v96H0z"/>
+  <path fill="#d4b89a" d="M0 438l309-14h180l211 96H0z"/>
+  <path fill="#9a816d" d="M409 424l157 0 134 79v17H589z" opacity=".75"/>
+  <path fill="#dac7ae" d="M182 424h276v17H182zM163 441h317v15H163zM143 456h354v16H143z"/>
+  <path fill="#f0e6d3" d="M64 158h24v122H64z"/>
+  <path fill="#ac8c70" d="M64 158h9v122h-9z"/>
+  <path d="M604 520V238" stroke="#5a6653" stroke-width="9"/>
+  <ellipse cx="605" cy="252" rx="45" ry="93" fill="#7d8b70"/>
+  <ellipse cx="620" cy="250" rx="27" ry="74" fill="#8f9b7c"/>
+  <text x="35" y="488" fill="#eee1ca" font-family="sans-serif" font-size="10" letter-spacing="3">LIGHT &amp; FORM / 02</text>
+</svg>

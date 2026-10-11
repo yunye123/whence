@@ -1,0 +1,22 @@
+/* W1-E: features/inspector.css; original cascade position retained by styles/index.css. */
+@layer features {
+
+  /* ---------- 展开与工作台：隐藏画布 HUD（K8）与被整窗布局盖住的外壳 ---------- */
+  .studio:has(.inspector:is(.inspector--video, .inspector--reading-expanded, .inspector--writing-expanded)) :is(.canvas-toolbar, .zoom-controls, .react-flow__minimap, .selection-tools, .canvas-hint) { display: none; }
+  .studio:has(.inspector:is(.inspector--video, .inspector--writing-expanded)) :is(.sidebar, .sidebar-scrim, .topbar, .canvas-shell) { visibility: hidden; }
+
+  /* ---------- 动效 §7：停靠 16px、拿起 24px、专注写作遮罩淡入 + 纸 .985→1 ----------
+     inspector--motion-open：面板从关闭到打开；-switch：同一张卡在布局之间切换；-none：面板已打开时换卡（不重播）。
+     收起展开态回到停靠时，停靠面板按 -switch 淡入，代替展开态的退出。 */
+  .inspector--docked:not(.inspector--motion-none) { animation: inspector-dock var(--dur-panel) var(--ease-drawer) backwards; }
+  .inspector--video:not(.inspector--motion-none), .inspector--reading-expanded:not(.inspector--motion-none) { animation: inspector-lift var(--dur-panel) var(--ease-drawer) backwards; }
+  .inspector--writing-expanded:not(.inspector--motion-none) { animation: inspector-fade var(--dur-base) var(--ease-out) backwards; }
+  .inspector--writing-expanded:not(.inspector--motion-none) .inspector-column { animation: inspector-paper var(--dur-panel) var(--ease-drawer) backwards; }
+  @keyframes inspector-dock { from { opacity: 0; transform: translateX(16px); } }
+  @keyframes inspector-lift { from { opacity: 0; transform: translateX(24px); } }
+  @keyframes inspector-fade { from { opacity: 0; } }
+  @keyframes inspector-paper { from { opacity: 0; transform: scale(.985); } }
+
+  /* ---------- 懒加载占位（InspectorPanel） ---------- */
+  .inspector-loading { display: grid; place-items: center; flex: 1; padding: var(--space-8); font: var(--type-meta); color: var(--fg-3); }
+}

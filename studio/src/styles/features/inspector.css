@@ -1,0 +1,148 @@
+/* 资料面板外壳与四种布局（DESIGN_SYSTEM §6.18、§7）
+   - .inspector--docked            停靠面板：主区右侧，占布局宽度，400（360–560 可拖）
+   - .inspector--video             观看工作台：整窗，网格 1fr 480
+   - .inspector--reading-expanded  阅读拆分：从右侧“拿起”，画布退到左侧成为画布条（右缘渐隐）
+   - .inspector--writing-expanded  专注写作：整窗，侧栏、顶栏、画布与 HUD 全部隐藏
+   区域与插槽（供观看、阅读、写作三个模式组件使用）见 docs/redesign/integration/inspector-shell.md。
+   通用规则用 :where() 压低权重，模式样式（inspector-video / -reading / -writing.css，同层且更晚引入）可以直接覆盖。 */
+/* W1-E: features/inspector.css; original cascade position retained by styles/index.css. */
+@layer features {
+  /* ---------- 外壳：所有布局共用 ---------- */
+  .inspector {
+    --inspector-head-h: 52px;
+    --inspector-paper: var(--paper-plain);
+    --fs-read: 16px;
+    --lh-read: 1.875;
+    --reading-scroll-margin: 84px;
+    position: relative;
+    z-index: var(--z-panel);
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    border: 0;
+    background: var(--bg-shell);
+    color: var(--fg-1);
+    font: var(--type-ui);
+    box-shadow: none;
+    overflow: hidden;
+  }
+  .inspector[data-paper="note"] { --inspector-paper: var(--paper-note); }
+  .inspector[data-paper="manuscript"] { --inspector-paper: var(--paper-manuscript); }
+  .inspector[data-kind="note"][data-paper="note"] :is(.inspector-reading-body, .inspector-text-editor) { font-family: var(--font-note); }
+  /* 根节点可聚焦只为让面板内的按键路由始终生效（Esc 逐级退出、单键不漏到画布），不画焦点环 */
+  .inspector:focus-visible { box-shadow: none; outline: none; }
+  .inspector.is-resizing { user-select: none; }
+  .inspector.is-resizing, .inspector.is-resizing * { transition: none; }
+
+  /* ---------- 头部 ---------- */
+  .inspector-header {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--space-4);
+    height: var(--inspector-head-h);
+    min-height: var(--inspector-head-h);
+    padding: 0 var(--space-5) 0 var(--space-6);
+    border: 0;
+    background: var(--bg-shell);
+    box-shadow: inset 0 -1px 0 var(--border-hair);
+  }
+  .inspector-head-lead { flex: none; display: flex; align-items: center; gap: var(--space-2); }
+  .inspector-head-lead:empty { display: none; }
+  .inspector-head-kind { display: grid; place-items: center; width: var(--hit-min); height: var(--hit-min); color: var(--fg-icon); }
+  .inspector-head-title { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; }
+  .inspector-head-meta {
+    flex: 0 1 auto;
+    display: flex;
+    align-items: center;
+    gap: var(--space-5);
+    min-width: 0;
+    overflow: hidden;
+    font: var(--type-meta);
+    color: var(--fg-3);
+    white-space: nowrap;
+  }
+  .inspector-head-meta:has(> .inspector-slot:empty:only-child) { display: none; }
+  .inspector-head-meta > span { flex: none; }
+  .inspector-head-actions { flex: none; display: flex; align-items: center; gap: var(--space-1); margin-left: auto; }
+  .inspector-slot:empty { display: none; }
+  .inspector-slot--header-meta, .inspector-slot--header-actions { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+  .inspector-slot--header-meta { gap: var(--space-5); }
+
+  .inspector-head-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    min-width: 32px;
+    height: 32px;
+    padding: 0 var(--space-3);
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: transparent;
+    color: var(--fg-2);
+    font: var(--type-ui-strong);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+  }
+  .inspector-head-button:hover { background: var(--bg-hover); color: var(--fg-1); }
+  .inspector-head-button:active { background: var(--bg-pressed); transition-duration: 0ms; }
+  .inspector-head-button svg { flex: none; color: var(--fg-icon); transition: color var(--dur-fast) var(--ease-out); }
+  .inspector-head-button:hover svg { color: var(--fg-1); }
+  .inspector-head-button--text { padding: 0 var(--space-4) 0 var(--space-3); color: var(--fg-1); }
+  .inspector-head-button--text svg { color: var(--fg-2); }
+  .inspector-head-button kbd {
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    padding: 0 var(--space-3);
+    border-radius: 4px;
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--border-hair);
+    color: var(--fg-2);
+    font: var(--type-kbd);
+  }
+  .inspector-head-return { color: var(--fg-1); }
+  .inspector-head-return svg, .inspector-head-return:hover svg { color: var(--fg-icon); }
+
+  /* ---------- 标题：头部一行（停靠、观看）/ 文章列（阅读）/ 纸上（写作） ---------- */
+  .inspector-title-area { display: block; padding: 0; min-width: 0; }
+  .inspector-title-area--header { display: flex; align-items: center; gap: var(--space-4); width: 100%; }
+  .inspector-title-field {
+    display: block;
+    width: 100%;
+    min-height: 0;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: transparent;
+    color: var(--fg-1);
+    letter-spacing: var(--ls-cjk);
+    resize: none;
+    overflow: hidden;
+    outline: none;
+    transition: background-color var(--dur-fast) var(--ease-out);
+  }
+  .inspector-title-field::placeholder { color: var(--fg-3); font-weight: var(--fw-book); }
+  .inspector-title-field:read-only { cursor: default; }
+  .inspector-title-field--header {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 32px;
+    padding: 5px var(--space-3);
+    margin-left: calc(-1 * var(--space-3));
+    font: var(--type-card-title);
+    white-space: pre;
+    overflow-x: hidden;
+  }
+  /* 停靠面板里长标题在右缘淡出（悬停与编辑时去掉，免得底色也被淡出）；观看页标题按内容定宽，不需要 */
+  .inspector--docked .inspector-title-field--header:not(:focus):not(:hover) { mask-image: linear-gradient(to right, currentColor calc(100% - 20px), transparent); }
+  .inspector-title-field--header:hover:not(:read-only):not(:focus) { background: var(--bg-hover); }
+  .inspector-title-field--article { font: var(--fw-semibold) 23px/32px var(--font-ui); text-wrap: balance; }
+}

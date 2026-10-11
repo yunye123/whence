@@ -1,0 +1,33 @@
+/* 稿纸书桌 §6.4：rail 左段。快捷键只在自绘提示里出现。 */
+@layer components {
+  .canvas-toolbar {
+    position: relative; inset: auto; transform: none; z-index: var(--z-hud);
+    display: flex; flex-wrap: nowrap; align-items: center; gap: 0;
+    width: max-content; max-width: none; height: 100%; margin: 0; padding: 0;
+    border: 0; border-radius: 0; background: transparent; box-shadow: none;
+    color: var(--fg-2); font: 400 var(--fs-ui)/1 var(--font-ui); touch-action: manipulation;
+  }
+  .canvas-toolbar__group { display: flex; align-items: center; gap: 2px; flex: none; }
+  .canvas-toolbar__rule { flex: none; width: 1px; height: 20px; margin: 0 6px; border: 0; background: var(--border-hair); }
+  .canvas-toolbar__tool {
+    position: relative; flex: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    width: auto; height: 34px; padding: 0 11px 0 9px; border: 0; border-radius: 7px;
+    background: transparent; color: var(--fg-2); font: 400 var(--fs-ui)/1 var(--font-ui); white-space: nowrap;
+  }
+  .canvas-toolbar__tool > svg { display: block; }
+  .canvas-toolbar__tool:hover { background: var(--bg-hover); color: var(--fg-1); }
+  .canvas-toolbar__tool[aria-pressed="true"] { background: var(--paper-plain); color: var(--fg-1); font-weight: 600; box-shadow: var(--shadow-chip); }
+  .canvas-toolbar__tool[aria-pressed="true"]:focus-visible { box-shadow: var(--shadow-chip), var(--focus-shadow); }
+  .canvas-toolbar__tool:active { background: var(--bg-pressed); }
+  .canvas-toolbar__tool[aria-disabled="true"] { background: transparent; color: var(--fg-disabled); cursor: default; }
+  .canvas-toolbar__add {
+    position: relative; flex: none; display: inline-flex; align-items: center; gap: 6px;
+    height: 32px; margin: 0; padding: 0 13px 0 10px; border: 0; border-radius: 7px;
+    background: var(--paper-plain); box-shadow: inset 0 0 0 1px var(--fg-1); color: var(--fg-1);
+    font: 600 var(--fs-ui)/1 var(--font-ui); white-space: nowrap;
+  }
+  .canvas-toolbar__add:hover, .canvas-toolbar__add.is-open { background: var(--paper-plain); box-shadow: inset 0 0 0 1px var(--fg-1), inset 0 0 0 100px var(--bg-hover); }
+  .canvas-toolbar__add:focus-visible { box-shadow: inset 0 0 0 1px var(--fg-1), var(--focus-shadow); }
+  .canvas-toolbar__add[aria-disabled="true"] { background: transparent; box-shadow: inset 0 0 0 1px var(--border-hair); color: var(--fg-disabled); cursor: default; }
+  .field-menu--add { min-width: 248px; }
+}

@@ -1,0 +1,14 @@
+@layer features {
+  .field-card .field-card__overview--draft .field-card__overview-content { padding: 8px 8px 8px 12px; }
+  .field-card .field-card__overview--draft h3 { --o-max: 1; --o-avail: calc(100cqh - 16px); font-family: var(--font-read); color: var(--fg-1); text-wrap: wrap; }
+  .field-card .field-card__overview--draft .field-card__draft-rule { height: 4px; margin: 4px 0 0; border-top-width: 2px; border-bottom-width: 1px; }
+  .field-card .field-card__overview-bars { flex: 1; min-height: 0; margin-top: 8px; container-type: size; }
+  .field-card .field-card__overview-bars > div { max-height: round(down, 100cqh, 9px); overflow: hidden; }
+  .field-card .field-card__overview-bars p { position: relative; font: var(--fw-draft) calc(16px * var(--z-tier))/9px var(--font-read); color: transparent; text-align: justify; overflow-wrap: anywhere; }
+  .field-card .field-card__overview-bars p + p { margin-top: 9px; }
+  .field-card .field-card__overview-bars span { padding-block: 2px; background: linear-gradient(var(--rail-tick), var(--rail-tick)) 0 50% / 100% 4px no-repeat; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+  .field-card--draft .field-card__overview-bars p { border: 0; background: none; }
+  .field-card--draft .field-card__overview-bars p.is-cited { padding-left: 8px; }
+  .field-card--draft .field-card__ref.is-cited:not(.field-card__draft-pn)::before { content: ''; position: absolute; left: 0; top: 3px; width: 4px; height: 4px; border-radius: 50%; background: var(--zhu); }
+  .field-card .field-card__overview-bars i { position: absolute; inset: 0 auto auto 0; width: 4px; height: 9px; }
+}

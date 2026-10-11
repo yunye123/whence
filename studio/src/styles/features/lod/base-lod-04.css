@@ -1,0 +1,37 @@
+/* W1-E: features/lod.css; original cascade position retained by styles/index.css. */
+@layer features {
+  .field-card[data-lod="simple"][data-lod-frame]:not(.field-card--frame, .field-card--image) .field-card__header { padding-right: var(--card-pad-x); }
+  .field-card[data-lod="simple"][data-lod-frame]:not(.field-card--frame, .field-card--image) .field-card__header h3:not(.sr-only) {
+    zoom: var(--lod-title);
+    line-height: 1.32;
+  }
+
+  /* 一行状态：屏幕 12px，左缘与标题对齐。右侧状态（“约 1600 字”“逐字稿 23 句”）优先：
+     左侧来源放不下完整一段时整段换到第二行并被裁掉，不出现被硬切的半个词。
+     （row-reverse + order 让状态排在第一位、视觉上仍在右侧；第二行起点 ≥ 46，被 40 的上限裁掉） */
+  .field-card[data-lod="simple"][data-lod-frame] .field-card__footer {
+    flex: none;
+    zoom: var(--lod-k);
+    flex-direction: row-reverse;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-content: flex-start;
+    row-gap: 24px;
+    max-height: 40px;
+    padding: 6px calc(var(--card-pad-x) * var(--z-tier)) 10px;
+    overflow: clip;
+    overflow-clip-margin: 4px;
+  }
+  .field-card[data-lod="simple"][data-lod-frame] .field-card__footer > .field-card__meta-state { order: -1; margin-left: 0; }
+  .field-card[data-lod="simple"][data-lod-frame] .field-card__footer > .field-card__meta-source { flex: none; max-width: 100%; margin-right: auto; }  /* 只有来源时仍靠左 */
+  /* 没有状态可说的卡（摘录平常没有元信息行）不留空行 */
+  .field-card[data-lod="simple"][data-lod-frame] .field-card__footer:empty { display: none; }
+  .field-card[data-lod="simple"][data-lod-frame] .field-card__draft-meta { zoom: var(--lod-k); }
+
+  /* 视频与带图链接：媒体让出高度（裁切，不变形），标题与状态不让 */
+  .field-card[data-lod="simple"][data-lod-frame] :is(.field-card__video, .field-card__link-poster) { flex: 0 1 auto; min-height: 0; }
+  .field-card[data-lod="simple"][data-lod-frame] .field-card__link-content {
+    zoom: var(--lod-k);
+    padding-inline: calc(var(--card-pad-x) * var(--z-tier));
+  }
+}

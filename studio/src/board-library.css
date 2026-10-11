@@ -1,0 +1,64 @@
+/* Organization stays quiet; the canvas and the creator's work remain the focus. */
+.studio .sidebar { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+.board-row.is-dragging { opacity: .48; }
+.board-grip, .board-row-more, .board-trash-trigger { flex: 0 0 auto; justify-content: center; gap: 4px; }
+.board-grip:disabled { cursor: default; }
+.board-group-heading:hover .board-row-more { opacity: 1; }
+.board-ungrouped > span { display: block; padding: 5px 9px 4px; font-size: 12px; line-height: 1.5; color: var(--fg-3); }
+.board-group { margin-top: 5px; border-radius: 7px; }
+.board-group-heading { display: flex; align-items: center; min-height: 38px; border-radius: 6px; }
+.board-group-heading:hover { background: var(--bg-hover); }
+.board-group-heading > button:first-child { display: flex; flex: 1; align-items: center; gap: 5px; min-width: 0; min-height: 38px; padding: 7px 3px; border-radius: 5px; text-align: left; color: var(--fg-3); font-size: 12px; font-weight: 600; }
+.board-group-heading > button:first-child > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.board-group-heading small { flex: 0 0 auto; min-width: 15px; font-size: 12px; line-height: 1.5; font-weight: 400; font-variant-numeric: tabular-nums; color: var(--fg-3); text-align: right; }
+.board-group-children { margin-left: 5px; padding-left: 4px; border-left: 1px solid var(--border-hair); }
+.board-group-empty { padding: 6px 8px 11px; font-size: 12px; line-height: 1.75; color: var(--fg-3); }
+.board-group.drop-target, .board-ungrouped.drop-target { outline: 2px solid var(--fg-1); outline-offset: -2px; background: var(--paper-plain); }
+.board-row.drop-before::before, .board-row.drop-after::after { content: ""; position: absolute; z-index: 2; left: 8px; right: 4px; height: 2px; border-radius: 2px; background: var(--fg-1); pointer-events: none; }
+.board-row.drop-before::before { top: -2px; }
+.board-row.drop-after::after { bottom: -2px; }
+.board-trash-trigger > span { font-size: 12px; font-variant-numeric: tabular-nums; }
+.board-grip:focus-visible,.board-row-more:focus-visible,.board-nav:focus-visible,.board-section-title button:focus-visible { outline-offset: -2px; }
+.board-group-heading > button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+
+.board-popover { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+.board-popover > button:focus-visible { outline-offset: -2px; }
+.board-popover > small { display: block; padding: 6px 10px 7px; font-size: 12px; line-height: 1.7; color: var(--fg-3); }
+
+.inspector-dialog.board-management-dialog { width: 480px; }
+.board-management-dialog .field-label { color: var(--muted); }
+.board-management-dialog > footer { flex-wrap: wrap; gap: 9px; }
+.board-empty-trash { padding: 10px 0 16px; font-size: 14px; line-height: 1.8; color: var(--muted); }
+.new-board-location .field-label { margin: 0 0 8px; }
+.directory-picker { display: flex; align-items: stretch; min-width: 0; border: 1px solid var(--line-strong); border-radius: 7px; background: var(--surface-subtle); }
+.directory-picker > button:first-child { display: flex; flex: 1; align-items: center; gap: 10px; min-width: 0; min-height: 44px; padding: 10px 12px; border-radius: 6px; color: var(--ink); text-align: left; }
+.directory-picker > button:first-child:disabled { opacity: 1; color: var(--muted); }
+.directory-picker > button:first-child:hover:enabled { background: var(--surface-hover); }
+.directory-picker .directory-path { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; line-height: 1.6; }
+.directory-picker small { flex: 0 0 auto; margin-left: auto; color: var(--blue); font-size: 12px; line-height: 1.6; white-space: nowrap; }
+.directory-picker .directory-clear { display: flex; flex: 0 0 auto; align-items: center; justify-content: center; width: 40px; min-height: 44px; padding: 0; border-left: 1px solid var(--line); border-radius: 0 6px 6px 0; color: var(--muted); }
+.directory-clear:hover:enabled { color: var(--ink); background: var(--surface-hover); }
+.directory-picker button:focus-visible { outline: 2px solid var(--focus, var(--blue)); outline-offset: -2px; }
+.new-board-location > p { overflow-wrap: anywhere; }
+.storage-folder-button { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 6px; color: var(--muted); }
+.storage-folder-button:hover:enabled { background: var(--surface-hover); color: var(--blue); }
+.selection-tools > span { padding: 0 7px; color: var(--muted); font-size: 12px; line-height: 1.7; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.selection-tools > button { min-height: 32px; padding: 6px 9px; border-radius: 5px; color: var(--ink); font-size: 12px; line-height: 1.6; white-space: nowrap; }
+.selection-tools > button:hover:enabled { background: var(--surface-hover); color: var(--blue); }
+.selection-tools > button:focus-visible { outline: 2px solid var(--focus, var(--blue)); outline-offset: -2px; }
+
+.field-card__transcribe { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 10px 16px 2px; padding: 10px 0; border-top: 1px solid var(--line); }
+.field-card__transcribe > span, .field-card__transcribe > p { flex: 1; min-width: 0; font-size: 12px; line-height: 1.65; color: var(--muted); overflow-wrap: anywhere; }
+.field-card__transcribe button { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 6px; min-height: 34px; padding: 7px 11px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--surface-subtle); color: var(--blue); font-size: 12px; font-weight: 550; line-height: 1.5; white-space: nowrap; }
+.field-card__transcribe button:hover:enabled { background: var(--surface-selected); border-color: var(--blue); }
+.field-card__transcribe button:focus-visible { outline: 2px solid var(--focus, var(--blue)); outline-offset: 2px; }
+@media (max-height: 580px) {
+  .sidebar .board-list { flex-shrink: 0; max-height: 130px; }
+  .sidebar .library-list { flex-shrink: 0; max-height: 130px; }
+}
+@media (max-width: 480px) {
+  .directory-picker small { display: none; }
+  .board-trash-list > article { align-items: flex-start; flex-wrap: wrap; gap: 9px; }
+  .board-trash-list > article > div { flex-basis: 100%; }
+  .selection-tools { transform: none; }
+}

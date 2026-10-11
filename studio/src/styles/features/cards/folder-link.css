@@ -1,0 +1,15 @@
+/* W3-B: link is the same folder material, with an optional print and a URL. */
+@layer features {
+  .field-card--link[data-stationery="folder"] { --folder-tab-base: 64px; }
+  .field-card--link .field-card__header h3[lang="en"] { font: 600 16px/24px var(--font-ui-latin); }
+  .field-card--link[data-stationery="folder"] .field-card__footer { padding-bottom: 0; }
+  .field-card--link[data-stationery="folder"] .field-card__domain { display: flex; align-items: center; gap: 6px; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--fg-2); font: 400 12px/22px var(--font-mono); }
+  .field-card--link[data-stationery="folder"] .field-card__domain:not(:empty)::after { content: none; }
+  .field-card--link .field-card__link-url { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .field-card--link .field-card__link-icon { flex: none; stroke: var(--zhu); }
+  .field-card--link .field-card__link-poster { order: -1; flex: none; align-self: flex-start; min-width: 0; width: calc(100% - 28px); margin: 12px 14px 0; padding: 0; overflow: hidden; border: 1px solid var(--rule-paper); border-radius: 3px; background: var(--paper-wall); container-type: inline-size; }
+  /* React Flow holds integer node heights: keep the 16:9 print within one CSS px of that geometry. */
+  .field-card--link .field-card__link-poster img { display: block; width: 100%; height: min(150px, round(down, calc(100cqw * 9 / 16), 1px)); max-height: 150px; aspect-ratio: 16 / 9; object-fit: cover; filter: none; }
+  .field-card--link .field-card__link-content { order: 2; flex: none; padding: 6px 14px 0; overflow: visible; }
+  .field-card--link .field-card__link-content .field-card__text-btn { margin: 0 0 0 -6px; color: var(--fg-2); }
+}

@@ -1,0 +1,79 @@
+{
+  "name": "field-creator-canvas",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "postinstall": "node node_modules/electron/install.js",
+    "runtime:install": "node node_modules/electron/install.js",
+    "dev": "node studio/scripts/launch.mjs",
+    "dev:browser": "node studio/scripts/launch.mjs --browser",
+    "build": "npm run build --prefix studio && node studio/scripts/build-native.mjs",
+    "start": "node studio/scripts/launch.mjs --production-root studio/dist --native-entry studio/dist-native/main.cjs",
+    "test": "npm test --prefix studio",
+    "test:e2e": "node studio/scripts/mvp-smoke.mjs"
+  },
+  "dependencies": {
+    "@tiptap/extension-link": "3.31.3",
+    "@tiptap/react": "3.31.3",
+    "@tiptap/starter-kit": "3.31.3",
+    "@xyflow/react": "12.12.0",
+    "lucide-react": "1.49.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "turndown": "7.2.4",
+    "yauzl": "3.4.0",
+    "yazl": "3.3.1",
+    "@codemirror/commands": "6.11.1",
+    "@codemirror/lang-markdown": "6.5.2",
+    "@codemirror/language": "6.12.4",
+    "@codemirror/state": "6.7.6",
+    "@codemirror/view": "6.43.13",
+    "@fontsource-variable/inter": "5.3.0",
+    "@fontsource-variable/noto-sans-sc": "5.3.0",
+    "@fontsource-variable/noto-serif-sc": "5.3.0",
+    "@lezer/highlight": "1.2.5",
+    "@lezer/markdown": "1.7.2",
+    "lxgw-wenkai-screen-web": "1.522.0",
+    "lxgw-wenkai-screen-webfont": "1.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.3",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@types/turndown": "5.0.6",
+    "@types/yauzl": "3.4.0",
+    "@types/yazl": "3.3.1",
+    "@vitejs/plugin-react": "6.1.1",
+    "electron": "44.5.0",
+    "esbuild": "0.28.2",
+    "playwright": "1.63.0",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vite": "8.3.1",
+    "@fontsource/ibm-plex-mono": "5.3.0",
+    "postcss": "8.5.29",
+    "rolldown": "1.2.12"
+  },
+  "description": "来处 whence — a local-first creative canvas for sources, notes and drafts",
+  "license": "MIT",
+  "author": "YUNYE FLOW",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yunye123/whence.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yunye123/whence/issues"
+  },
+  "homepage": "https://github.com/yunye123/whence#readme",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "overrides": {
+    "@tiptap/extension-bubble-menu": "3.31.3",
+    "@tiptap/extension-floating-menu": "3.31.3"
+  },
+  "allowScripts": {
+    "esbuild": true
+  }
+}

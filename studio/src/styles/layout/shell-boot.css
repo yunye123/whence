@@ -1,0 +1,31 @@
+/* W1-E: layout/shell.css; original cascade position retained by styles/index.css. */
+@layer layout {
+
+  /* “跳到画布”（§6.28）：视觉隐藏，键盘聚焦时出现在左上。标记由 App 加（见 integration/chrome.md） */
+  .skip-link {
+    position: fixed;
+    z-index: var(--z-tooltip);
+    top: 8px;
+    left: 8px;
+    display: inline-flex;
+    align-items: center;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: var(--radius-ctl);
+    background: var(--bg-panel);
+    box-shadow: var(--shadow-tool);
+    color: var(--fg-1);
+    font: var(--fw-semibold) 14px/22px var(--font-ui);
+    text-decoration: none;
+    transform: translateY(calc(-100% - 16px));
+  }
+  .skip-link:focus-visible { transform: none; box-shadow: var(--shadow-tool), var(--focus-shadow); }
+
+  /* Loading, the lazy welcome fallback and the mounted welcome share a flat desk.
+     The old floating canvas-hint placement is removed; W2-D owns the complete rail.css hint. */
+  .boot-screen { position: relative; isolation: isolate; }
+  :is(.boot-screen, section.welcome:empty)::before,
+  :is(.boot-screen, section.welcome:empty)::after {
+    content: none;
+  }
+}

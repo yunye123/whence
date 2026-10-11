@@ -1,0 +1,36 @@
+/* LOD 三档（DESIGN_SYSTEM §6.16、§0 规则 3–4、K7、K9-7、C14）
+   - 档位只来自枚举 data-lod="full|simple|far"；--z-tier（向下量化到 0.05，只在档位切换与移动结束时写入）
+     是字号与剪影补偿的唯一来源，--z 只给描边类绘制属性。两者由 src/canvas/lod.ts 写在 .react-flow 根上。
+   - 补偿用 CSS zoom（1 / --z-tier，或按名义字号折算）：被补偿的元素内部按“屏幕像素”书写，13px 就是
+     屏幕上的 13px。zoom 只在档位或 --z-tier 变化时改变，平移缩放的每一帧不重排。
+   - 行数一律按可用高度取整：可用高度来自 size 容器（cqh），行高用 1lh，最后一行省略号，绝不露半行。
+   - 简化档只在外框锁定后（[data-lod-frame]，见 useLodFrame）重排内容，卡片外框尺寸不变（K9-7）。
+   - 概览档的剪影画在 .field-card__overview；纸面、选中墨线、纸叠留在 .field-card 根上（C14）。 */
+/* W1-E: features/lod.css; original cascade position retained by styles/index.css. */
+@layer features {
+
+  /* ===================================================================
+     0. 画布：网格在 0.6 以下淡出，概览档不画网格
+     =================================================================== */
+  .react-flow .react-flow__background {
+    transition: opacity var(--dur-base) var(--ease-out), visibility 0s;
+  }
+  .react-flow[data-grid-off] .react-flow__background {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--dur-base) var(--ease-out), visibility 0s linear var(--dur-base);
+  }
+
+  /* ===================================================================
+     1. 平移缩放进行中（.flow-container.is-moving）：纸卡环境影收起，只留发丝；档位淡入暂停
+     =================================================================== */
+  /* Direct painting override: no inherited per-frame variables; even selected/lit/tray roots retain one edge. */
+  .flow-container.is-moving .react-flow__node > .field-card[data-stationery]::before {
+    box-shadow: 0 0 0 1px var(--paper-edge);
+    transition: none;
+  }
+  .flow-container.is-moving .react-flow__node > .field-card[data-stationery] { transform: none; box-shadow: none; }
+  .flow-container.is-moving .field-card[data-stationery] :where(*),
+  .flow-container.is-moving .field-card[data-stationery] :where(*)::before,
+  .flow-container.is-moving .field-card[data-stationery] :where(*)::after { box-shadow: none; }
+}

@@ -1,0 +1,141 @@
+/* W1-E: features/dialogs.css; original cascade position retained by styles/index.css. */
+@layer features {
+
+  /* ---------- 使用指南（§6.26）：左边一句做法，右边这一步用得到的按键 ---------- */
+  .help-guide { padding-bottom: var(--space-6); }
+  /* 内容可滚动时正文是一个可聚焦区域（DLG-12）：焦点环画在可见边缘内侧，随滚动不动。 */
+  .help-guide:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--focus-ring); }
+  .help-group {
+    display: grid;
+    grid-template-columns: minmax(0, 260px) minmax(0, 1fr);
+    gap: var(--space-10);
+    padding: var(--space-5) 0;
+    box-shadow: inset 0 1px 0 var(--border-hair);
+  }
+  .help-group:first-child { padding-top: var(--space-2); box-shadow: none; }
+  .help-group__lead h3 { margin: 0; font: var(--fw-semibold) var(--fs-ui)/22px var(--font-ui); color: var(--fg-1); }
+  .help-group__lead p { margin: var(--space-2) 0 0; font: var(--fw-book) var(--fs-ui)/23px var(--font-ui); color: var(--fg-2); text-wrap: pretty; }
+  .help-group__keys { display: grid; gap: 0; margin: 0; align-content: start; }
+  .help-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); min-height: 28px; }
+  .help-row dt { font: var(--fw-book) var(--fs-ui)/23px var(--font-ui); color: var(--fg-1); }
+  .help-row dd { margin: 0; }
+  .help-keys { display: inline-flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-3); }
+  .help-chord { display: inline-flex; align-items: center; gap: 3px; }
+  .help-or, .help-hold, .help-note { font: var(--type-meta); color: var(--fg-3); }
+  .help-hold { margin-right: 2px; }
+  .help-storage {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-4);
+    margin: var(--space-2) 0 0;
+    padding: var(--space-5) var(--space-6);
+    border-radius: var(--radius-ctl);
+    background: var(--bg-sunken);
+    font: var(--fw-book) var(--fs-ui)/23px var(--font-ui);
+    color: var(--fg-2);
+  }
+  .help-storage svg { flex: none; margin-top: 3px; color: var(--fg-icon); }
+  .help-storage code {
+    padding: 2px 6px;
+    border-radius: 4px;
+    box-shadow: inset 0 0 0 1px var(--border-hair);
+    font: var(--fw-medium) var(--fs-xs)/1 var(--font-mono);
+    color: var(--fg-1);
+    overflow-wrap: anywhere;
+  }
+  .help-group--about { margin-top: var(--space-6); }
+  .help-version { font-variant-numeric: tabular-nums; color: var(--fg-1); }
+  .help-copy { margin-top: var(--space-4); }
+  .help-about { margin: 0; font: var(--fw-book) var(--fs-ui)/23px var(--font-ui); color: var(--fg-2); text-wrap: pretty; }
+  .help-about + .help-about { margin-top: var(--space-2); }
+  .modal .help-anytime { justify-content: flex-start; gap: var(--space-8); }
+  .help-anytime__title { font: var(--fw-semibold) var(--fs-ui)/22px var(--font-ui); color: var(--fg-1); }
+  .help-anytime__item { display: inline-flex; align-items: center; gap: var(--space-4); font: var(--fw-book) var(--fs-ui)/23px var(--font-ui); color: var(--fg-2); }
+
+  /* ---------- 视频导入任务（IM-M2） ---------- */
+  .vit-summary { display: flex; flex-wrap: wrap; gap: var(--space-5); }
+  .vit-summary__attention { color: var(--fg-1); font-weight: var(--fw-medium); }
+  .modal .video-import-list, .video-import-list { display: grid; gap: var(--space-5); margin: 0; }
+  .modal .video-import-row, .video-import-row {
+    padding: var(--space-6) var(--space-7);
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: var(--bg-sunken);
+    box-shadow: inset 0 0 0 1px var(--border-hair);
+  }
+  .video-import-row.is-unfinished { box-shadow: inset 0 0 0 1px var(--border-hair), inset 3px 0 0 var(--fg-1); }
+  .video-import-row-heading { display: flex; align-items: center; gap: var(--space-5); }
+  .video-import-row-heading > div { flex: 1; min-width: 0; }
+  .video-import-row-heading strong, .modal .video-import-row-heading strong {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font: var(--fw-semibold) var(--fs-ui)/22px var(--font-ui);
+    color: var(--fg-1);
+  }
+  .video-import-row-heading small { display: block; margin: 0; font: var(--type-meta); color: var(--fg-3); }
+  .vit-icon { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: var(--radius-ctl); background: var(--bg-sunken); color: var(--fg-icon); }
+  .is-failed .vit-icon, .is-interrupted .vit-icon { color: var(--fg-1); background: var(--bg-sunken); }
+  .is-completed .vit-icon { color: var(--fg-1); }
+  .video-import-state, .modal .video-import-state { font: var(--type-meta); color: var(--fg-2); white-space: nowrap; }
+  .is-failed .video-import-state, .is-interrupted .video-import-state { color: var(--fg-1); font-weight: var(--fw-medium); }
+  .video-import-row-message, .modal .video-import-row-message {
+    max-height: 130px;
+    margin: var(--space-4) 0 0 calc(32px + var(--space-5));
+    overflow-y: auto;
+    font: var(--type-meta);
+    color: var(--fg-2);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .video-import-meter, .modal .video-import-meter { height: 4px; margin: var(--space-4) 0 0 calc(32px + var(--space-5)); border-radius: 2px; background: var(--rail-bg); overflow: hidden; }
+  .video-import-meter > span { display: block; height: 100%; border-radius: inherit; background: var(--fg-2); transition: width var(--dur-base) var(--ease-out); }
+  .video-import-row-actions, .modal .video-import-row-actions { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-3); margin-top: var(--space-5); }
+  .video-import-row-actions > span { margin-right: auto; font: var(--type-meta); color: var(--fg-3); }
+
+  /* ---------- 目录恢复 ---------- */
+  dialog.inspector-dialog.directory-recovery-dialog { width: min(480px, calc(100vw - 32px)); }
+  .directory-recovery-content { display: grid; gap: var(--space-6); padding: 0; text-align: left; }
+  .directory-recovery-board { display: flex; gap: var(--space-5); align-items: flex-start; }
+  .directory-recovery-icon { display: grid; place-items: center; flex: none; width: 36px; height: 36px; border-radius: var(--radius-ctl); background: var(--bg-sunken); color: var(--fg-1); }
+  .directory-recovery-content h3 { margin: 0; font: var(--fw-semibold) var(--fs-ui)/22px var(--font-ui); color: var(--fg-1); }
+  .directory-recovery-content p { margin: var(--space-1) 0 0; font: var(--fw-book) var(--fs-ui)/23px var(--font-ui); color: var(--fg-2); }
+  .directory-recovery-content dl { display: grid; gap: 0; margin: 0; border-radius: var(--radius-ctl); box-shadow: inset 0 0 0 1px var(--border-hair); }
+  .directory-recovery-content dl > div { display: grid; grid-template-columns: 112px 1fr; gap: var(--space-5); padding: var(--space-4) var(--space-6); }
+  .directory-recovery-content dl > div + div { box-shadow: inset 0 1px 0 var(--border-hair); }
+  .directory-recovery-content dt { font: var(--type-meta); color: var(--fg-3); }
+  .directory-recovery-content dd { margin: 0; font: var(--fw-book) var(--fs-ui)/23px var(--font-ui); color: var(--fg-1); overflow-wrap: anywhere; }
+  .directory-recovery-content dd.tabular { font: var(--fw-medium) var(--fs-xs)/18px var(--font-mono); }
+  .directory-recovery-note { margin: 0; }
+  .directory-recovery-actions { display: flex; justify-content: flex-end; gap: var(--space-4); margin-top: var(--space-3); }
+
+  /* W2-G owns the transcript dialogs. This later fragment replaces their old
+     watch-workbench typography without changing the W3-G workbench file. */
+  dialog.inspector-dialog.watch-correct-dialog::backdrop { background: var(--bg-scrim); }
+  dialog.inspector-dialog.watch-correct-dialog[open] { display: flex; flex-direction: column; overflow: hidden; }
+  dialog.inspector-dialog.watch-correct-dialog > header, dialog.watch-correct-dialog > footer { flex: none; }
+  .watch-correct__body { flex: 1 1 auto; min-height: 0; margin: -4px; padding: 4px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+  dialog.inspector-dialog.watch-correct-dialog > header h2 { font: var(--fw-semibold) var(--fs-h3)/26px var(--font-read); }
+  dialog.watch-replace-dialog .inspector-dialog-description { font: var(--fw-regular) var(--fs-ui)/23px var(--font-ui); }
+  .watch-correct__lead { font: var(--fw-book) var(--fs-ui)/23px var(--font-ui); }
+  .watch-correct__time { font: var(--fw-medium) var(--fs-xs)/18px var(--font-mono); }
+  .watch-correct__field { font: var(--fw-medium) var(--fs-ui)/22px var(--font-ui); }
+  .watch-correct__field textarea {
+    max-height: min(240px, 30dvh);
+    font: var(--fw-regular) var(--fs-ui)/23px var(--font-ui);
+    background: var(--bg-sunken);
+    color: var(--fg-1);
+  }
+  .watch-correct__original h3 { font: var(--fw-medium) var(--fs-ui)/22px var(--font-ui); }
+  .watch-correct__original blockquote { font: var(--fw-regular) var(--fs-ui)/23px var(--font-ui); }
+  dialog.watch-correct-dialog > footer, dialog.watch-replace-dialog > footer { flex-wrap: wrap; }
+
+  @media (max-width: 620px) {
+    .help-group { grid-template-columns: minmax(0, 1fr); gap: var(--space-5); }
+    .modal .help-anytime { gap: var(--space-5); }
+    .video-import-row-heading { flex-wrap: wrap; }
+    .video-import-row-actions { flex-wrap: wrap; }
+    .directory-recovery-content dl > div { grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
+  }
+}

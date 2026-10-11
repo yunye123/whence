@@ -1,0 +1,427 @@
+/* 七类卡片 + 分组托盘（DESIGN_SYSTEM §6.8–6.15）
+   材质、阴影、选中墨线画在 .field-card 根的 ::before 上（C14），概览档隐藏 surface 时纸面仍在。
+   只引用语义令牌；暗光只来自令牌的 light-dark()；视口层内不用 filter / backdrop-filter。 */
+/* W1-E: features/cards.css; original cascade position retained by styles/index.css. */
+@layer features {
+
+  /* ===================================================================
+     0. 壳与纸面
+     =================================================================== */
+  .field-card {
+    --card-bg: var(--paper-plain);
+    --card-edge: 0 0 0 1px var(--paper-edge);
+    --card-ambient-rest: inset 0 1px 0 var(--paper-top-hi), 0 1px 1px var(--shadow-paper-1), 0 3px 8px -3px var(--shadow-paper-2);
+    --card-ambient-lift: inset 0 1px 0 var(--paper-top-hi), 0 2px 3px var(--shadow-paper-1), 0 10px 22px -8px var(--shadow-paper-2);
+    --card-ambient: var(--card-ambient-rest);
+    --card-radius: var(--radius-paper);
+    --card-inset-left: 0px;
+    --card-inset-right: 0px;
+    --card-inset-top: 0px;
+    --card-inset-bottom: 0px;
+    --card-pad-x: 14px;
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    color: var(--fg-1);
+    background: none;
+    border: 0;
+    border-radius: var(--card-radius);
+    box-shadow: none;
+    font: var(--type-body);
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+  .field-card::before {
+    content: '';
+    position: absolute;
+    inset: var(--card-inset-top) var(--card-inset-right) var(--card-inset-bottom) var(--card-inset-left);
+    z-index: -1;
+    border-radius: var(--card-radius);
+    background: var(--card-bg);
+    box-shadow: var(--card-edge), var(--card-ambient);
+    transition: box-shadow var(--dur-fast) var(--ease-out);
+  }
+  .field-card__surface {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  /* 悬停：纸卡抬起 1px（在 .field-card 上位移，不动节点 transform）；平移与只读不抬 */
+  .field-card:not(.is-hand, .is-overview, .is-readonly):hover {
+    transform: translateY(-1px);
+    --card-ambient: var(--card-ambient-lift);
+  }
+  /* 选中墨框画在根伪元素，向纸面外偏 2px，页签不参与。 */
+  .field-card.is-selected {
+    --card-ambient: var(--card-ambient-lift);
+  }
+  /* 多选：每张卡只画墨线，不抬升（CD-M7） */
+  .react-flow__nodes:has(> .react-flow__node.selected ~ .react-flow__node.selected) .field-card.is-selected {
+    --card-ambient: var(--card-ambient-rest);
+  }
+  .react-flow__nodes:has(> .react-flow__node.selected ~ .react-flow__node.selected) .react-flow__node.selected .field-card__resize-handle,
+  .react-flow__nodes:has(> .react-flow__node.selected ~ .react-flow__node.selected) .react-flow__node.selected .field-card__resize-line {
+    display: none;
+  }
+  /* 多选包围盒（SelectionBounds）：1px 墨色虚线 4/4，离卡片墨线 8px，屏幕尺寸恒定、不接指针 */
+  .field-selection-bounds {
+    --pad: calc(8px / var(--z, 1));
+    position: absolute;
+    left: calc(var(--bx) * 1px - var(--pad));
+    top: calc(var(--by) * 1px - var(--pad));
+    width: calc(var(--bw) * 1px + var(--pad) * 2);
+    height: calc(var(--bh) * 1px + var(--pad) * 2);
+    overflow: visible;
+    pointer-events: none;
+  }
+  .field-selection-bounds__rect {
+    fill: none;
+    stroke: var(--selection-ring);
+    stroke-width: calc(1px / var(--z, 1));
+    stroke-dasharray: calc(4px / var(--z, 1)) calc(4px / var(--z, 1));
+  }
+  /* 框选松手后 React Flow 自己的选区矩形只作整体拖动的把手，不再另画一个框（K6 类名不变） */
+  .react-flow__nodesselection-rect { opacity: 0; }
+  /* 拖动：跟手 0ms；表面轻微放大并投下更深的影，松手时阴影收回（不做惯性，K9） */
+  .react-flow__node.dragging .field-card {
+    transform: scale(1.01);
+    transition: none;
+    --card-ambient: 0 16px 32px -12px var(--shadow-c2);
+  }
+  .react-flow__node.dragging .field-card::before { transition: none; }
+
+  /* 来源被点亮、导入失败、新落位 */
+  .field-card.is-lit-source::before { outline: calc(1.5px / var(--z, 1)) solid var(--zhu); outline-offset: 0; }
+  .field-card:is(.is-failed, .is-media-missing)::before { border: 1px dashed var(--fg-1); }
+  .field-card.is-fresh { animation: field-card-land var(--dur-base) var(--ease-out) both; }
+  .field-card.is-fresh::after {
+    content: '';
+    position: absolute;
+    inset: var(--card-inset-top) var(--card-inset-right) var(--card-inset-bottom) var(--card-inset-left);
+    border-radius: var(--card-radius);
+    border: calc(1px / var(--z, 1)) solid var(--fg-1);
+    box-shadow: none;
+    pointer-events: none;
+    animation: field-card-ring 1200ms var(--ease-out) forwards;
+  }
+  @keyframes field-card-land { from { opacity: 0; transform: translateY(6px); } }
+  @keyframes field-card-ring { from { opacity: 1; } to { opacity: 0; } }
+
+  /* 键盘焦点：3px 墨圈，向外偏 5px，屏幕宽度恒定（K8）。 */
+  .react-flow__node-card:focus-visible {
+    outline-width: calc(var(--focus-node-width) / var(--z));
+    outline-offset: calc(var(--focus-node-offset) / var(--z));
+    border-radius: 6px;
+  }
+  /* 鼠标点出来的焦点、鼠标用户打开示例后程序交给第一张卡的焦点（focus-source.ts）：按住 Shift 多选、
+     按 F 等快捷键时浏览器也会判成 :focus-visible，这里不画光环；Tab、方向键、Enter、Esc 等真正的键盘操作
+     会去掉这个记号，K8 的轮廓照常出现 */
+  .react-flow__node-card[data-focus-source]:focus-visible { outline: none; }
+  /* 欢迎页或对话框关上后，卡片出现在一动未动的指针下面：浏览器照样判 :hover，这里先不亮悬停控件、
+     不抬纸，指针真正移动或按下后恢复（focus-source.ts 的 data-pointer-still） */
+  .react-flow[data-pointer-still] .field-card:not(.is-selected):hover { transform: none; --card-ambient: var(--card-ambient-rest); }
+  .react-flow[data-pointer-still] .field-card--image:not(.is-selected):hover { box-shadow: none; }
+  .react-flow[data-pointer-still] .field-card:not(.is-selected, :focus-within):hover :is(.field-card__actions, .field-card__import-actions) { opacity: 0; }   /* 只是不显，仍可点：按下即恢复 */
+  .react-flow[data-pointer-still] .field-card--image:not(:focus-within):hover .field-card__header,
+  .react-flow[data-pointer-still] .field-card--image:not(.is-selected, :focus-within):hover .field-card__image-expand,
+  .react-flow[data-pointer-still] .field-card:hover .field-card__handle:not(.connecting, .connectingto, .valid) { opacity: 0; }
+
+  /* 中文短文本折行：词间 <wbr> + keep-all（Words.tsx 只在插入了断点时加这个类） */
+  .field-card .cjk-wrap { word-break: keep-all; overflow-wrap: anywhere; line-break: strict; }
+  /* 摘录原句、我的理解、笔记：每段最后几个词连在一起（Words keep，至少 4 个字），末行不再只剩“来算”“空的。”；只关折行，段内换行照旧 */
+  .field-card .keep-together { text-wrap-mode: nowrap; }
+
+  /* ===================================================================
+     1. 头部、元信息行、悬停操作
+     =================================================================== */
+  .field-card__header {
+    position: static;
+    display: block;
+    flex: none;
+    min-height: 0;
+    margin: 0;
+    padding: 14px calc(var(--card-pad-x) + 26px) 0 var(--card-pad-x);
+    border: 0;
+    background: none;
+    cursor: grab;
+  }
+  .field-card__header h3:not(.sr-only) {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    flex: none;
+    margin: 0;
+    overflow: hidden;
+    font: var(--type-card-title);
+    color: var(--fg-1);
+    white-space: normal;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+    text-wrap: balance;
+  }
+
+  .field-card__footer {
+    display: flex;
+    flex: none;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-height: 0;
+    margin-top: auto;
+    padding: 6px var(--card-pad-x) 12px;
+    border: 0;
+    font: var(--type-meta);
+    color: var(--fg-3);
+    cursor: grab;
+  }
+  .field-card__footer.is-empty { display: none; }
+  .field-card__meta-source {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .field-card__meta-state {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 5px;
+    margin-left: auto;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .field-card__meta-state svg, .field-card__meta-source svg { flex: none; color: var(--fg-icon); }
+  .field-card__meta-state.is-danger { color: var(--status-danger-fg); }
+  .field-card__meta-state.is-live { margin-left: 0; color: var(--fg-2); }
+
+  /* 悬停 / 焦点 / 选中时出现的操作（静置卡面常驻按钮 0 个，P1） */
+  .field-card__actions {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--dur-fast) var(--ease-out);
+    cursor: default;
+  }
+  .field-card:is(:hover, :focus-within, .is-selected) .field-card__actions,
+  .react-flow__node:focus-visible:not([data-focus-source]) > .field-card .field-card__actions { opacity: 1; pointer-events: auto; }
+  .field-card:is(.is-hand, .is-overview) .field-card__actions { display: none; }
+  /* 选中后操作条接管（§6.6）：卡内的悬停操作与“查看原图”让位，不和操作条的“更多”“查看原图”重复；
+     指针直接移到原处或键盘焦点进入时才浮现（仍可点，原地编辑笔记时的“完成”照常常驻） */
+  .react-flow__node.selected > .field-card:not(.is-editing) .field-card__actions:not(:hover, :focus-within, :has([aria-expanded="true"])) { opacity: 0; }
+  .react-flow__node.selected > .field-card .field-card__image-expand:not(:hover, :focus-visible) { opacity: 0; }
+  /* 包住“…”的这一层也是 flex：否则按钮落在一行文字的行框里，比旁边的按钮高出 2px（CANVAS-16） */
+  .field-card__menu-wrap { position: relative; display: flex; flex: none; }
+  .field-card__chip,
+  .field-card__actions .field-card__icon-button {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 24px;
+    height: 24px;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: var(--paper-plain);
+    box-shadow: 0 0 0 1px var(--paper-edge);
+    color: var(--fg-2);
+    font: var(--fw-medium) var(--fs-xs)/1 var(--font-ui);
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .field-card__chip svg, .field-card__actions .field-card__icon-button svg { color: var(--fg-2); }
+  .field-card__chip:hover,
+  .field-card__actions .field-card__icon-button:hover,
+  .field-card__actions .field-card__icon-button[aria-expanded="true"] {
+    background: linear-gradient(var(--bg-hover), var(--bg-hover)), var(--paper-plain);
+  }
+  .field-card__chip:hover svg,
+  .field-card__actions .field-card__icon-button:is(:hover, [aria-expanded="true"]) svg { color: var(--fg-1); }
+  .field-card__chip.is-text { width: auto; padding: 0 8px 0 6px; color: var(--fg-1); }
+  .field-card__hint { font: var(--type-meta); color: var(--fg-3); white-space: nowrap; padding-right: 2px; }
+  /* 叠在媒体画面上的操作：浮层不随主题（画面本身不随主题） */
+  .field-card:is(.field-card--video, .field-card--image) .field-card__actions :is(.field-card__chip, .field-card__icon-button) {
+    background: var(--media-button-bg);
+    box-shadow: 0 0 0 1px var(--paper-edge);
+  }
+  .field-card:is(.field-card--video, .field-card--image) .field-card__actions :is(.field-card__chip, .field-card__icon-button) svg { color: var(--media-button-fg); }
+
+  /* 卡片里的小按钮：次级实底（§6.1 .btn--soft / .btn--sm），禁用不用整体透明度 */
+  .field-card .field-card__btn,
+  .field-card .field-card__media-cta {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    height: 28px;
+    min-height: 0;
+    padding: 0 10px;
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: var(--action-soft-bg);
+    color: var(--action-soft-fg);
+    font: var(--fw-medium) var(--fs-xs)/1 var(--font-ui);
+    white-space: nowrap;
+    opacity: 1;
+    box-shadow: none;
+  }
+  .field-card .field-card__btn svg { color: var(--fg-1); }
+  .field-card .field-card__btn:hover:enabled, .field-card .field-card__media-cta:hover { background: var(--action-soft-bg-hover); }
+  .field-card .field-card__btn:disabled { color: var(--fg-disabled); cursor: default; opacity: 1; }
+  .field-card .field-card__btn:disabled svg { color: var(--fg-disabled); }
+  .field-card .field-card__btn--sm { height: 24px; padding: 0 8px; }
+  .field-card .field-card__text-btn {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    height: 24px;
+    margin: 0 -6px 0 0;
+    padding: 0 6px;
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: none;
+    color: var(--fg-2);
+    font: var(--fw-medium) var(--fs-xs)/1 var(--font-ui);
+    white-space: nowrap;
+  }
+  .field-card .field-card__text-btn:hover { background: var(--bg-hover); color: var(--fg-1); }
+  .field-card__why { font: var(--type-meta); color: var(--fg-3); white-space: nowrap; }
+  .field-card__quiet-link { font: var(--type-meta); color: var(--fg-2); text-decoration: none; white-space: nowrap; }
+  .field-card__quiet-link:hover { color: var(--fg-1); text-decoration: underline; text-underline-offset: 3px; }
+
+  /* ===================================================================
+     2. 连接点：10px 空心环，四边命中区扩到 24px；只读与平移时不出现（CD-m3）
+     =================================================================== */
+  .field-card .field-card__handle {
+    z-index: 4;
+    width: 10px;
+    height: 10px;
+    min-width: 0;
+    min-height: 0;
+    border: 1.5px solid var(--fg-2);
+    border-radius: 50%;
+    background: var(--bg-canvas);
+    box-shadow: none;
+    opacity: 0;
+    transition: opacity var(--dur-fast) var(--ease-out);
+  }
+  .field-card .field-card__handle::before { content: ''; position: absolute; inset: -8px; border-radius: 50%; }
+  /* 只在悬停时出现：选中（尤其多选）不再让每张卡都亮出连接点，连线由操作条的“连线”或悬停提供 */
+  .field-card:hover .field-card__handle,
+  .field-card .field-card__handle:is(.connecting, .connectingto, .valid) { opacity: 1; }
+  .field-card .field-card__handle:hover { border-color: var(--fg-1); }
+  .field-card:is(.is-readonly, .is-hand) .field-card__handle { opacity: 0; pointer-events: none; }
+  /* 摘录的入口系在签孔上（孔心距签尖 7.6、距卡顶 21）；出口在原句首行 */
+  .field-card--quote > .react-flow__handle-left { top: 21px; left: 7.6px; }
+  /* 签孔本身就是入口：环只在连线拖到这里时出现，静置与悬停不在孔上再套一个圈 */
+  .field-card.field-card--quote > .react-flow__handle-left:not(.connectingto, .valid) { opacity: 0; }
+  .field-card--quote > .react-flow__handle-right { top: 54px; }
+  /* 视频、文字资料的出口画在刻度轨 / 篇幅轨上（Handle 放在轨内） */
+  .field-card__rail > .react-flow__handle-right,
+  .field-card__length-rail > .react-flow__handle-right {
+    top: 50%;
+    right: calc(-1 * var(--card-pad-x));
+  }
+
+  /* 尺寸手柄：墨线细框，与选中同色 */
+  .field-card .field-card__resize-line { border-color: var(--selection-ring); }
+  .field-card .field-card__resize-handle {
+    width: 8px;
+    height: 8px;
+    border: 1.5px solid var(--selection-ring);
+    border-radius: 2px;
+    background: var(--paper-plain);
+  }
+  /* 手柄框住纸面，不框节点：摘录的签悬挂区、文字资料的下一页、文稿的纸叠都在纸外（与 ::before 同一组内缩）。
+     简化档的手柄被 zoom 放大（lod.css），--resize-k 把内缩量先乘回 --z-tier，放大后仍落在纸边。 */
+  .field-card > .field-card__resize-line:is(.left, .right) { top: var(--card-inset-top); height: calc(100% - var(--card-inset-top) - var(--card-inset-bottom)); }
+  .field-card > .field-card__resize-line.left { left: var(--card-inset-left); }
+  .field-card > .field-card__resize-line.right { left: calc(100% - var(--card-inset-right)); }
+  .field-card > .field-card__resize-line:is(.top, .bottom) {
+    left: var(--card-inset-left);
+    width: calc(100% - var(--card-inset-left) - var(--card-inset-right));
+  }
+  .field-card > .field-card__resize-line.bottom { top: calc(100% - var(--card-inset-bottom)); }
+  .field-card > .field-card__resize-line.top { top: var(--card-inset-top); }
+  .field-card > .field-card__resize-handle.left { left: calc(var(--card-inset-left) * var(--resize-k, 1)); }
+  .field-card > .field-card__resize-handle.right { left: calc(100% - var(--card-inset-right) * var(--resize-k, 1)); }
+  .field-card > .field-card__resize-handle.bottom { top: calc(100% - var(--card-inset-bottom) * var(--resize-k, 1)); }
+  .field-card > .field-card__resize-handle.top { top: calc(var(--card-inset-top) * var(--resize-k, 1)); }
+
+  /* Shared migration boundary: obsolete type-specific paper stacks may not add shadow layers.
+     W3 owns their material geometry. Four root layers, at most two with blur; no descendant blur. */
+  .field-card[data-stationery][data-lod][data-display] {
+    --card-edge: 0 0 0 1px var(--paper-edge);
+    --card-ambient-rest: inset 0 1px 0 var(--paper-top-hi), 0 1px 1px var(--shadow-paper-1), 0 3px 8px -3px var(--shadow-paper-2);
+    --card-ambient-lift: inset 0 1px 0 var(--paper-top-hi), 0 2px 3px var(--shadow-paper-1), 0 10px 22px -8px var(--shadow-paper-2);
+    box-shadow: none;
+    outline: none;
+  }
+  .field-card[data-stationery="manuscript"][data-lod][data-display] {
+    --card-edge: 0 0 0 1px var(--shadow-fair-edge);
+    --card-ambient-rest: inset 0 1px 0 var(--paper-manuscript-hi), 0 1px 2px var(--shadow-fair-1), 0 12px 20px -12px var(--shadow-fair-2);
+    --card-ambient-lift: inset 0 1px 0 var(--paper-manuscript-hi), 0 2px 3px var(--shadow-fair-1), 0 14px 28px -12px var(--shadow-fair-2);
+  }
+  .field-card[data-stationery][data-lod]::before {
+    display: block;
+    box-shadow: var(--card-edge), var(--card-ambient);
+  }
+  .field-card[data-stationery="photo"]::before { background: none; }
+  .field-card.is-lit-source[data-stationery]::before { outline: calc(1.5px / var(--z, 1)) solid var(--zhu); outline-offset: 0; }
+  .field-card.is-selected[data-stationery]::before {
+    outline: calc(2px / var(--z, 1)) solid var(--selection-ring);
+    outline-offset: calc(2px / var(--z, 1));
+  }
+  .field-card[data-stationery][data-lod] :is(.field-card__surface, .field-card__overview) :where(*),
+  .field-card[data-stationery][data-lod] :is(.field-card__surface, .field-card__overview) :where(*)::before,
+  .field-card[data-stationery][data-lod] :is(.field-card__surface, .field-card__overview) :where(*)::after { box-shadow: none; }
+  .field-card[data-stationery] :is(button, a, input, textarea):focus-visible {
+    outline: var(--focus-width) solid var(--focus-ring);
+    outline-offset: var(--focus-offset);
+  }
+  .field-card.is-readonly[data-stationery] .field-card__menu-wrap { display: none; }
+  .field-card.is-hand[data-stationery] .field-card__resize-handle,
+  .field-card.is-readonly[data-stationery] .field-card__resize-handle,
+  .field-card.is-readonly[data-stationery] .field-card__resize-line { display: none; }
+  .field-card .char-wrap { word-break: normal; overflow-wrap: anywhere; line-break: strict; text-align: justify; }
+  .field-card .sentence-wrap { text-wrap: wrap; }
+  .field-card[data-lod="full"] .field-card__footer {
+    font: var(--type-card-meta);
+    font-size: max(var(--fs-xs), calc(12px / var(--z-tier, 1)));
+    line-height: 18px;
+  }
+  .field-card[data-lod="full"] :is(.field-card__meta-source, .field-card__meta-state) { height: 18px; line-height: 18px; }
+
+  /* Make the new conditional note title usable now; W3-C owns the full note material migration. */
+  .field-card[data-stationery="note"][data-lod] .field-card__header { position: static; inset: auto; height: auto; padding: 0; }
+  .field-card[data-stationery="note"][data-lod][data-has-title] .field-card__header { padding: 14px 40px 0 14px; }
+  .field-card[data-stationery="note"][data-lod][data-has-title] .field-card__header h3 { font: var(--type-card-note-title); }
+  .field-card[data-stationery="note"] .field-card__note-content { padding: 14px; }
+  .field-card[data-stationery="note"][data-has-title] .field-card__note-content { padding-top: 6px; }
+  .field-card[data-stationery="note"] .field-card__note-editor { caret-color: var(--fg-1); }
+
+  @media (forced-colors: active) {
+    .field-card[data-stationery]::before { outline: 1px solid CanvasText; }
+    .field-card.is-selected[data-stationery]::before { outline-width: calc(2px / var(--z, 1)); }
+  }
+}

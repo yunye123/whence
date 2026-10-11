@@ -1,0 +1,20 @@
+/* Note simple tier: title on one row, complete WenKai lines in the held outer frame. */
+@layer features {
+  .field-card--note:not(.field-card--article)[data-lod="simple"][data-lod-frame][data-has-title] .field-card__header {
+    zoom: var(--lod-k);
+    padding: calc(14px * var(--z-tier)) calc(var(--card-pad-x) * var(--z-tier)) 0;
+  }
+  /* The whole header is compensated; undo the common title's second zoom. */
+  .field-card--note:not(.field-card--article)[data-stationery="note"][data-lod="simple"][data-lod-frame] .field-card__header h3:not(.sr-only) { font-size: 16px; line-height: 24px; zoom: 1; }
+  .field-card--note:not(.field-card--article)[data-lod="simple"][data-lod-frame] .field-card__note-content {
+    --lod-zoom: max(1, calc(14 / 14 / var(--z-tier)));
+    flex: 1 1 0;
+    height: auto;
+    zoom: var(--lod-zoom);
+    container-type: size;
+    padding: calc(14px / var(--lod-zoom)) calc(var(--card-pad-x) / var(--lod-zoom));
+  }
+  .field-card--note:not(.field-card--article)[data-lod="simple"][data-lod-frame][data-has-title] .field-card__note-content { padding-top: calc(6px / var(--lod-zoom)); }
+  .field-card--note[data-lod="simple"][data-lod-frame] .field-card__note-preview { max-height: max(0px, round(down, 100cqh, 1lh)); overflow: hidden; white-space: pre-wrap; }
+  .field-card--note[data-lod="simple"][data-lod-frame] .field-card__note-preview { line-height: clamp(14px, calc(100cqh - 1px), 22px); }
+}

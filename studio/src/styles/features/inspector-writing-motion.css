@@ -1,0 +1,8 @@
+/* W1-E: features/inspector-writing.css; original cascade position retained by styles/index.css. */
+@layer features {
+  @keyframes draft-pop { from { opacity: 0; transform: translateY(-4px); } }
+  @keyframes draft-sheet { from { opacity: 0; transform: translateY(16px); } }
+  @keyframes draft-drawer { from { opacity: 0; transform: translateX(16px); } }
+  @keyframes draft-fade { from { opacity: 0; } }
+  @keyframes draft-spin { to { transform: rotate(360deg); } }
+}

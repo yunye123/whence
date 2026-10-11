@@ -1,0 +1,20 @@
+/* 本地打包字体（OFL-1.1，scripts/copy-fonts.mjs 生成 ../assets/fonts）。禁止远程字体。
+   @font-face 只是声明：浏览器只下载实际用到的字体族与 unicode-range 切片。 */
+@import '../assets/fonts/inter/opsz.css';
+@import '../assets/fonts/noto-sans-sc/wght.css';
+@import '../assets/fonts/noto-sans-sc-ui/ui.css';
+@import '../assets/fonts/noto-serif-sc/wght.css';
+@import '../assets/fonts/lxgw-wenkai-screen/result.css';
+@import '../assets/fonts/lxgw-wenkai-screen-ui/ui.css';
+@import '../assets/fonts/ibm-plex-mono/latin.css';
+@import '../assets/fonts/noto-sans-sc-body/body.css';
+@import '../assets/fonts/noto-serif-sc-body/body.css';
+
+/* 中文语境的引号、破折号、省略号交给思源黑体（只接管 6 个码位，避免落到 Inter 的西文字形） */
+@font-face {
+  font-family: 'Field Punct Sans';
+  font-weight: 100 900;
+  font-display: block;
+  src: url('../assets/fonts/noto-sans-sc-ui/ui-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+2014, U+2018-2019, U+201C-201D, U+2026;
+}

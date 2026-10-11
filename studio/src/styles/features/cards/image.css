@@ -1,0 +1,127 @@
+/* W3-E: photo print. Existing prefix/import position retained; caption is the existing header. */
+@layer features {
+  .field-card--image[data-stationery] {
+    --card-radius: 3px;
+    --card-edge: 0 0 transparent;
+    --card-ambient-rest: 0 0 transparent;
+    --card-ambient-lift: 0 1px 2px var(--shadow-c1), 0 8px 16px -8px var(--shadow-c2);
+    border-radius: 3px;
+    box-shadow: none;
+  }
+  .field-card--image[data-stationery]::before { background: none; }
+  .field-card--image[data-stationery]:not(.is-hand, .is-overview, .is-readonly):hover {
+    transform: translateY(-1px);
+    --card-ambient: var(--card-ambient-lift);
+  }
+  .field-card--image[data-stationery].is-selected { --card-ambient: var(--card-ambient-lift); }
+  .field-card--image.is-fresh::after { border-radius: 3px; }
+  .field-card--image .field-card__image-button {
+    position: relative;
+    display: block;
+    flex: 1 1 auto;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    aspect-ratio: var(--image-ratio, 4 / 3);
+    overflow: hidden;
+    border-radius: 3px;
+    background: var(--paper-wall);
+  }
+  .field-card--image .field-card__image-button > img {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: none;
+    border-radius: inherit;
+  }
+  .field-card--image .field-card__image-button.is-empty { border: 1px solid var(--border-strong); }
+  .field-card--image.is-media-missing .field-card__image-button.is-empty { border: 1px dashed var(--fg-1); }
+  .field-card--image .field-card__problem { border-radius: inherit; background: var(--paper-wall); color: var(--fg-1); }
+  .field-card--image .field-card__media-placeholder { background: var(--paper-wall); color: var(--fg-3); }
+
+  /* C7/K10: retain header/footer in DOM. Main sets .has-tight-caption/.is-in-tray and --photo-number
+     (quoted CSS string) on the node wrapper. No gradient or second title. */
+  .field-card--image[data-stationery][data-lod] .field-card__header {
+    position: absolute;
+    inset: calc(100% + 6px) 0 auto;
+    z-index: 1;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    height: 18px;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    opacity: 1;
+    transition: opacity var(--dur-fast) var(--ease-out);
+  }
+  .field-card--image[data-stationery] .field-card__header h3:not(.sr-only) {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    font: 400 12px/18px var(--font-ui);
+    font-size: max(var(--fs-xs), calc(12px / var(--z-tier, 1)));
+    color: var(--fg-2);
+    text-shadow: none;
+    text-overflow: ellipsis;
+    text-wrap: nowrap;
+    white-space: nowrap;
+  }
+  .react-flow__node.has-tight-caption > .field-card--image[data-stationery][data-lod="full"] .field-card__header { opacity: 0; }
+  .react-flow__node.has-tight-caption > .field-card--image[data-stationery][data-lod="full"]:is(:hover, :focus-within, .is-selected) .field-card__header { opacity: 1; }
+  .react-flow__node.is-in-tray > .field-card--image[data-stationery][data-lod="full"] .field-card__header {
+    top: calc(100% + 3px);
+    height: 14px;
+    line-height: 14px;
+  }
+  .react-flow__node.is-in-tray > .field-card--image[data-stationery] .field-card__header h3 { line-height: 14px; }
+  .react-flow__node.is-in-tray > .field-card--image[data-stationery] .field-card__header::before {
+    content: var(--photo-number, none);
+    flex: none;
+    font: 500 12px/14px var(--font-mono);
+    font-size: max(var(--fs-xs), calc(12px / var(--z-tier, 1)));
+    color: var(--fg-3);
+  }
+  .react-flow[data-pointer-still] .react-flow__node:not(.has-tight-caption) > .field-card--image[data-stationery][data-lod="full"]:hover .field-card__header { opacity: 1; }
+  .react-flow[data-pointer-still] .react-flow__node.has-tight-caption > .field-card--image[data-stationery][data-lod="full"]:not(.is-selected, :focus-within):hover .field-card__header { opacity: 0; }
+  .field-card .field-card__image-expand {
+    position: absolute;
+    inset: 8px 8px auto auto;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-ctl);
+    background: var(--media-button-bg);
+    color: var(--media-button-fg);
+    box-shadow: none;
+    opacity: 0;
+    transition: opacity var(--dur-fast) var(--ease-out);
+  }
+  .field-card--image:is(:hover, :focus-within, .is-selected) .field-card__image-expand { opacity: 1; }
+  .field-card--image .field-card__actions { top: 10px; right: 40px; }
+  .field-card--image .field-card__footer {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}

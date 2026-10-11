@@ -1,0 +1,23 @@
+/* W1-E: layout/shell.css; original cascade position retained by styles/index.css. */
+@layer layout {
+
+  /* 窄窗：侧栏浮在画布之上，主区不让位；遮罩点按即收起 */
+  @media (max-width: 999px) {
+    .studio .sidebar {
+      position: fixed;
+      inset: 0 auto 0 0;
+      z-index: calc(var(--z-focus-mode) + 2);
+      width: min(240px, calc(100vw - 56px));
+      flex-basis: auto;
+      box-shadow: inset -1px 0 0 var(--border-hair), var(--shadow-tool);
+    }
+    .studio:not(.sidebar-hidden) .sidebar-scrim {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: calc(var(--z-focus-mode) + 1);
+      background: var(--bg-scrim);
+      animation: field-scrim-in var(--dur-base) var(--ease-out);
+    }
+  }
+}

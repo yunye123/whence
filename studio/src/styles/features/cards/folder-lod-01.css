@@ -1,0 +1,6 @@
+/* W3-B: simple links keep the same box; only excerpted paragraphs remain. */
+@layer features {
+  :where(.react-flow[data-lod="simple"]) .field-card--link[data-lod="simple"][data-lod-frame] .field-card__footer,
+  :where(.react-flow[data-lod="simple"]) .field-card--link[data-lod="simple"][data-lod-frame] .field-card__link-content { display: none; }
+  :where(.react-flow[data-lod="simple"]) .field-card--link[data-lod="simple"][data-lod-frame] .field-card__link-poster { max-height: 90px; }
+}

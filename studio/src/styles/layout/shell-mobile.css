@@ -1,0 +1,6 @@
+/* W1-E: layout/shell.css; original cascade position retained by styles/index.css. */
+@layer layout {
+  @media (max-width: 999px) {
+    .studio:not(.sidebar-hidden) .main-workspace { margin-left: 0; }
+  }
+}

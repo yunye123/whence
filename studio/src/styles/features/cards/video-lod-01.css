@@ -1,0 +1,46 @@
+/* W3-A: video-specific simplified face and photograph/strip silhouette. */
+@layer features {
+  .field-card--video[data-lod="simple"][data-lod-frame]:not(.is-playing) .field-card__surface {
+    height: 100%; min-height: 0; grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto calc(26px / var(--z-tier)) 22px minmax(0, 1fr);
+    padding-bottom: 8px; overflow: clip;
+  }
+  .field-card--video[data-lod="simple"][data-lod-frame]:not(.is-playing) .field-card__header { grid-column: 1; height: auto; padding: 3px 8px; }
+  .field-card--video[data-lod="simple"][data-lod-frame]:not(.is-playing) .field-card__header h3:not(.sr-only) { zoom: var(--lod-k); font: 600 13px/20px var(--font-ui); white-space: nowrap; }
+  .field-card--video[data-lod="simple"][data-lod-frame]:not(.is-playing) .field-card__footer { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); zoom: 1; }
+  .field-card--video[data-lod="simple"] .field-card__ruler > time { display: none; }
+  /* Rows compensate their own zoom; keep the hover arrow inside the scaled 8px paper margin. */
+  .field-card--video[data-lod="simple"] .field-card__line-play { left: calc(1px - 8px * var(--z-tier)); }
+  .field-card--video[data-lod="simple"][data-lod-frame]:not(.is-playing) .field-card__archive { display: none; }
+  .field-card--video[data-lod="simple"][data-lod-frame]:not(.is-playing) .field-card__transcript { min-height: 0; container-type: size; overflow: visible clip; }
+  .field-card--video[data-lod="simple"][data-lod-frame]:not(.is-playing) .field-card__transcript-lines { zoom: var(--lod-k); max-height: max(0px, round(down, calc(100cqh * var(--z-tier)), 22px)); }
+  .field-card--video[data-lod="simple"][data-lod-frame]:not(.is-playing) .field-card__transcript-gap { display: none; }
+  /* An active player uses the existing natural-height hold; its visible text still follows simple-tier compensation. */
+  .field-card--video[data-lod="simple"].is-playing .field-card__surface { grid-template-rows: auto calc(26px / var(--z-tier)) 22px auto auto; }
+  .field-card--video[data-lod="simple"].is-playing .field-card__header { height: auto; padding: 3px 8px; }
+  .field-card--video[data-lod="simple"].is-playing .field-card__header h3 { zoom: var(--lod-k); font: 600 13px/20px var(--font-ui); }
+  .field-card--video[data-lod="simple"].is-playing .field-card__footer { height: auto; font-size: max(12px, calc(12px / var(--z-tier))); }
+  .field-card--video[data-lod="simple"].is-playing .field-card__transcript-lines { zoom: var(--lod-k); }
+  .field-card--video[data-lod="simple"].is-playing :is(.field-card__archive, .field-card__transcript-gap) { display: none; }
+  .field-card--video .field-card__overview--video { background: var(--paper-plain); zoom: 1; }
+  .field-card--video .field-card__overview--video .field-card__overview-picture { position: absolute; inset: 0 0 auto; width: 100%; aspect-ratio: var(--media-ratio, 16 / 9); background: var(--paper-wall); }
+  .field-card--video .field-card__overview--video .field-card__overview-picture > img { display: block; width: 100%; height: 100%; object-fit: cover; filter: none; }
+  .field-card--video .field-card__overview--video.has-picture::after { content: none; }
+  .field-card--video .field-card__overview--video .field-card__overview-content {
+    position: absolute; inset: calc(100cqw / (var(--media-ratio, 16 / 9))) 0 0; height: auto; max-height: none;
+    padding: 4px 8px 6px; background: var(--paper-plain); overflow: hidden;
+  }
+  .field-card--video .field-card__overview--video h3 {
+    display: block; --o-max: 1; margin: 0; max-height: 20px; zoom: var(--lod-k);
+    font: 600 13px/20px var(--font-ui); color: var(--fg-1); text-shadow: none;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-wrap: nowrap;
+  }
+  .field-card--video .field-card__overview--video.has-picture h3 { color: var(--fg-1); text-shadow: none; }
+  .field-card--video .field-card__overview--video .field-card__overview-rail { flex: none; width: 100%; height: 14px; }
+  .field-card--video .field-card__overview-play, .field-card--video .field-card__overview-live {
+    position: absolute; top: 8px; left: 8px; z-index: 1; border-radius: 50%; background: var(--media-button-bg);
+  }
+  .field-card--video .field-card__overview-play { width: 18px; height: 18px; }
+  .field-card--video .field-card__overview-play::after { content: ''; position: absolute; top: 5px; left: 7px; border-left: 6px solid var(--media-button-fg); border-block: 4px solid transparent; }
+  .field-card--video .field-card__overview-live { width: 6px; height: 6px; background: var(--fg-1); box-shadow: 0 0 0 4px var(--media-button-bg); }
+}

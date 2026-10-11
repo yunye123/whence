@@ -1,0 +1,195 @@
+/* FIELD appearance: the canvas stays quiet; material and tools occupy distinct planes. */
+.appearance-control > svg { flex: none; }
+.appearance-control select {
+  border-radius: 6px;
+  color: var(--ink);
+}
+.appearance-control:focus-within { background: var(--surface-soft); }
+
+/* Absolute positioning must keep the toolbar's intrinsic width rather than half the canvas.
+   A narrow canvas scrolls tools in one row; buttons keep their usable target size. */
+.canvas-shell .canvas-toolbar {
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+  scroll-padding-inline: 6px;
+}
+/* Theme-dependent surfaces must change with their text instead of crossing low-contrast colors. */
+
+
+/* Shell and navigation */
+:root[data-theme="dark"] :is(.board-nav:hover, .library-item:hover, .library-item.selected, .icon-button:hover:not(:disabled)) { background: var(--surface-hover); color: var(--ink); }
+
+/* Canvas, its controls, and the document outline */
+:root[data-theme="dark"] .react-flow__minimap-node { stroke-width: 1px; }
+
+/* Dialogs, menus, import, export, help, and persistent status */
+:root[data-theme="dark"] :is(.toast, .busy-toast, .context-menu, .field-card__menu, .inspector-transcript-export-menu) { color: var(--ink); }
+:root[data-theme="dark"] .toast > svg { color: var(--success); }
+:root[data-theme="dark"] :is(.status-banner.warning, .inspector-native-warning) { background: var(--warning-surface); color: var(--warning); border-color: #726345; }
+:root[data-theme="dark"] .status-banner.error { background: var(--danger-surface); color: var(--danger); }
+:root[data-theme="dark"] :is(.video-import-form-error, .inspector-field-error, .inspector-dialog-error, .inspector-image-load-error) { color: var(--danger); }
+:root[data-theme="dark"] :is(.video-import-row.is-failed .video-import-state, .video-import-row.is-interrupted .video-import-state, .video-import-row.is-failed .video-import-row-message) { color: var(--danger); }
+:root[data-theme="dark"] :is(.video-import-meter, .field-card__import-meter) { background: var(--surface-hover); }
+:root[data-theme="dark"] :is(.video-import-meter > span, .field-card__import-meter > span) { background: var(--blue); }
+:root[data-theme="dark"] :is(.video-import-activity:hover, .video-import-row-actions > button:hover:enabled) { color: var(--blue); }
+
+/* Card material: tone remains meaningful without bright patches in a dark room. */
+:root[data-theme="dark"] :is(.field-card__image-button:hover .field-card__image-expand, .field-card__image-button:focus-visible .field-card__image-expand) { background: #2b3746f5; }
+:root[data-theme="dark"] :is(.field-card__media-placeholder, .field-card__media-placeholder small) { color: var(--muted); }
+:root[data-theme="dark"] :is(.field-card__video-details button, .field-card__import-actions button, .field-card__import-actions a, .field-card__draft-action span:last-child, .field-card__link-domain) { color: var(--blue); }
+:root[data-theme="dark"] .field-card__live-dot { background: var(--success); }
+:root[data-theme="dark"] .field-card__import { border-color: var(--line); }
+:root[data-theme="dark"] .field-card--frame.is-selected { box-shadow: none; }
+
+/* Inspector: writing, media, transcripts, references, and native processing. */
+:root[data-theme="dark"] :is(.inspector, .inspector-dialog) {
+  --inspector-ink: var(--ink);
+  --inspector-muted: var(--muted);
+  --inspector-line: var(--line);
+  --inspector-blue: var(--blue);
+}
+:root[data-theme="dark"] :is(.inspector-kind, .inspector-media-empty strong, .inspector-empty h4) { color: var(--ink); }
+:root[data-theme="dark"] .inspector-icon-button:hover { background: var(--surface-hover); }
+:root[data-theme="dark"] :is(.inspector-player, .inspector-image-preview) { background: var(--surface-subtle); }
+:root[data-theme="dark"] .inspector-play-placeholder { background: #1d2633; color: #ffffff; }
+:root[data-theme="dark"] .inspector-import-status { background: var(--surface-subtle); border-color: var(--line); }
+:root[data-theme="dark"] .inspector-import-heading { color: var(--blue); }
+:root[data-theme="dark"] .inspector-import-status--completed { background: var(--success-surface); border-color: #4c6a57; }
+:root[data-theme="dark"] :is(.inspector-import-status--completed .inspector-import-heading, .inspector-import-status--completed > p) { color: var(--success); }
+:root[data-theme="dark"] :is(.inspector-import-status--failed, .inspector-import-status--interrupted) { background: var(--warning-surface); border-color: #726345; }
+:root[data-theme="dark"] :is(.inspector-import-status--failed .inspector-import-heading, .inspector-import-status--interrupted .inspector-import-heading, .inspector-import-status > p.inspector-import-error) { color: var(--warning); }
+:root[data-theme="dark"] .inspector-import-status--cancelled { background: var(--surface-subtle); border-color: var(--line); }
+:root[data-theme="dark"] .inspector-import-status progress { background: var(--surface-hover); accent-color: var(--blue); }
+:root[data-theme="dark"] .inspector-import-status progress::-webkit-progress-bar { background: var(--surface-hover); }
+:root[data-theme="dark"] .inspector-import-status progress::-webkit-progress-value { background: var(--blue); }
+:root[data-theme="dark"] .inspector-import-status progress::-moz-progress-bar { background: var(--blue); }
+:root[data-theme="dark"] .inspector-small-button { color: var(--ink); background: var(--paper); border-color: var(--line-strong); }
+:root[data-theme="dark"] .inspector-small-button:hover { color: var(--ink); background: var(--surface-hover); border-color: var(--focus); }
+:root[data-theme="dark"] :is(.inspector-transcript-export-menu > hr, .inspector-transcript-tools, .inspector-writing-toolbar, .inspector-draft-sources, .inspector-draft-sources li, .inspector-versions, .inspector-version, .inspector-footer) { border-color: var(--line); }
+:root[data-theme="dark"] :is(.inspector-writing-toolbar button:hover, .inspector-writing-toolbar button.is-active) { background: var(--surface-selected); color: #c4d3ff; }
+:root[data-theme="dark"] .inspector-citation-updated { background: var(--warning-surface); color: var(--warning); }
+:root[data-theme="dark"] .inspector-reference-list { background: var(--surface-subtle); border-color: var(--line); }
+:root[data-theme="dark"] .inspector-image-open > span { background: var(--surface-soft); color: var(--blue); }
+:root[data-theme="dark"] .inspector-image-open:hover > span { background: var(--surface-hover); }
+:root[data-theme="dark"] :is(.inspector-url-row input:focus, .inspector-tags > input:focus) { background: var(--surface-soft); border-color: var(--focus); }
+:root[data-theme="dark"] .inspector-url-row input[aria-invalid=true] { border-color: var(--danger); }
+
+/* Recovery stays in the workspace flow so long paths and actions never cover the canvas. */
+.status-banner.save-recovery-banner {
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  padding: 10px 24px;
+  border-bottom: 1px solid var(--line);
+  background: var(--warning-surface);
+  color: var(--warning);
+}
+.save-recovery-banner > svg { flex: none; }
+.save-recovery-banner > span { flex: 1 1 280px; min-width: 0; overflow-wrap: anywhere; line-height: 1.75; }
+.save-recovery-actions { display: flex; flex: 0 1 auto; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
+.save-recovery-actions > button {
+  flex: 0 0 auto;
+  min-width: 36px;
+  min-height: 36px;
+  max-width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+.save-recovery-actions > button:hover:enabled { background: var(--surface-hover); border-color: var(--focus); }
+.save-recovery-actions > button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.save-recovery-actions > button:disabled { opacity: 1; color: var(--muted); background: var(--surface-subtle); }
+
+/* Selection tools retain usable targets when the Inspector makes the canvas narrow. */
+.canvas-shell .selection-tools {
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+  scroll-padding-inline: 6px;
+}
+.canvas-shell .selection-tools > span { flex: none; }
+.canvas-shell .selection-tools > button { flex: 0 0 auto; min-width: 36px; min-height: 36px; white-space: nowrap; scroll-margin-inline: 6px; }
+.canvas-shell .selection-tools > button:focus-visible { outline-offset: -2px; }
+/* Preserve ReactFlow measurements and playback while suppressing descendants that set visibility. */
+.canvas-shell .flow-container.flow-hidden { opacity: 0; }
+
+@media (max-width: 760px) {
+  .status-banner.save-recovery-banner { padding: 8px 12px; }
+}
+
+/* Reduce transitions, including transform transitions. Static masks remain active;
+   actual animation durations are controlled by styles/base/motion.css. */
+@media (prefers-reduced-motion: reduce) {
+  .appearance-control *,.field-card,.field-card *,.inspector * {
+    transition: none !important;
+  }
+}
+
+/* The workbench has two quiet planes: navigation and a full, uninterrupted canvas.
+   Material, rather than repeated project headings, carries the visual identity. */
+:root {
+  --chrome-shadow: 0 8px 24px color-mix(in srgb, var(--ink) 6%, transparent), 0 1px 3px color-mix(in srgb, var(--ink) 5%, transparent);
+}
+.library-empty > p { font-size: 13px; line-height: 1.6; color: var(--ink); }
+.library-empty > button { display: inline-flex; align-items: center; gap: 5px; margin-top: 9px; padding: 5px 0; color: var(--blue); font-size: 12px; }
+.studio .sidebar-bottom > button { gap: 10px; font-size: 12px; }
+.studio .sidebar-bottom .appearance-control { font-size: 12px; }
+.studio .sidebar-bottom .appearance-control select { background: var(--paper); }
+
+/* The project has one title. Context and persistence stay close to that title. */
+.studio .board-title:disabled { opacity: 1; color: var(--ink); }
+.studio .storage-folder-button { width: 27px; height: 28px; }
+.studio .view-switch button:focus-visible { outline-offset: -1px; }
+.studio .video-import-activity { padding: 7px; min-height: 34px; font-size: 11px; border-radius: 6px; }
+.studio .video-import-activity.is-active { color: var(--blue); background: var(--surface-selected); }
+
+/* The outline is a reading index, with room for excerpts rather than duplicate chrome. */
+.studio .outline-view { width: 100%; }
+.outline-intro > div { min-width: 0; }
+.outline-intro > span { margin-top: 9px; }
+.outline-empty { flex-direction: column; align-items: center; }
+
+/* Dialogs describe an action plainly and give each type of creator an equal entry. */
+.modal .field-label { margin-top: 23px; font-size: 12px; color: var(--ink); }
+.modal .field-label > input { font-size: 14px; min-height: 44px; border-color: var(--chrome-line); background: var(--surface-subtle); }
+.modal .template-card > span { font-size: 11px; line-height: 1.7; }
+
+@media (min-width: 1700px) {
+  .studio .sidebar { padding-inline: 18px; }
+  .studio .topbar { padding-inline: 26px; }
+  .studio .board-title { font-size: 18px; }
+}
+@media (max-width: 1250px) {
+  .studio .video-import-activity > span { display: none; }
+}
+@media (max-height: 780px) {
+  .studio .sidebar-bottom > button:first-child { display: none; }
+}
+@media (max-width: 760px) {
+  .studio .sidebar { inset: 0 auto 0 0; }
+  .studio.sidebar-hidden .sidebar { pointer-events: none; }
+  .studio .topbar { padding-inline: 9px; }
+  .studio .view-switch button { font-size: 10px; padding-inline: 6px; }
+  .studio .outline-row { padding: 16px; gap: 13px; }
+  .modal h2 { font-size: 22px; }
+}
+@media (max-width: 520px) {
+  .studio .view-switch button { gap: 3px; padding-inline: 5px; }
+  .studio .view-switch svg { display: none; }
+  .studio .video-import-activity { padding-inline: 4px; }
+  .studio .empty-canvas h2 { font-size: 22px; }
+  .studio .empty-canvas p { font-size: 13px; }
+}
+@media (max-height: 580px) {
+  .studio .materials-navigation { flex: 0 0 185px; }
+  .studio .board-navigation .board-list { max-height: 122px; }
+  .studio .empty-canvas h2 { font-size: 20px; }
+}

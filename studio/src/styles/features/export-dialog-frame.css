@@ -1,0 +1,4 @@
+/* W1-E split kept in its original cascade position; W3-K handles its own frame in features. */
+@layer components {
+  .modal-help { width: min(800px, 100%); }
+}

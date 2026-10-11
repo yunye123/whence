@@ -1,0 +1,27 @@
+/* W1-E: features/inspector-writing.css; original cascade position retained by styles/index.css. */
+@layer features {
+
+  /* 脚本纸的容器只在脚本开启时接入；正文写作归 W3-I。 */
+  .inspector--draft:has(.draft-script) .inspector-column { background: var(--paper-manuscript); }
+  .inspector--writing-expanded:has(.draft-script) .inspector-column { border-radius: var(--radius-paper); box-shadow: var(--shadow-fair); }
+  .inspector--draft:has(.draft-script) .inspector-title-field--paper { font: var(--fw-semibold) var(--fs-title)/var(--lh-title) var(--font-read); letter-spacing: .03em; }
+
+  /* 页脚：脚本的场数、行数与成片时长 */
+  .draft-band__script { white-space: nowrap; }
+
+  @media (max-width: 1359px) {
+    .inspector--writing-expanded .inspector-layout:has(.draft-writing.is-script) > .inspector-column { padding: 48px 48px 120px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .draft-view-switch__thumb, .draft-shot-button { transition: none; }
+    .draft-shot-button:hover { transform: none; }
+  }
+
+  @media (forced-colors: active) {
+    .draft-script__table, .draft-shot { outline: 1px solid CanvasText; }
+    .draft-script__columns { border-top-color: CanvasText; }
+    .draft-script__line:focus-visible, .draft-script__scene-grip:focus-visible { outline: 2px solid Highlight; }
+  }
+
+  @keyframes draft-script-reveal { from { background-color: var(--bg-hover); } }
+}

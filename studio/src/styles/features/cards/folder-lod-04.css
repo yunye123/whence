@@ -1,0 +1,4 @@
+/* W3-B: links retain a complete paper edge at every tier, with no rod-notch mask. */
+@layer features {
+  .field-card--link[data-lod]::before { mask-image: none; }
+}
