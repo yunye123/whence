@@ -12,7 +12,11 @@ const hash = value => createHash('sha256').update(value).digest('hex');
 
 /** Build a separate desktop shell without editing any legacy source or distribution. */
 export async function buildNative() {
-  const [main, preload] = await Promise.all([fs.readFile(originalMain, 'utf8'), fs.readFile(originalPreload, 'utf8')]);
+  const [rawMain, rawPreload] = await Promise.all([fs.readFile(originalMain, 'utf8'), fs.readFile(originalPreload, 'utf8')]);
+  // Git for Windows may check out CRLF. Match source transformations against
+  // normalized text, while retaining exact bytes for the concurrency check.
+  const main = rawMain.replace(/\r\n/g, '\n');
+  const preload = rawPreload.replace(/\r\n/g, '\n');
   let transformed = main;
   const changes = [];
   function replaceOnce(name, from, to) {
@@ -178,13 +182,13 @@ export async function buildNative() {
     } }],
   });
   const current = await Promise.all([fs.readFile(originalMain, 'utf8'), fs.readFile(originalPreload, 'utf8')]);
-  if (current[0] !== main || current[1] !== preload) throw new Error('构建期间旧桌面源码发生了并发变化，请重新构建后再启动。');
+  if (current[0] !== rawMain || current[1] !== rawPreload) throw new Error('构建期间旧桌面源码发生了并发变化，请重新构建后再启动。');
   const worker = await fs.readFile(path.join(studioRoot, 'native', 'workers', 'transcribe.py'), 'utf8').catch(() => {
     throw new Error('缺少来处自己的转写程序 native/workers/transcribe.py，已停止构建。');
   });
   await fs.writeFile(path.join(out, 'build-info.json'), JSON.stringify({
     builtAt: new Date().toISOString(), legacyRoot, changes,
-    sources: { 'electron/main.ts': hash(main), 'electron/preload.ts': hash(preload) },
+    sources: { 'electron/main.ts': hash(rawMain), 'electron/preload.ts': hash(rawPreload) },
     worker: { 'native/workers/transcribe.py': hash(worker) },
     originalsUnchanged: true,
   }, null, 2));
