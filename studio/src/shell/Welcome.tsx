@@ -78,13 +78,19 @@ export default function Welcome({ onOpenExample, onNewBoard, onOpenBoardFile, on
 
   useLayoutEffect(() => {
     measure();
-    const observer = new ResizeObserver(measure);
-    if (root.current) observer.observe(root.current);
-    if (demo.current) observer.observe(demo.current);
-    const footer = root.current?.querySelector<HTMLElement>('.welcome__foot');
-    if (footer) observer.observe(footer);
+    // 从下一帧起才开始观察。欢迎页常在 React Flow 报告节点尺寸的回调里被提交；若此刻就观察这个更浅的元素，
+    // Chromium 会报 “ResizeObserver loop completed with undelivered notifications”（启动约 0.5 秒处，约三分之一的冷启动出现）。
+    // 首次测量上面已同步完成，推迟观察不改变任何首帧画面。
+    let observer: ResizeObserver | undefined;
+    const frame = requestAnimationFrame(() => {
+      observer = new ResizeObserver(measure);
+      if (root.current) observer.observe(root.current);
+      if (demo.current) observer.observe(demo.current);
+      const footer = root.current?.querySelector<HTMLElement>('.welcome__foot');
+      if (footer) observer.observe(footer);
+    });
     void document.fonts?.ready.then(measure);
-    return () => observer.disconnect();
+    return () => { cancelAnimationFrame(frame); observer?.disconnect(); };
   }, [measure]);
 
   // Wait for first-frame text and pictures, with the existing cap; controls remain keyboard accessible.

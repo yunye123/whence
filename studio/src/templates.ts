@@ -175,7 +175,8 @@ function createWritingExample(): Board {
   const colB = 300 + CHANNEL, colC = colB + QUOTE_WIDTH + CHANNEL;
   // 署名放在卡片元信息（sourceAuthor），不写进正文：正文第 1 段就是引子的第一句，段号与肉眼数的一致（DLG-16）。
   const article = exampleCard('note', 0, 0, { title: '步行十五分钟，能到达什么', body: ARTICLE, tags: ['文字资料', 'Markdown'], sourceAuthor: '林冉', collectedAt: '2026-10-02T14:15:00.000Z' }, 300);
-  const link = exampleCard('link', 0, 270, {
+  // 文章卡随正文长到约 375px 高；链接卡放在它下方留 56px（= CHANNEL）的空隙，不再压住文章卡底部。
+  const link = exampleCard('link', 0, 432, {
     title: '社区步行调查：一份方法笔记', url: 'https://example.org/walking-survey-notes', body: WALKING_NOTES, tone: 'blue',
   }, 300);
   const opening = textQuote(article, '一座城市是否宜居，要看一个人步行十五分钟能完成多少件事。',
@@ -283,8 +284,9 @@ function createVideoExample(): Board {
     title: '这支片子想让人感受到什么？',
     body: '城市醒来之前，已经有人替它醒着。\n\n镜头少动，让蒸汽自己动。\n环境声比音乐重要。\n不拍正脸也可以，拍手和锅。', tone: 'butter',
   }, DRAFT_WIDTH);
-  const depot = exampleCard('image', 0, 318, { title: '头班车出站', poster: sample('v03-depot.webp') }, 320, 180);
-  const drivers = exampleCard('image', 0, 522, { title: '司机的早饭', poster: sample('v05-drivers.webp') }, 320, 180);
+  // 视频卡含逐字稿与摘录入口，实际高约 407px；两张剧照从它下方 56px（= CHANNEL）起排，不再压住视频卡底部。
+  const depot = exampleCard('image', 0, 463, { title: '头班车出站', poster: sample('v03-depot.webp') }, 320, 180);
+  const drivers = exampleCard('image', 0, 667, { title: '司机的早饭', poster: sample('v05-drivers.webp') }, 320, 180);
   board.nodes = [video, reason, regulars, script, intent, depot, drivers];
   board.edges = [
     edge(video, reason, '摘录', 'smoothstep'),

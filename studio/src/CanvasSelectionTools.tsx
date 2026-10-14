@@ -18,6 +18,7 @@ import { citationLocationLabel, paragraphIndexAt, quoteDisplayTitle, timeRangeLa
 import ProvenanceTag from './components/ProvenanceTag';
 import { ActionMenu, cardMenuEntries, onCardCommand, type ActionMenuEntry, type CardCommand } from './cards/CardMenu';
 import { isImportPending, kindDisplayName, webLink } from './cards/card-utils';
+import { openWebLink } from './cards/open-web-link';
 import InspectorDialog from './InspectorDialog';
 import { GridLayoutIcon, MasonryLayoutIcon, RowsLayoutIcon, ThreadIcon } from './icons/field-icons';
 import { connectionTracker } from './canvas/edges/label-edit';
@@ -719,7 +720,7 @@ export default function CanvasSelectionTools(props: CanvasSelectionToolsProps) {
         break;
       case 'link': {
         const link = webLink(data.url);
-        if (link) actions.push({ key: 'web', label: '打开网页', icon: <ExternalLink size={ICON} />, onActivate: () => { window.open(link.href, '_blank', 'noopener,noreferrer'); } });
+        if (link) actions.push({ key: 'web', label: '打开网页', icon: <ExternalLink size={ICON} />, onActivate: () => { void openWebLink(link.href, { external: window.studio?.openExternal, fallbackOpen: url => { window.open(url, '_blank', 'noopener,noreferrer'); }, notify: message => { showToast(message); } }); } });
         if (data.body.trim()) actions.push({ key: 'open', label: '阅读全文并摘录', icon: <BookOpen size={ICON} />, onActivate: () => onOpen(node.id) });
         else if (!link) actions.push({ key: 'open', label: readOnly ? '阅读' : '编辑', ariaLabel: readOnly ? '打开阅读' : '打开编辑', icon: <SquarePen size={ICON} />, onActivate: () => onOpen(node.id) });
         break;

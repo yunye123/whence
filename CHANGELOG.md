@@ -2,6 +2,20 @@
 
 本文件记录开源版的功能范围与限制。/ This file records the scope and limitations of the open-source edition.
 
+## 未发布 / Unreleased
+
+### 中文
+
+- 修复：链接卡工具栏的“打开网页”在桌面版点了没有反应。桌面版会拦截页面自行打开新窗口，现在改为通过系统浏览器打开，失败时给出提示。
+- 修复：内置示例画布里，文章卡与链接卡、视频卡与剧照互相压住的问题，现在卡片之间留有间距。
+- 修复：欢迎页启动时偶发的 `ResizeObserver loop completed with undelivered notifications` 报错；新增冷启动回归测试（需先构建并预览，不属于 `npm test`）。
+
+### English
+
+- Fix: the "Open page" button on a link card did nothing in the desktop app, because the desktop shell blocks pages from opening windows themselves. It now opens in the system browser and shows a message if that fails.
+- Fix: in the built-in example boards, the article card overlapped the link card, and the video card overlapped its stills. The cards now keep a gap.
+- Fix: an occasional `ResizeObserver loop completed with undelivered notifications` error when the welcome screen starts. Added a cold-start regression test (it needs a build and preview first, so it is not part of `npm test`).
+
 ## 0.1.0 — MVP
 
 ### 中文
