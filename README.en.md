@@ -50,9 +50,9 @@ The application has been run and checked on Windows 11. macOS and Linux have not
 
 ## Local use and MVP limitations
 
-- Content is stored on your computer. No account is required. Cloud sync, collaboration, and cloud AI are not included.
+- Content is stored on your computer. No account is required. Cloud sync and collaboration are not included. English-to-Chinese translation is optional and calls an external API only after the desktop app is given an API key. See the [getting started guide](docs/GETTING_STARTED.en.md#optional-translate-english-into-chinese).
 - Local saving is not an independent backup. Check the save status, export your canvas regularly, and verify that the export includes your media.
-- Only one window can write to a workspace at a time. Portable canvas files have size limits; use the desktop app's “另存完整画布目录” (Save a complete canvas directory) for large videos.
+- Starting the desktop app again returns to the window that is already open. Read-only applies only to a second page from the same origin, such as two browser tabs on one workspace. Portable canvas files have size limits; use the desktop app's “另存完整画布目录” (Save a complete canvas directory) for large videos.
 - Video link downloads and automatic speech recognition are optional advanced workflows. They require Python 3.12, `yt-dlp`, `faster-whisper`, FFmpeg, ffprobe, and a local model. Basic canvas use does not require these tools.
 - Advanced workflows have not been verified end to end on a fresh machine. Site login requirements, access restrictions, and link availability can prevent downloads. Not every site or link is guaranteed to work.
 

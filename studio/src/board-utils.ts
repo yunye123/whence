@@ -111,8 +111,10 @@ export function exportMarkdown(board: Board): string {
     if (data.kind === 'quote') {
       const original = data.citation?.text ?? data.body;
       if (original) out.push(original.split('\n').map(line => `> ${line}`).join('\n'), '');
+      if (data.translation?.trim()) out.push(`译文：${data.translation}`, '');
       if (data.citation?.text && data.body && data.body !== original) out.push(`我的理解：${data.body}`, '');
     } else if (data.body) out.push(withoutRepeatedTitle(data.body, data.title), '');
+    if (data.kind !== 'quote' && data.translation?.trim()) out.push(`译文：${data.translation}`, '');
     const originalSource = typeof data.sourceUrl === 'string' ? safeUrl(data.sourceUrl) : null;
     const sourceUrl = data.sourceUrl !== undefined ? originalSource : data.url ? safeUrl(data.url) : null;
     if (sourceUrl) out.push(`来源：<${sourceUrl}>`, '');
@@ -125,7 +127,10 @@ export function exportMarkdown(board: Board): string {
       if (data.kind !== 'quote' && data.citation.text && data.citation.text !== data.body) out.push(data.citation.text.split('\n').map(line => `> ${line}`).join('\n'), '');
       out.push(`引用：${markdownEscape(source?.data.title ?? data.citation.title)}${timestamp}`, '');
     }
-    if (data.transcript?.length) out.push('### 字幕', '', ...data.transcript.map(line => `- ${stamp(line.start)}–${stamp(line.end)} ${line.text.replace(/\n/g, ' ')}`), '');
+    if (data.transcript?.length) out.push('### 字幕', '', ...data.transcript.map(line => {
+      const row = `- ${stamp(line.start)}–${stamp(line.end)} ${line.text.replace(/\n/g, ' ')}`;
+      return line.translation?.trim() ? `${row}\n  译文：${line.translation.replace(/\n/g, ' ')}` : row;
+    }), '');
     if (data.mediaId) out.push('_媒体文件保存在本机，包含在便携画布文件中；Markdown 不携带媒体文件。_', '');
     if (data.demo) out.push('_演示内容_', '');
   }

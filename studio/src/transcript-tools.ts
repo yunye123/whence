@@ -23,6 +23,8 @@ export function editTranscriptLine(data: CardData, lineId: string, text: string)
   const changed: TranscriptLine = { ...line, text };
   if (text === originalText) delete changed.originalText;
   else changed.originalText = originalText;
+  // The stored Chinese translation belongs to the previous sentence.
+  delete changed.translation;
   return {
     transcript: data.transcript!.map(item => item.id === lineId ? changed : item),
     transcriptRevision: uid(),
@@ -35,6 +37,7 @@ export function restoreTranscriptLine(data: CardData, lineId: string): Partial<C
   if (!line || line.originalText === undefined) return {};
   const restored: TranscriptLine = { ...line, text: line.originalText };
   delete restored.originalText;
+  if (restored.text !== line.text) delete restored.translation;
   return {
     transcript: data.transcript!.map(item => item.id === lineId ? restored : item),
     ...(line.text !== restored.text ? { transcriptRevision: uid() } : {}),

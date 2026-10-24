@@ -73,10 +73,11 @@ function validateNode(value: unknown, portable: boolean): BoardNode {
   const position = object(node.position, '卡片位置');
   keys(position, ['x', 'y'], '卡片位置');
   const raw = object(node.data, '卡片内容');
-  keys(raw, ['kind', 'title', 'body', 'tone', 'mediaId', 'poster', 'url', 'duration', 'transcript', 'transcriptRevision', 'citation', 'tags', 'draftVersions', 'demo', 'videoImport', ...NATIVE_STRINGS, ...SOURCE_STRINGS, 'sourceUrl', 'collectedAt', 'nativeHasAudio', 'nativeSegmentIds', 'nativeWordIds', 'nativeRanges', 'nativeCapture'], '卡片内容');
+  keys(raw, ['kind', 'title', 'body', 'translation', 'tone', 'mediaId', 'poster', 'url', 'duration', 'transcript', 'transcriptRevision', 'citation', 'tags', 'draftVersions', 'demo', 'videoImport', ...NATIVE_STRINGS, ...SOURCE_STRINGS, 'sourceUrl', 'collectedAt', 'nativeHasAudio', 'nativeSegmentIds', 'nativeWordIds', 'nativeRanges', 'nativeCapture'], '卡片内容');
   if (portable && Object.keys(raw).some(key => key.startsWith('native'))) fail('画布包包含设备专属路径，无法安全导入。请从原设备重新导出。');
   if (!TYPES.includes(raw.kind as CardKind)) fail('卡片内容类型不受支持。');
   const data: CardData = { kind: raw.kind as CardKind, title: string(raw.title, '卡片标题', 500), body: string(raw.body, '卡片正文', 300_000) };
+  if (raw.translation !== undefined) data.translation = string(raw.translation, '译文', 300_000, false);
   if (raw.tone !== undefined) {
     if (!['paper', 'butter', 'mint', 'lavender', 'blue'].includes(raw.tone as string)) fail('卡片颜色不受支持。');
     data.tone = raw.tone as CardData['tone'];
@@ -109,11 +110,12 @@ function validateNode(value: unknown, portable: boolean): BoardNode {
   if (raw.transcript !== undefined) {
     data.transcript = array(raw.transcript, '字幕', 10_000).map(item => {
       const line = object(item, '字幕条目');
-      keys(line, ['id', 'start', 'end', 'text', 'originalText'], '字幕条目');
+      keys(line, ['id', 'start', 'end', 'text', 'originalText', 'translation'], '字幕条目');
       const start = number(line.start, '字幕开始时间', 0, 604_800), end = number(line.end, '字幕结束时间', 0, 604_800);
       if (end <= start) fail('字幕结束时间须晚于开始时间。');
       return { id: id(line.id, '字幕 ID'), start, end, text: string(line.text, '字幕文字', 20_000),
         ...(line.originalText !== undefined ? { originalText: string(line.originalText, '字幕原始文字', 20_000) } : {}),
+        ...(line.translation !== undefined ? { translation: string(line.translation, '字幕译文', 40_000, false) } : {}),
       };
     });
     unique(data.transcript.map(line => line.id), '字幕');

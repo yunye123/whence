@@ -23,10 +23,14 @@ const PLACEHOLDER = '一个想法、一句想留住的话……';
 export function NoteCardBody(props: NoteCardBodyProps) {
   const { id, data, board, lod, noteEditing, noteRef, finishNoteEditing } = props;
   const preview = lod === 'simple' ? joinLines(data.body) : data.body;
+  const shownTranslation = !noteEditing && lod !== 'simple' ? (data.translation?.trim() ?? '') : '';
   // The plain preview and textarea use identical native wrapping. Per-word wbr/tail spans would
   // change where the first line breaks on entering the native editor.
   const lines = useStationeryLines(preview || PLACEHOLDER, props.previewWidth, '400 14px "LXGW WenKai Screen"', 'char');
-  const style = !noteEditing && lines !== undefined ? { '--text-natural-block': `${Math.max(1, lines) * 22}px` } as CSSProperties : undefined;
+  const translationLines = useStationeryLines(shownTranslation, props.previewWidth, '400 14px "LXGW WenKai Screen"', 'char');
+  const style = !noteEditing && lines !== undefined && (!shownTranslation || translationLines !== undefined)
+    ? { '--text-natural-block': `${Math.max(1, lines) * 22 + (shownTranslation && translationLines ? translationLines * 22 + 6 : 0)}px` } as CSSProperties
+    : undefined;
   return (
     <div className={`field-card__note-content${noteEditing ? ' nodrag nowheel' : ' card-drag-content'}`} data-text-planned={style ? '' : undefined} style={style}>
       {noteEditing ? (
@@ -55,6 +59,7 @@ export function NoteCardBody(props: NoteCardBodyProps) {
       ) : (
         <div className={`field-card__note-preview${!data.body ? ' is-empty' : ''}`} data-note-preview>
           {data.body ? preview : PLACEHOLDER}
+          {shownTranslation && <div className="field-card__note-translation" lang="zh-CN"><span className="field-card__note-translation-label">译文</span>{shownTranslation}</div>}
         </div>
       )}
     </div>

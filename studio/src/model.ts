@@ -1,6 +1,6 @@
 export type CardKind = 'video' | 'image' | 'note' | 'quote' | 'draft' | 'link' | 'frame';
 export type CardTone = 'paper' | 'butter' | 'mint' | 'lavender' | 'blue';
-export interface TranscriptLine { id: string; start: number; end: number; text: string; originalText?: string }
+export interface TranscriptLine { id: string; start: number; end: number; text: string; originalText?: string; translation?: string }
 /** UTF-16 offsets and context refer to the source body after CRLF/CR normalization to LF. */
 export interface TextAnchor { from: number; to: number; prefix: string; suffix: string }
 export interface Citation { nodeId: string; title: string; start?: number; end?: number; text?: string; transcriptRevision?: string; textAnchor?: TextAnchor }
@@ -21,6 +21,8 @@ export interface CardData extends Record<string, unknown> {
   sourceStatus?: string; sourceAuthor?: string; sourceTitle?: string;
   /** When a source card (video, image, link, text material) was collected into its board, ISO UTC (INSP-21). */
   collectedAt?: string;
+  /** Simplified Chinese for an English note, excerpt, or draft. The source text stays in body or citation.text. */
+  translation?: string;
   demo?: boolean;
 }
 export interface BoardNode { id: string; type: 'card'; position: { x: number; y: number }; data: CardData; style?: { width?: number; height?: number }; }

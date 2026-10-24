@@ -684,6 +684,21 @@
   .inspector-transcript-line.is-used .watch-line__time { color: var(--fg-2); }
   .inspector-transcript-line.is-current .watch-line__time { color: var(--fg-1); }
 
+  .inspector--video .inspector-translation--transcript {
+    flex: none;
+    margin: 0;
+    padding: var(--space-4) var(--space-7);
+    box-shadow: inset 0 -1px 0 var(--border-hair);
+  }
+  .watch-line__translation {
+    display: block;
+    margin-top: 2px;
+    color: var(--fg-3);
+    font: var(--type-meta);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
   .watch-line__text {
     display: block;
     min-width: 0;

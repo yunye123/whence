@@ -53,6 +53,14 @@
   .field-card .field-card__note-preview { min-height: 0; overflow: visible; }
   .field-card .field-card__note-content[data-text-planned] .field-card__note-preview { max-height: max(0px, round(down, 100cqh, 1lh)); overflow: hidden; }
   .field-card .field-card__note-preview.is-empty { color: var(--fg-3); }
+  .field-card .field-card__note-translation {
+    margin-top: 6px;
+    color: var(--fg-2);
+    font: var(--type-card-note);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .field-card .field-card__note-translation-label { margin-right: 6px; color: var(--fg-3); font: var(--type-card-meta); }
   .field-card .field-card__note-editor {
     display: block;
     width: 100%;

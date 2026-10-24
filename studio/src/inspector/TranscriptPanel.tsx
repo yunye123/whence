@@ -14,6 +14,7 @@ import { withShortcut } from '../dialogs/shortcuts';
 import { runBreaks, sentenceNodes, transcriptRuns } from './transcript-wrap';
 import { Words } from '../cards/Words';
 import type { EditingTranscriptLine, ReplaceAction } from './shared';
+import { TranslationForCard } from './EnglishTranslation';
 import {
   corrections, lineIndexAt, lineMarks, prefersReducedMotion, publishPlayhead, readFollowPreference, selections, transcriptTimeLabels, transcriptViews,
   useCorrection, usePlayhead, videoQuotes, watchableVideoUrl, writeFollowPreference,
@@ -69,7 +70,7 @@ export default function TranscriptPanel({
   const describeId = useId();
   const canSeek = !!watchableVideoUrl(videoUrl, data) && !mediaError;
   const needle = query.trim().toLocaleLowerCase();
-  const filtered = useMemo(() => needle ? transcript.filter(line => line.text.toLocaleLowerCase().includes(needle)) : transcript, [transcript, needle]);
+  const filtered = useMemo(() => needle ? transcript.filter(line => `${line.text}\n${line.translation ?? ''}`.toLocaleLowerCase().includes(needle)) : transcript, [transcript, needle]);
   const indexById = useMemo(() => new Map(transcript.map((line, index) => [line.id, index])), [transcript]);
   const positionById = useMemo(() => new Map(filtered.map((line, index) => [line.id, index])), [filtered]);
   const labels = transcriptTimeLabels(transcript);
@@ -518,6 +519,14 @@ export default function TranscriptPanel({
         <button type="button" className="switch" role="switch" aria-checked={follow} aria-labelledby={`${describeId}-follow`} title={follow ? '播放时当前句保持在中间' : '不自动滚动'} onClick={toggleFollow} />
       </span>}
     </header>
+    <TranslationForCard
+      data={data}
+      surface="transcript"
+      nodeId={nodeId}
+      readOnly={!!board.readOnly}
+      suspended={transcriptProcessing || !!correction}
+      update={(id, next) => board.updateCard(id, next)}
+    />
     <details className="inspector-transcript-tools" onKeyDown={closeDetailsOnEscape}>
       <summary className="icon-btn" title="字幕与转写工具"><Ellipsis size={16} aria-hidden="true" /><span className="sr-only">字幕与转写工具</span></summary>
       <div className="watch-tools">
@@ -666,7 +675,7 @@ const TranscriptRow = memo(function TranscriptRow({
         onKeyDown={event => actions.key(line.id, event)}
         onKeyUp={event => { if (event.key === ' ') event.preventDefault(); }}
         onFocus={() => actions.focus(line.id)}
-      ><span className="watch-line__original">{sentenceNodes(line.text, query, breaks)}</span></button>
+      ><span className="watch-line__original">{sentenceNodes(line.text, query, breaks)}</span>{line.translation?.trim() && <span className="watch-line__translation" lang="zh-CN">{line.translation}</span>}</button>
       <span className="watch-line__aside">
         {usedStart && <span className="watch-line__flag">已摘录</span>}
         <button
