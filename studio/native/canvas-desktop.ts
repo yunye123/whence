@@ -11,11 +11,13 @@ import { folderMediaResponse } from './folder-media';
 import { renderHtmlToPdf } from './pdf-render';
 import { VideoImportService } from './video-import-service';
 import { XImportService } from './x-import';
+import { translateEnglish, translationSettingsFromEnv } from '../src/english-translation';
 
 /**
  * Lifecycle and IPC for the canvas desktop services: video library, X import,
- * canvas directories, verified export, and PDF. electron/main.ts calls open,
- * register, and close. Channel names stay studio:* and field-video-import:task.
+ * canvas directories, verified export, PDF, and English-to-Chinese translation.
+ * electron/main.ts calls open, register, and close. Channel names stay studio:*
+ * and field-video-import:task. Translation itself lives in english-translation.ts.
  */
 const TASK_CHANNEL = 'field-video-import:task';
 const MATERIAL_MIME: Record<string, string> = {
@@ -106,6 +108,7 @@ export function rejectManagedLibrary(directory: string): void {
 
 export function register(handle: IpcHandle, selectDirectory: (title: string) => Promise<string | undefined>): void {
   const { video, boards, x } = services();
+  handle('translate-english', input => translateEnglish(input, translationSettingsFromEnv(process.env)));
   handle('video-import-submit', input => video.submit(input));
   handle('video-import-local', input => video.submitLocal(input));
   handle('video-import-list', () => video.list());

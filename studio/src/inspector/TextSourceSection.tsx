@@ -21,6 +21,7 @@ import { inspectorSessions } from './session-cache';
 import { InspectorSlot, isEditableTarget, keepEditorFocus, useInspectorLayout } from './shared';
 import { formatCount } from './draft-text';
 import type { PatchCard, SourceReveal, TextRange, TextSelection } from './shared';
+import { TranslationForCard } from './EnglishTranslation';
 
 /** Optional App action (integration request inspector-shell / inspector-reading): bring a card into view. */
 type RevealBoard = BoardActions & { revealCard?: (id: string) => void };
@@ -380,6 +381,7 @@ export default function TextSourceSection({
       placeholder="粘贴一段资料，或写下值得留下的想法……"
       spellCheck={false}
     />}
+    {data.kind === 'note' && <TranslationForCard data={data} surface="note" nodeId={nodeId} readOnly={!!board.readOnly} update={(_id, next) => patch(next)} />}
     {showLead && <InspectorSlot name="lead"><ReadingLead document={headings} excerpts={excerpts} characters={characters} bodyRef={bodyRef} onJump={reading ? undefined : jumpInEditor} /></InspectorSlot>}
   </section>;
 }

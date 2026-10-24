@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { FieldVideoImportsAPI, FieldBoardStorageAPI, FieldFileExportAPI, FieldPdfAPI, FieldXImportsAPI, VideoImportTask } from './contracts';
+import type { FieldTranslateAPI, FieldVideoImportsAPI, FieldBoardStorageAPI, FieldFileExportAPI, FieldPdfAPI, FieldXImportsAPI, VideoImportTask } from './contracts';
 
 export function exposeVideoImports(): void {
   const request = (channel: string, ...args: unknown[]) => ipcRenderer.invoke(channel, ...args).catch(error => {
@@ -31,6 +31,8 @@ export function exposeVideoImports(): void {
   contextBridge.exposeInMainWorld('fieldPdf', pdf);
   const xImports: FieldXImportsAPI = { resolve: input => request('studio:x-import-resolve', input), cancel: requestId => request('studio:x-import-cancel', requestId) };
   contextBridge.exposeInMainWorld('fieldXImports', xImports);
+  const translate: FieldTranslateAPI = { translate: input => request('studio:translate-english', input) as ReturnType<FieldTranslateAPI['translate']> };
+  contextBridge.exposeInMainWorld('fieldTranslate', translate);
 }
 
 /**

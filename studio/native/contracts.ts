@@ -2,6 +2,7 @@ import type { ProjectState } from '../../shared/types';
 import type { Board, BoardNode, CardData } from '../src/model';
 import type { DirectoryChoice, StoredMedia, BoardOpenResult, BoardOpenedResult } from './board-storage';
 import type { XImportResult, XImportRequest } from '../shared/x-import';
+import type { EnglishTranslationRequest, EnglishTranslationResult } from '../src/english-translation';
 
 export type VideoImportStage = 'queued' | 'downloading' | 'processing' | 'media-ready' | 'transcribing' | 'completed' | 'failed' | 'cancelled' | 'interrupted';
 export interface VideoImportInput {
@@ -72,6 +73,9 @@ export interface FieldXImportsAPI {
   resolve(input: XImportRequest): Promise<XImportResult>;
   cancel(requestId: string): Promise<void>;
 }
-declare global { interface Window { fieldVideoImports?: FieldVideoImportsAPI; fieldBoardStorage?: FieldBoardStorageAPI; fieldLocalFiles?: FieldLocalFilesAPI; fieldFileExport?: FieldFileExportAPI; fieldXImports?: FieldXImportsAPI; fieldPdf?: FieldPdfAPI } }
+export interface FieldTranslateAPI {
+  translate(input: EnglishTranslationRequest): Promise<EnglishTranslationResult>;
+}
+declare global { interface Window { fieldVideoImports?: FieldVideoImportsAPI; fieldBoardStorage?: FieldBoardStorageAPI; fieldLocalFiles?: FieldLocalFilesAPI; fieldFileExport?: FieldFileExportAPI; fieldXImports?: FieldXImportsAPI; fieldPdf?: FieldPdfAPI; fieldTranslate?: FieldTranslateAPI } }
 
 export const VIDEO_IMPORT_TERMINAL: ReadonlySet<VideoImportStage> = new Set(['completed', 'failed', 'cancelled', 'interrupted']);

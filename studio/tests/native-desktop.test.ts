@@ -58,6 +58,17 @@ test('CORE-06: the desktop build uses FIELD’s own worker; the legacy worker st
   if (fs.existsSync(legacy)) assert.doesNotMatch(fs.readFileSync(legacy, 'utf8'), /initial_prompt/, 'the older app keeps its own worker');
 });
 
+test('English-to-Chinese is one IPC on the desktop shell', () => {
+  const main = fs.readFileSync(path.join(path.dirname(root), 'electron/main.ts'), 'utf8');
+  const desktop = fs.readFileSync(path.join(root, 'native/canvas-desktop.ts'), 'utf8');
+  const bridge = fs.readFileSync(path.join(root, 'native/preload-bridge.ts'), 'utf8');
+  assert.match(main, /canvasDesktop\.register\(handle, selectDirectory\)/);
+  assert.match(desktop, /from '\.\.\/src\/english-translation'/);
+  assert.match(desktop, /handle\('translate-english', input => translateEnglish\(input, translationSettingsFromEnv\(process\.env\)\)\)/);
+  assert.equal((desktop.match(/translateEnglish/g) ?? []).length, 2);
+  assert.match(bridge, /studio:translate-english/);
+});
+
 test('2026-10-07 rename: the desktop window is titled 来处 and carries the app icon (field.ico keeps its file name)', () => {
   const main = fs.readFileSync(path.join(path.dirname(root), 'electron/main.ts'), 'utf8');
   const preload = fs.readFileSync(path.join(path.dirname(root), 'electron/preload.ts'), 'utf8');
@@ -69,6 +80,7 @@ test('2026-10-07 rename: the desktop window is titled 来处 and carries the app
   assert.match(preload, /exposeVideoImports\(\)/);
   assert.match(preload, /reportAppearance\(\)/);
   assert.doesNotMatch(build, /replaceOnce/);
+  assert.doesNotMatch(build, /translateEnglish/);
   assert.doesNotMatch(build, /云野参考画布/);
   assert.doesNotMatch(build, /originalsUnchanged/);
   const ico = fs.readFileSync(path.join(root, 'desktop-assets', 'field.ico'));

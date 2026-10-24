@@ -110,9 +110,37 @@ Install and configure these dependencies separately: `npm ci` does not install P
 
 Once configured, submit a link through “导入 → 视频链接” (Import → Video link), then follow the interface to download and transcribe. Review and correct automatically recognized text. You can also organize existing subtitles. Downloads contact the source site; login requirements, access restrictions, expired links, or deleted content can prevent retrieval. Not every site is guaranteed to work. If a download fails, keep the source link and check the reason shown on its task card.
 
+## Optional: translate English into Chinese
+
+English in notes, excerpts, drafts, and video transcripts can be translated into Simplified Chinese in the desktop app. The source stays where it is. The translation is stored on the same card or the same transcript line. Opening the app in a browser does not offer this.
+
+The desktop app calls an external API only after an API key is configured. 来处 has no built-in account and does not write the key into the canvas or the source tree. Set the variables before launching the desktop app, and restart after changing them:
+
+| Variable | Purpose |
+| --- | --- |
+| `CANVAS_TRANSLATE_API_KEY` | Required. The API key. |
+| `CANVAS_TRANSLATE_BASE_URL` | Optional. Defaults to `https://api.deepseek.com`. A full URL that already ends in `/chat/completions` is also accepted. Do not put the key in the URL. |
+| `CANVAS_TRANSLATE_MODEL` | Optional. Defaults to `deepseek-v4-flash`. |
+
+The values below are placeholders. Do not commit a real key:
+
+```sh
+export CANVAS_TRANSLATE_API_KEY="your-key"
+export CANVAS_TRANSLATE_BASE_URL="https://api.deepseek.com"
+export CANVAS_TRANSLATE_MODEL="deepseek-v4-flash"
+```
+
+Windows PowerShell:
+
+```powershell
+$env:CANVAS_TRANSLATE_API_KEY="your-key"
+```
+
+English content shows “译成中文”. A partial translation offers “继续翻译”. A finished translation can be requested again with “重新翻译”. Chinese content does not show the button. An excerpt keeps its English snapshot. When the card has no separate “我的理解”, the card shows “译文”. If the key is missing or the request fails, the source stays unchanged and the reason is shown.
+
 ## MVP limits
 
-- No accounts, cloud sync, collaboration, or cloud AI. Automatic speech recognition is optional local processing.
+- No accounts, cloud sync, or collaboration. English-to-Chinese translation is optional and calls out only after the desktop app is given an API key. There is no built-in cloud account. Automatic speech recognition is optional local processing.
 - Starting the desktop app again returns to the window that is already open. Read-only applies only to a second page from the same origin, for example two browser tabs on the same workspace: the later page is read-only. Close the page that is editing, then reload the other page before editing.
 - Up to 500 cards and 1,500 connections per canvas, 100 canvases per workspace, and 100 saved versions per draft.
 - Portable canvas files are limited to 96 MiB, with up to 64 MiB per media item and 68 MiB of total binary media. These are portable file limits, not universal limits on all media. Use complete directory export in the desktop app when needed.
@@ -128,6 +156,7 @@ Once configured, submit a link through “导入 → 视频链接” (Import →
 | `npm start` fails | Confirm that `npm run build` succeeded, then inspect the terminal error. |
 | The canvas is read-only | Check whether another browser tab has the same workspace open. Starting the desktop app again returns to the existing window. |
 | Downloads or transcription fail | Check the Python environment, tool paths, model availability, and the task card's error message. |
+| English translation fails | Check that `CANVAS_TRANSLATE_API_KEY` was set before the desktop app started, and that the base URL, model, and the reason shown in the interface are right. Do not send the key to anyone. |
 | Portable export exceeds its limit | Use “另存完整画布目录” in the desktop app and confirm that the media is still readable. |
 
 When reporting a problem, include the version, operating system, steps, expected result, and actual error. Remove personal paths, private content, and credentials from screenshots and logs.

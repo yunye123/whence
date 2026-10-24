@@ -96,6 +96,7 @@ export function createWorkspaceSearchIndex(workspace: Workspace): WorkspaceSearc
       add('citation', node.data.citation?.title);
       for (const line of node.data.transcript ?? []) {
         add('transcript', line.text, line.start);
+        add('transcript', line.translation, line.start);
         add('originalTranscript', line.originalText, line.start);
       }
       add('tags', node.data.tags?.join(' · '));

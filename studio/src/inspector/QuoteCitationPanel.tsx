@@ -6,6 +6,7 @@ import { transcriptRevision } from '../transcript-tools';
 import { resolveTextAnchor } from '../text-anchor';
 import { paragraphIndexAt, plainMarkdown, timeRangeLabel } from '../source-location';
 import { ProvenanceTagShape } from '../components/ProvenanceTag';
+import { TranslationForCard } from './EnglishTranslation';
 
 /**
  * The quote's captured source text, laid out like the quote card (§6.11): the provenance tag with the exact place
@@ -43,6 +44,7 @@ export default function QuoteCitationPanel({ nodeId, data, rememberVisit }: {
       <span className="inspector-citation-source">{citation.title || '未命名来源'}</span>
     </button> : <h3 className="inspector-citation-heading">原文</h3>}
     <blockquote>{plainMarkdown(citation?.text ?? data.body).trim()}</blockquote>
+    <TranslationForCard data={data} surface="excerpt" nodeId={nodeId} readOnly={!!board.readOnly} update={(id, next) => board.updateCard(id, next)} />
     {citationIsOutdated && <p className="inspector-citation-updated"><History size={14} aria-hidden="true" />来源逐字稿后来有更新；这张摘录保留了创建时的文字。</p>}
     {citationTextChanged && <p className="inspector-citation-updated"><History size={14} aria-hidden="true" />来源文字后来有修改；这张摘录保留了创建时的原文。</p>}
     {citation && !citationSource && <p className="inspector-citation-missing">来源卡片已不在当前画布，摘录原文仍保留在这里。</p>}

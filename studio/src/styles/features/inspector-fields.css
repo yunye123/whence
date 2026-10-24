@@ -108,4 +108,21 @@
       animation: inspector-fade var(--dur-base) var(--ease-out) backwards;
     }
   }
+
+  .inspector-translation {
+    display: grid;
+    gap: var(--space-3);
+    margin-top: var(--space-5);
+  }
+  .inspector-translation__result { margin: 0; color: var(--fg-2); font: var(--type-ui); }
+  .inspector-translation__result summary { cursor: pointer; color: var(--fg-2); font: var(--type-ui-strong); }
+  .inspector-translation__text {
+    margin-top: var(--space-3);
+    color: var(--fg-1);
+    font: var(--type-ui);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .inspector-translation__actions { display: flex; align-items: center; gap: var(--space-4); }
+  .inspector-translation__hint, .inspector-translation__status { margin: 0; color: var(--fg-3); font: var(--type-meta); }
 }

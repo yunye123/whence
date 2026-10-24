@@ -32,6 +32,7 @@ import type { ScriptLine } from './script-view/script-model';
 import { setDraftView, storedDraftView, useDraftView } from './script-view/view-mode';
 import type { DraftView } from './script-view/view-mode';
 import { ScriptEditing } from './script-view/script-editing';
+import { TranslationForCard } from './EnglishTranslation';
 
 /** Optional App field (integration request inspector-writing): edges, for the notes pinned to the margin. */
 type EdgeAwareBoard = BoardActions & { edges?: BoardEdge[] };
@@ -480,6 +481,7 @@ export default function DraftWritingSection({ data, editorRef, normalizedBody, p
       </div>}
     </div>}
 
+    <TranslationForCard data={data} surface="draft" nodeId={draftId ?? ''} readOnly={!!board.readOnly} update={(_id, next) => patch(next)} />
     {/* 脚本 hides the editor instead of unmounting it: selection, undo history and scroll anchors survive the switch. */}
     <div className="draft-body" hidden={script}>
       <DraftEditor

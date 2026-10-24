@@ -3,6 +3,9 @@ Exact dependency versions are locked in package-lock.json. Electron runtime noti
 
 来处的无限画布基于 React Flow（@xyflow/react，MIT 许可，© webkid GmbH）构建，感谢 xyflow 团队。画布上不显示 React Flow 署名，致谢写在这里和“使用指南 → 关于”。
 The 来处 (whence) canvas is built on React Flow (@xyflow/react, MIT License, (c) webkid GmbH). Thank you to the xyflow team.
+
+英语译成中文的提示词、分批、chat completions 请求和失败处理改编自 Zara Zhang 的 youtube-digest（MIT，Copyright (c) 2026 Zara Zhang，https://github.com/zarazhangrui/youtube-digest）。改编后的实现和许可全文在 studio/src/english-translation.ts。
+The English-to-Chinese prompts, batching, chat-completions request, and failure handling are adapted from youtube-digest by Zara Zhang (MIT License, Copyright (c) 2026 Zara Zhang, https://github.com/zarazhangrui/youtube-digest). The adapted implementation and the full license text are in studio/src/english-translation.ts.
 字标“来处”（界面里的 Wordmark 组件、src/icons/wordmark.svg）由思源宋体 SemiBold（Noto Serif SC，SIL OFL 1.1，许可全文见下文“内置字体”）的字形轮廓转曲而来，不含字体文件本身。
 
 ========================================================================

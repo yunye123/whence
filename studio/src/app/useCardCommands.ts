@@ -15,6 +15,7 @@ import { pendingImport } from './video-links';
 import { errorMessage } from './utils';
 import { EMPTY_IDS, beginNoteEdit, focusWhenReady } from './studio-dom';
 import { preloadDraftEditor } from '../inspector/draft-editor/editor-loader';
+import { cardDataAfterEdit } from '../english-translation';
 
 /**
  * Making, changing and removing cards (CORE-32: moved out of App.tsx unchanged): a new card where §5.4 puts it, the
@@ -52,7 +53,7 @@ export function useCardCommands({boardRef,workspaceRef,readOnlyRef,measurements,
   // Cards placed in the last ~1.2s: the new-placement ring (§6.8).
   const [freshCardIds,setFreshCardIds]=useState<ReadonlySet<string>>(EMPTY_IDS);
   // Metadata the player fills in by itself (duration) is not a user edit and never becomes an invisible undo step (RL-m2).
-  const updateCard=useCallback((id:string,patch:Partial<CardData>)=>{const automatic=Object.keys(patch).length>0&&Object.keys(patch).every(key=>key==='duration');return changeBoard(b=>({...b,nodes:b.nodes.map(n=>n.id===id?{...n,data:{...n.data,...patch}}:n)}),automatic?{history:false}:{key:'edit'});},[changeBoard]);
+  const updateCard=useCallback((id:string,patch:Partial<CardData>)=>{const automatic=Object.keys(patch).length>0&&Object.keys(patch).every(key=>key==='duration');return changeBoard(b=>({...b,nodes:b.nodes.map(n=>n.id===id?{...n,data:cardDataAfterEdit(n.data,patch)}:n)}),automatic?{history:false}:{key:'edit'});},[changeBoard]);
   /** New placement (§6.8): the ring on fresh cards; with reduced motion the trace player keeps the ring as a fade (§7). */
   const markFresh=useCallback((ids:string[])=>{
     if(!ids.length)return;

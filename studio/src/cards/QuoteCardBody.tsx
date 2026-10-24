@@ -111,8 +111,11 @@ export function QuoteCardBody({ data, previewWidth }: CardBodyProps) {
   const hasSeparateNote = data.citation?.text !== undefined
     && !!data.body.trim()
     && data.body.trim() !== data.citation.text.trim();
+  const translation = data.translation?.trim() ?? '';
+  const showTranslation = !hasSeparateNote && !!translation;
+  const secondary = hasSeparateNote ? `我的理解 ${data.body}` : showTranslation ? `译文 ${translation}` : '';
   const lines = useStationeryLines(quoteText || '选中素材中的文字，即可留下带来源的摘录。', previewWidth, '500 16px "Noto Serif SC Variable"', 'word', 4);
-  const noteLines = useStationeryLines(hasSeparateNote ? `我的理解 ${data.body}` : '', previewWidth, '400 14px "Noto Sans SC Variable"', 'word', 4);
+  const noteLines = useStationeryLines(secondary, previewWidth, '400 14px "Noto Sans SC Variable"', 'word', 4);
   const style = lines === undefined || noteLines === undefined ? undefined : {
     '--text-natural-block': `${Math.max(1, lines) * 26 + (noteLines ? noteLines * 22 + 6 : 0)}px`,
     '--quote-natural-block': `${Math.max(1, lines) * 26}px`,
@@ -132,9 +135,9 @@ export function QuoteCardBody({ data, previewWidth }: CardBodyProps) {
       >
         {quoteText ? <Words text={quoteText} keep={4} /> : <span className="is-placeholder">选中素材中的文字，即可留下带来源的摘录。</span>}
       </blockquote>
-      {hasSeparateNote && (
+      {(hasSeparateNote || showTranslation) && (
         <div className="field-card__quote-note">
-          <p><span className="field-card__quote-note-label">我的理解</span><Words text={data.body} keep={4} /></p>
+          <p><span className="field-card__quote-note-label">{hasSeparateNote ? '我的理解' : '译文'}</span><Words text={hasSeparateNote ? data.body : translation} keep={4} /></p>
         </div>
       )}
     </div>
