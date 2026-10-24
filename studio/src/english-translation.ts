@@ -45,7 +45,7 @@ const DEFAULT_BASE_URL = 'https://api.deepseek.com';
 const DEFAULT_MODEL = 'deepseek-v4-flash';
 
 export type TranslationContentType = 'transcriptBatch' | 'interfaceBatch';
-export type TranslationSurface = 'transcript' | 'excerpt' | 'note' | 'draft';
+export type TranslationSurface = 'transcript' | 'excerpt' | 'note' | 'draft' | 'link' | 'description';
 
 export interface TranslationSegment { id: string; text: string }
 export interface EnglishTranslationRequest {
@@ -122,7 +122,15 @@ function surfaceText(data: CardData, surface: TranslationSurface): string {
   if (surface === 'excerpt' && data.kind === 'quote') return (data.citation?.text ?? data.body).trim();
   if (surface === 'note' && data.kind === 'note') return data.body.trim();
   if (surface === 'draft' && data.kind === 'draft') return data.body.trim();
+  if (surface === 'link' && data.kind === 'link') return data.body.trim();
+  if (surface === 'description' && data.kind === 'video') return (data.sourceDescription ?? '').trim();
   return '';
+}
+
+function surfaceSegmentId(surface: TranslationSurface): string {
+  if (surface === 'excerpt') return 'excerpt';
+  if (surface === 'description') return 'description';
+  return 'body';
 }
 
 /**
@@ -144,7 +152,7 @@ export function surfaceTranslation(data: CardData, surface: TranslationSurface):
   }
   const text = surfaceText(data, surface);
   if (!englishSourceText(text)) return null;
-  const id = surface === 'excerpt' ? 'excerpt' : 'body';
+  const id = surfaceSegmentId(surface);
   return {
     surface,
     contentType: 'interfaceBatch',
@@ -172,7 +180,7 @@ export function applySurfaceTranslation(data: CardData, surface: TranslationSurf
     return changed ? { transcript } : null;
   }
   const source = surfaceText(data, surface);
-  const id = surface === 'excerpt' ? 'excerpt' : 'body';
+  const id = surfaceSegmentId(surface);
   const update = accepted.find(item => item.id === id && item.source === source);
   if (!update || update.text === data.translation) return null;
   return { translation: update.text };
@@ -189,8 +197,153 @@ export function cardDataAfterEdit(previous: CardData, patch: Partial<CardData>):
   const quoteSourceChanged = previous.kind === 'quote'
     && patch.citation !== undefined
     && (patch.citation.text ?? '') !== (previous.citation?.text ?? '');
-  if ((bodyChanged && previous.kind !== 'quote') || quoteSourceChanged) delete data.translation;
+  const descriptionChanged = previous.kind === 'video'
+    && patch.sourceDescription !== undefined
+    && patch.sourceDescription !== previous.sourceDescription;
+  // A video's 观看笔记 is `body`. Editing it must not wipe the description's Chinese.
+  if ((bodyChanged && previous.kind !== 'quote' && previous.kind !== 'video') || quoteSourceChanged || descriptionChanged) delete data.translation;
   return data;
+}
+
+export interface FreshSegment {
+  id: string;
+  text: string;
+  batch: TranslationContentType;
+  maxLength: number;
+}
+
+/**
+ * English created by this paste, and nothing already on the canvas. A link with no article
+ * body does not send its hostname. A video title is included only while it is still the
+ * downloaded English title.
+ */
+export function collectFreshSegments(data: CardData): FreshSegment[] {
+  const segments: FreshSegment[] = [];
+  if (data.kind === 'link') {
+    const body = data.body.trim();
+    if (englishSourceText(body)) segments.push({ id: 'body', text: body, batch: 'interfaceBatch', maxLength: TRANSLATION_TEXT_MAX });
+    const title = data.title.trim();
+    if (body && englishSourceText(title) && (!data.sourceTitle || data.sourceTitle === data.title)) {
+      segments.push({ id: 'title', text: title, batch: 'interfaceBatch', maxLength: 500 });
+    }
+  }
+  if (data.kind === 'video') {
+    const title = data.title.trim();
+    if (englishSourceText(title) && !!data.sourceTitle && data.title === data.sourceTitle) {
+      segments.push({ id: 'title', text: title, batch: 'interfaceBatch', maxLength: 500 });
+    }
+    const description = (data.sourceDescription ?? '').trim();
+    if (englishSourceText(description)) segments.push({ id: 'description', text: description, batch: 'interfaceBatch', maxLength: TRANSLATION_TEXT_MAX });
+    for (const line of data.transcript ?? []) {
+      const text = line.text.trim();
+      if (englishSourceText(text)) segments.push({ id: line.id, text, batch: 'transcriptBatch', maxLength: TRANSLATION_LINE_MAX });
+    }
+  }
+  return segments;
+}
+
+/** The button's "source changed, or too long to store" check. Import uses the same one. */
+export function acceptTranslationUpdates(
+  sent: readonly TranslationSegment[],
+  result: Pick<EnglishTranslationResult, 'segments'>,
+  currentText: (id: string) => string | undefined,
+  maxLength: number | ((id: string) => number),
+): { updates: TranslationUpdate[]; stale: number; tooLong: number; empty: number } {
+  const updates: TranslationUpdate[] = [];
+  let stale = 0;
+  let tooLong = 0;
+  let empty = 0;
+  const limit = (id: string) => typeof maxLength === 'function' ? maxLength(id) : maxLength;
+  for (const segment of result.segments) {
+    const source = sent.find(item => item.id === segment.id);
+    if (!source) continue;
+    if (!segment.text) { empty += 1; continue; }
+    if (currentText(segment.id) !== source.text) { stale += 1; continue; }
+    if (segment.text.length > limit(segment.id)) { tooLong += 1; continue; }
+    updates.push({ id: segment.id, text: segment.text, source: source.text });
+  }
+  return { updates, stale, tooLong, empty };
+}
+
+export function translationNotice(accepted: number, stale: number, tooLong: number, empty: number, error: string): string {
+  const failed = empty + stale + tooLong;
+  if (!accepted) return stale ? '原文已改变，没有写入过期译文。' : tooLong ? '译文超过可保存长度。' : (error || '没有得到可用的中文译文。');
+  if (failed) return `已译出 ${accepted} 段，还有 ${failed} 段没有译出。${error || ''}`;
+  return '已译成中文。原文仍保留。';
+}
+
+function freshSegmentText(data: CardData | undefined, id: string): string | undefined {
+  if (!data) return undefined;
+  if (id === 'body') return data.body.trim();
+  if (id === 'description') return (data.sourceDescription ?? '').trim();
+  if (id === 'title') return data.title.trim();
+  return data.transcript?.find(line => line.id === id)?.text.trim();
+}
+
+/**
+ * Write this paste's Chinese back. Description and web body use `translation`. A title changes
+ * only while it is still the English that was sent. Transcript lines keep their English in `text`.
+ */
+export function applyFreshTranslation(data: CardData, updates: readonly TranslationUpdate[]): Partial<CardData> | null {
+  let patch: Partial<CardData> | null = null;
+  const put = (next: Partial<CardData>) => { patch = { ...(patch ?? {}), ...next }; };
+  const body = updates.find(item => item.id === 'body');
+  if (body && data.kind === 'link' && body.source === data.body.trim() && body.text !== data.translation) put({ translation: body.text });
+  const description = updates.find(item => item.id === 'description');
+  if (description && data.kind === 'video' && description.source === (data.sourceDescription ?? '').trim() && description.text !== data.translation) {
+    put({ translation: description.text });
+  }
+  const title = updates.find(item => item.id === 'title' && item.source === data.title.trim());
+  if (title) {
+    const stillOriginal = data.kind === 'video'
+      ? !!data.sourceTitle && data.title === data.sourceTitle
+      : data.kind === 'link' && (!data.sourceTitle || data.sourceTitle === data.title);
+    if (stillOriginal) {
+      const chinese = title.text.slice(0, 500);
+      const english = title.source.slice(0, 2000);
+      if (chinese !== data.title || data.sourceTitle !== english) put({ title: chinese, sourceTitle: english });
+    }
+  }
+  const lines = updates.filter(item => item.id !== 'body' && item.id !== 'description' && item.id !== 'title');
+  if (lines.length) {
+    const transcript = applySurfaceTranslation(data, 'transcript', lines)?.transcript;
+    if (transcript) put({ transcript });
+  }
+  return patch;
+}
+
+/** Ask the desktop bridge for this card's fresh English and return a patch against the latest card. */
+export async function translateFreshCard(
+  read: () => CardData | undefined,
+  translate: (request: EnglishTranslationRequest) => Promise<EnglishTranslationResult>,
+): Promise<{ patch: Partial<CardData> | null; notice: string | null }> {
+  const data = read();
+  const segments = data ? collectFreshSegments(data) : [];
+  if (!data || !segments.length) return { patch: null, notice: null };
+  const groups: TranslationContentType[] = [];
+  if (segments.some(segment => segment.batch === 'interfaceBatch')) groups.push('interfaceBatch');
+  if (segments.some(segment => segment.batch === 'transcriptBatch')) groups.push('transcriptBatch');
+  const updates: TranslationUpdate[] = [];
+  let stale = 0;
+  let tooLong = 0;
+  let empty = 0;
+  let error = '';
+  for (const contentType of groups) {
+    const sent = segments.filter(segment => segment.batch === contentType).map(segment => ({ id: segment.id, text: segment.text }));
+    const limits = new Map(segments.filter(segment => segment.batch === contentType).map(segment => [segment.id, segment.maxLength]));
+    const result = await translate({ segments: sent, contentType, contextTitle: data.title, targetLanguage: 'zh' });
+    if (result.error) error = result.error;
+    const judged = acceptTranslationUpdates(sent, result, id => freshSegmentText(read(), id), id => limits.get(id) ?? TRANSLATION_TEXT_MAX);
+    updates.push(...judged.updates);
+    stale += judged.stale;
+    tooLong += judged.tooLong;
+    empty += judged.empty;
+  }
+  const latest = read() ?? data;
+  const patch = applyFreshTranslation(latest, updates);
+  const notice = translationNotice(updates.length, stale, tooLong, empty, error);
+  if (!patch && notice === '已译成中文。原文仍保留。') return { patch: null, notice: null };
+  return { patch, notice };
 }
 
 export function translationSettingsFromEnv(env: Record<string, string | undefined>): TranslationSettings {

@@ -8,6 +8,7 @@ import type { ToastOptions } from '../shell/Toasts';
 import { pendingImport, importStageStatus } from './video-links';
 import { differentNativeAsset, keepCachedImportMedia, needsImportPosterRestore, prepareVideoImportUpdate } from './import-merge';
 import { clone, errorMessage } from './utils';
+import { translateFreshAttempt } from './fresh-translation';
 
 type Notify=(message:string,options?:ToastOptions)=>void;
 
@@ -51,7 +52,8 @@ export function useVideoTasks({workspaceRef,readOnlyRef,notify,setNext,persist,s
     if(node.data.nativeImportJobId&&node.data.nativeImportJobId!==task.id)return;
     const activeRun=videoRuns.current.get(node.id);
     if(!node.data.nativeImportJobId&&(!activeRun||activeRun.attemptId!==node.data.videoImport.attemptId))return;
-    const materialChanged=!node.data.videoImport.mediaReady||(task.status==='completed'&&node.data.videoImport.status!=='completed')||differentNativeAsset(node.data,task.card??{});
+    const wasCompleted=node.data.videoImport.status==='completed';
+    const materialChanged=!node.data.videoImport.mediaReady||(task.status==='completed'&&!wasCompleted)||differentNativeAsset(node.data,task.card??{});
     const lateMedia:Partial<CardData>={};
     for(const key of ['mediaId','poster','nativeMediaWarning'] as const){const value=task.card?.[key];if(value!==undefined&&value!==node.data[key]&&!keepCachedImportMedia(node.data,task.card??{},key))lateMedia[key]=value as string;}
     const accepted=updateImportCard(task.boardId,task.nodeId,node.data.videoImport.attemptId,{...(materialChanged?task.card:{}),...lateMedia,...mergeXVideoSource(node,task.card??{}),sourceUrl:task.card?.sourceUrl??node.data.sourceUrl,nativeImportJobId:task.id},{
@@ -59,6 +61,7 @@ export function useVideoTasks({workspaceRef,readOnlyRef,notify,setNext,persist,s
       message:task.message.slice(0,4096),error:task.error?.slice(0,4096),mediaReady:node.data.videoImport.mediaReady||!!(task.card?.url||task.card?.mediaId),updatedAt:task.updatedAt,
     });
     if(!accepted)rejectedNativeResults.current.set(task.id,revision);
+    else if(!wasCompleted&&importStageStatus(task.status)==='completed')translateFreshAttempt(task.boardId,task.nodeId,node.data.videoImport.attemptId);
   },[updateImportCard]);
   const setVideoAction=useCallback((id:string,pending:boolean)=>{if(pending)videoActions.current.add(id);else videoActions.current.delete(id);setVideoActionIds([...videoActions.current]);},[]);
   const launchVideoImport=useCallback((boardId:string,nodeId:string,attemptId:string)=>{
@@ -76,7 +79,7 @@ export function useVideoTasks({workspaceRef,readOnlyRef,notify,setNext,persist,s
       onMediaReady:patch=>{updateImportCard(boardId,nodeId,attemptId,patch,{mediaReady:true,status:'transcribing',message:'视频已就绪，正在提取逐字稿'});},
     }).then(patch=>{
       const saved=updateImportCard(boardId,nodeId,attemptId,patch,{mediaReady:true,status:'completed',progress:100,message:patch.transcript?.length?`逐字稿已就绪，共 ${patch.transcript.length} 句`:'视频已就绪',error:undefined});
-      if(saved)notify('视频已加入原画布，可播放与阅读逐字稿');
+      if(saved){notify('视频已加入原画布，可播放与阅读逐字稿');translateFreshAttempt(boardId,nodeId,attemptId);}
     }).catch(error=>{
       const cancelled=controller.signal.aborted||(error instanceof Error&&error.name==='AbortError');
       updateImportCard(boardId,nodeId,attemptId,{},cancelled?{status:'cancelled',message:'已取消，下载好的视频会保留',error:undefined}:{status:'failed',message:'导入未完成，可重试',error:errorMessage(error).slice(0,4096)});

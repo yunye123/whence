@@ -11,10 +11,11 @@ import { attr, getByLabel } from './helpers/markup';
 const noop = () => {};
 const items = (entries: ReturnType<typeof cardMenuEntries>) => entries.filter((entry): entry is ActionMenuItem => entry.kind === undefined || entry.kind === 'item');
 
-test('the five card actions keep their K4 names; read-only greys the editing ones with a reason', () => {
-  const actions = { onView: noop, onConnect: noop, onResize: noop, onDuplicate: noop, onDelete: noop };
-  assert.deepEqual(items(cardMenuEntries({ kind: 'note' }, actions)).map(item => item.label), ['查看这张卡片', '连接到卡片…', '调整尺寸…', '复制卡片', '移除卡片']);
+test('the card actions keep their K4 names, and 打开 is first; read-only greys the editing ones with a reason', () => {
+  const actions = { onOpen: noop, onView: noop, onConnect: noop, onResize: noop, onDuplicate: noop, onDelete: noop };
+  assert.deepEqual(items(cardMenuEntries({ kind: 'note' }, actions)).map(item => item.label), ['打开', '查看这张卡片', '连接到卡片…', '调整尺寸…', '复制卡片', '移除卡片']);
   const locked = items(cardMenuEntries({ kind: 'note' }, { ...actions, readOnly: true }));
+  assert.equal(locked.find(item => item.id === 'open')?.disabled, undefined);
   assert.equal(locked.find(item => item.id === 'view')?.disabled, undefined);
   for (const id of ['connect', 'resize', 'duplicate', 'delete']) {
     const item = locked.find(entry => entry.id === id);
@@ -22,6 +23,25 @@ test('the five card actions keep their K4 names; read-only greys the editing one
     assert.ok(item?.reason, `${id} explains why`);
   }
   assert.ok(!items(cardMenuEntries({ kind: 'frame' }, actions)).some(item => item.id === 'connect'), 'frames do not connect');
+});
+
+test('a video can excerpt every transcript line, and the row says why it cannot', () => {
+  const actions = { onOpen: noop, onExcerptTranscript: noop, onView: noop };
+  const line = { id: 'a', start: 0, end: 1, text: '一句原话' };
+  const ready = items(cardMenuEntries({ kind: 'video', transcript: [line] }, actions));
+  assert.equal(ready[0]?.label, '打开');
+  assert.equal(ready.find(item => item.id === 'excerpt-transcript')?.label, '摘录全部逐字稿到画布');
+  assert.equal(ready.find(item => item.id === 'excerpt-transcript')?.disabled, undefined);
+  assert.equal(ready.find(item => item.id === 'view')?.label, '查看这张卡片');
+  const none = items(cardMenuEntries({ kind: 'video', transcript: [{ ...line, text: '  ' }] }, actions));
+  assert.equal(none.find(item => item.id === 'excerpt-transcript')?.reason, '还没有逐字稿');
+  const busy = items(cardMenuEntries({ kind: 'video', transcript: [line], videoImport: { status: 'transcribing' } as never }, actions));
+  assert.equal(busy.find(item => item.id === 'excerpt-transcript')?.reason, '逐字稿还在提取');
+  const downloading = items(cardMenuEntries({ kind: 'video', videoImport: { status: 'downloading' } as never }, actions));
+  assert.equal(downloading.find(item => item.id === 'excerpt-transcript')?.reason, '逐字稿还在提取');
+  const locked = items(cardMenuEntries({ kind: 'video', transcript: [line], videoImport: { status: 'queued' } as never }, { ...actions, readOnly: true }));
+  assert.equal(locked.find(item => item.id === 'excerpt-transcript')?.reason, '只读窗口');
+  assert.equal(locked.find(item => item.id === 'open')?.disabled, undefined);
 });
 
 test('menus flip above and shift inside the window, 8px from the edges', () => {

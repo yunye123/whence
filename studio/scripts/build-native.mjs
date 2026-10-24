@@ -15,8 +15,17 @@ export async function buildNative() {
   const [rawMain, rawPreload] = await Promise.all([fs.readFile(originalMain, 'utf8'), fs.readFile(originalPreload, 'utf8')]);
   const out = path.join(studioRoot, 'dist-native');
   await fs.mkdir(out, { recursive: true });
-  const common = { absWorkingDir: legacyRoot, bundle: true, platform: 'node', format: 'cjs', target: 'node24', external: ['electron'] };
-  await build({ ...common, entryPoints: [originalMain], outfile: path.join(out, 'main.cjs'), sourcemap: true });
+  const readabilitySource = await fs.readFile(path.join(legacyRoot, 'node_modules/@mozilla/readability/Readability.js'), 'utf8');
+  const readabilityHeader = readabilitySource.match(/^\/\*[\s\S]*?\*\//)?.[0] ?? '';
+  if (!/Apache License/.test(readabilityHeader)) throw new Error('缺少 @mozilla/readability 的 Apache-2.0 声明，已停止构建。');
+  const common = { absWorkingDir: legacyRoot, bundle: true, platform: 'node', format: 'cjs', target: 'node24', external: ['electron'], legalComments: 'eof' };
+  await build({
+    ...common,
+    entryPoints: [originalMain],
+    outfile: path.join(out, 'main.cjs'),
+    sourcemap: true,
+    banner: { js: readabilityHeader.replace(/^\/\*/, '/*!') },
+  });
   await build({ ...common, entryPoints: [originalPreload], outfile: path.join(out, 'preload.cjs'), sourcemap: true });
   const current = await Promise.all([fs.readFile(originalMain, 'utf8'), fs.readFile(originalPreload, 'utf8')]);
   if (current[0] !== rawMain || current[1] !== rawPreload) throw new Error('构建期间旧桌面源码发生了并发变化，请重新构建后再启动。');

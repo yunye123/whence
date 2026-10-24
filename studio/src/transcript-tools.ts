@@ -69,18 +69,29 @@ export function replaceTranscript(_data: CardData, lines: readonly TranscriptLin
   return { transcript: replacementLines(lines), transcriptRevision: uid() };
 }
 
+/** Keep a line's Chinese when a later automatic write has the same id and the same English. */
+function withKeptTranslations(current: CardData, lines: readonly TranscriptLine[]): TranscriptLine[] {
+  const next = replacementLines(lines);
+  const previous = new Map((current.transcript ?? []).filter(line => line.translation).map(line => [line.id, line]));
+  if (!previous.size) return next;
+  return next.map(line => {
+    const old = previous.get(line.id);
+    return old?.translation && old.text === line.text ? { ...line, translation: old.translation } : line;
+  });
+}
+
 /** Merge background task results without letting an old recognizer overwrite manual text. */
 export function mergeAutomaticTranscript(current: CardData, incoming: Partial<CardData>, assetChanged: boolean): Partial<CardData> {
   const patch = { ...incoming };
   if (assetChanged) {
-    patch.transcript = replacementLines(incoming.transcript ?? []);
+    patch.transcript = withKeptTranslations(current, incoming.transcript ?? []);
     patch.transcriptRevision = undefined;
   } else if (transcriptRevision(current) !== INITIAL_TRANSCRIPT_REVISION) {
     delete patch.transcript;
     delete patch.transcriptRevision;
   } else {
     delete patch.transcriptRevision;
-    if (incoming.transcript !== undefined) patch.transcript = replacementLines(incoming.transcript);
+    if (incoming.transcript !== undefined) patch.transcript = withKeptTranslations(current, incoming.transcript);
   }
   return patch;
 }

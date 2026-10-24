@@ -12,7 +12,7 @@ const TYPES: CardKind[] = ['video', 'image', 'note', 'quote', 'draft', 'link', '
 const MIMES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif', 'video/mp4', 'video/webm', 'video/quicktime', 'video/ogg', 'video/x-m4v', 'audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/x-wav', 'audio/ogg', 'audio/webm', 'audio/flac']);
 const EXTENSIONS: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', gif: 'image/gif', avif: 'image/avif', mp4: 'video/mp4', m4v: 'video/x-m4v', mov: 'video/quicktime', webm: 'video/webm', ogv: 'video/ogg', mp3: 'audio/mpeg', m4a: 'audio/mp4', wav: 'audio/wav', ogg: 'audio/ogg', flac: 'audio/flac' };
 const NATIVE_STRINGS = ['nativeAssetId', 'nativeProjectId', 'nativeDirectory', 'nativeNodeId', 'nativeEntityId', 'nativeSourceId', 'nativeTranscriptId', 'nativeGroup', 'nativeMediaWarning', 'nativeImportJobId'] as const;
-const SOURCE_STRINGS = ['sourceTitle', 'sourceAuthor', 'sourceOriginalText', 'sourceStatus', 'excerptNote'] as const;
+const SOURCE_STRINGS = ['sourceTitle', 'sourceAuthor', 'sourceOriginalText', 'sourceStatus', 'sourceDescription', 'excerptNote'] as const;
 let databasePromise: Promise<IDBDatabase> | undefined;
 const savedFolders = new Map<string, string>();
 
@@ -150,7 +150,10 @@ function validateNode(value: unknown, portable: boolean): BoardNode {
     });
     unique(data.draftVersions.map(version => version.id), '文稿版本');
   }
-  for (const key of SOURCE_STRINGS) if (raw[key] !== undefined) data[key] = string(raw[key], '来源信息', key === 'sourceOriginalText' || key === 'excerptNote' ? 300_000 : 2000);
+  for (const key of SOURCE_STRINGS) if (raw[key] !== undefined) {
+    const max = key === 'sourceOriginalText' || key === 'excerptNote' ? 300_000 : key === 'sourceDescription' ? 20_000 : 2000;
+    data[key] = string(raw[key], '来源信息', max);
+  }
   if (raw.collectedAt !== undefined) data.collectedAt = date(raw.collectedAt, '收进时间');
   if (raw.sourceUrl !== undefined) {
     const url = string(raw.sourceUrl, '原始来源链接', 4096);

@@ -15,7 +15,7 @@ import { WELCOME_KEY, focusCanvasStart } from './studio-dom';
  * The boards of the workspace (CORE-32: moved out of App.tsx unchanged): switch, create (template, folder), import,
  * duplicate, rename, the first-run examples and welcome (§6.24), and reopening a board folder with its recovery prompt.
  */
-export function useBoardManagement({workspaceRef,boardRef,readOnlyRef,readOnly,busyRef,setBusy,setWorkspace,setNext,saveQueue,initialRevealBoard,revealStartAreaWhenMeasured,notify,changeBoard,clearDraftNavigation,playbackRequest,playbackSession,setSelectedIds,setSelectedEdgeIds,setInspectedId,setActiveVideo,setLibraryFacet,setGroupPicker,setView,setModal,setCanvasReveal}:{
+export function useBoardManagement({workspaceRef,boardRef,readOnlyRef,readOnly,busyRef,setBusy,setWorkspace,setNext,saveQueue,initialRevealBoard,revealStartAreaWhenMeasured,notify,changeBoard,clearDraftNavigation,playbackRequest,playbackSession,setSelectedIds,setSelectedEdgeIds,closePanels,setActiveVideo,setLibraryFacet,setGroupPicker,setView,setModal,setCanvasReveal}:{
   workspaceRef:RefObject<Workspace|null>;
   boardRef:RefObject<Board|null>;
   readOnlyRef:RefObject<boolean>;
@@ -34,7 +34,7 @@ export function useBoardManagement({workspaceRef,boardRef,readOnlyRef,readOnly,b
   playbackSession:RefObject<VideoPlaybackSession>;
   setSelectedIds:Dispatch<SetStateAction<string[]>>;
   setSelectedEdgeIds:Dispatch<SetStateAction<string[]>>;
-  setInspectedId:Dispatch<SetStateAction<string|null>>;
+  closePanels:()=>void;
   setActiveVideo:Dispatch<SetStateAction<string|null>>;
   setLibraryFacet:Dispatch<SetStateAction<LibraryFacet>>;
   setGroupPicker:Dispatch<SetStateAction<{cardId:string;anchor:HTMLElement|{x:number;y:number}}|null>>;
@@ -51,13 +51,13 @@ export function useBoardManagement({workspaceRef,boardRef,readOnlyRef,readOnly,b
   // The new-board dialog does not lean towards any one kind of creator (F-M1).
   const [chosenTemplate,setChosenTemplate]=useState<TemplateId>('blank');
   const [welcome,setWelcome]=useState(()=>{try{return localStorage.getItem(WELCOME_KEY)!=='seen';}catch{return false;}});
-  const switchBoard=useCallback((id:string)=>{const current=workspaceRef.current;if(!current||id===current.activeBoardId||!current.boards.some(item=>item.id===id))return;setCanvasReveal(null);clearDraftNavigation();playbackRequest.current++;playbackSession.current.handoff();const next={...current,activeBoardId:id};if(readOnlyRef.current){workspaceRef.current=next;setWorkspace(next);}else setNext(next);setSelectedIds([]);setInspectedId(null);setActiveVideo(null);setLibraryFacet('all');setGroupPicker(null);},[clearDraftNavigation,setNext]);
+  const switchBoard=useCallback((id:string)=>{const current=workspaceRef.current;if(!current||id===current.activeBoardId||!current.boards.some(item=>item.id===id))return;setCanvasReveal(null);clearDraftNavigation();playbackRequest.current++;playbackSession.current.handoff();const next={...current,activeBoardId:id};if(readOnlyRef.current){workspaceRef.current=next;setWorkspace(next);}else setNext(next);setSelectedIds([]);closePanels();setActiveVideo(null);setLibraryFacet('all');setGroupPicker(null);},[clearDraftNavigation,closePanels,setNext]);
   const changeWorkspace=useCallback((change:(current:Workspace)=>Workspace)=>{
     if(readOnlyRef.current)return;
     const current=workspaceRef.current;if(!current)return;
-    try { const next=validateWorkspace(change(current));if(next.activeBoardId!==current.activeBoardId){clearDraftNavigation();playbackRequest.current++;playbackSession.current.handoff();setInspectedId(null);setActiveVideo(null);setSelectedIds([]);setSelectedEdgeIds([]);setView('canvas');}setNext(next); }
+    try { const next=validateWorkspace(change(current));if(next.activeBoardId!==current.activeBoardId){clearDraftNavigation();playbackRequest.current++;playbackSession.current.handoff();closePanels();setActiveVideo(null);setSelectedIds([]);setSelectedEdgeIds([]);setView('canvas');}setNext(next); }
     catch(error){notify(errorMessage(error));}
-  },[clearDraftNavigation,notify,setNext]);
+  },[clearDraftNavigation,closePanels,notify,setNext]);
   const chooseBoardDirectory=useCallback(async()=>{
     if(!window.fieldBoardStorage)return;
     setDirectoryError('');try{const chosen=await window.fieldBoardStorage.chooseDirectory();if(chosen)setBoardDirectory(chosen);}catch(error){setDirectoryError(errorMessage(error));}
@@ -72,10 +72,10 @@ export function useBoardManagement({workspaceRef,boardRef,readOnlyRef,readOnly,b
     if(boardDirectory){if(!window.fieldBoardStorage)throw new Error('自定义目录需要来处桌面版。');b.storage=await window.fieldBoardStorage.create(boardDirectory.id,b);}
     const latest=workspaceRef.current;if(!latest||readOnlyRef.current)throw new Error('工作区暂时无法创建画布。');
     if(b.nodes.length)initialRevealBoard.current=b.id;
-    clearDraftNavigation();playbackRequest.current++;playbackSession.current.handoff();setNext({...latest,activeBoardId:b.id,boards:[...latest.boards,b]});setModal(null);setBoardName('');setBoardDirectory(null);setInspectedId(null);setActiveVideo(null);setSelectedIds([]);setView('canvas');notify(b.storage?'新画布已创建，内容将保存到所选文件夹':'新画布已创建');focusCanvasStart();
+    clearDraftNavigation();playbackRequest.current++;playbackSession.current.handoff();setNext({...latest,activeBoardId:b.id,boards:[...latest.boards,b]});setModal(null);setBoardName('');setBoardDirectory(null);closePanels();setActiveVideo(null);setSelectedIds([]);setView('canvas');notify(b.storage?'新画布已创建，内容将保存到所选文件夹':'新画布已创建');focusCanvasStart();
     }catch(error){setDirectoryError(errorMessage(error));}finally{setCreatingBoard(false);}
-  },[boardName,boardDirectory,creatingBoard,clearDraftNavigation,notify,readOnly,setNext]);
-  const insertBoard=useCallback((b:Board,message:string|null='画布已导入')=>{const w=workspaceRef.current;if(!w||readOnlyRef.current)return;if(w.boards.length>=STORAGE_LIMITS.boards){notify('这个工作区已达到 100 张画布，请先导出整理。');return;}if(w.boards.some(item=>item.id===b.id))b={...b,id:uid()};try{validateBoard(b);}catch(error){notify(`画布未导入：${errorMessage(error)}`);return;}clearDraftNavigation();playbackRequest.current++;playbackSession.current.handoff();setNext({...w,boards:[...w.boards,b],activeBoardId:b.id});setModal(null);setInspectedId(null);setActiveVideo(null);setSelectedIds([]);setSelectedEdgeIds([]);if(message)notify(message);},[clearDraftNavigation,notify,setNext]);
+  },[boardName,boardDirectory,creatingBoard,clearDraftNavigation,closePanels,notify,readOnly,setNext]);
+  const insertBoard=useCallback((b:Board,message:string|null='画布已导入')=>{const w=workspaceRef.current;if(!w||readOnlyRef.current)return;if(w.boards.length>=STORAGE_LIMITS.boards){notify('这个工作区已达到 100 张画布，请先导出整理。');return;}if(w.boards.some(item=>item.id===b.id))b={...b,id:uid()};try{validateBoard(b);}catch(error){notify(`画布未导入：${errorMessage(error)}`);return;}clearDraftNavigation();playbackRequest.current++;playbackSession.current.handoff();setNext({...w,boards:[...w.boards,b],activeBoardId:b.id});setModal(null);closePanels();setActiveVideo(null);setSelectedIds([]);setSelectedEdgeIds([]);if(message)notify(message);},[clearDraftNavigation,closePanels,notify,setNext]);
   /** Board “…” menu → 复制画布: the tested package export/import path remaps ids, citations and media (SB-m1). */
   const duplicateBoard=useCallback(async(id:string)=>{
     const source=workspaceRef.current?.boards.find(item=>item.id===id);

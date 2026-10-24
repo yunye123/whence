@@ -167,4 +167,17 @@ test('initial automatic results are accepted, while a changed asset clears old c
   assert.equal(transcriptRevision({ ...corrected, ...changed }), 'initial');
   assert.deepEqual(mergeAutomaticTranscript(corrected, {}, true), { transcript: [], transcriptRevision: undefined });
   assert.deepEqual(mergeAutomaticTranscript(data, { duration: 10 }, false), { duration: 10 });
+  const kept = mergeAutomaticTranscript(
+    { ...data, transcript: [{ id: 'new', start: 0, end: 1, text: '新片段', translation: '译文' }] },
+    { transcript: [{ id: 'new', start: 0, end: 1, text: '新片段' }] },
+    false,
+  );
+  assert.equal(kept.transcript?.[0].translation, '译文');
+  const dropped = mergeAutomaticTranscript(
+    { ...data, transcript: [{ id: 'new', start: 0, end: 1, text: '新片段', translation: '译文' }] },
+    { transcript: [{ id: 'new', start: 0, end: 1, text: '改过的英文' }] },
+    true,
+  );
+  assert.equal(dropped.transcript?.[0].text, '改过的英文');
+  assert.equal(dropped.transcript?.[0].translation, undefined);
 });

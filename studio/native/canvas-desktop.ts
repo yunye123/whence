@@ -12,6 +12,8 @@ import { renderHtmlToPdf } from './pdf-render';
 import { VideoImportService } from './video-import-service';
 import { XImportService } from './x-import';
 import { translateEnglish, translationSettingsFromEnv } from '../src/english-translation';
+import { extractWebArticle } from '../src/web-article';
+import { fetchWebPage } from './web-page';
 
 /**
  * Lifecycle and IPC for the canvas desktop services: video library, X import,
@@ -109,6 +111,11 @@ export function rejectManagedLibrary(directory: string): void {
 export function register(handle: IpcHandle, selectDirectory: (title: string) => Promise<string | undefined>): void {
   const { video, boards, x } = services();
   handle('translate-english', input => translateEnglish(input, translationSettingsFromEnv(process.env)));
+  handle('fetch-web-page', async (input: unknown) => {
+    if (typeof input !== 'string' || !input.trim()) return null;
+    const page = await fetchWebPage(input);
+    return page ? extractWebArticle(page.html, page.url) : null;
+  });
   handle('video-import-submit', input => video.submit(input));
   handle('video-import-local', input => video.submitLocal(input));
   handle('video-import-list', () => video.list());

@@ -33,6 +33,8 @@ function mediaUrl(projectId: string, relative: string) { return `media://${encod
 
 /** Durable, local-only import queue. This store never switches the legacy editor's project. */
 export class VideoImportService {
+  /** Info.json descriptions, keyed by source id. Never written into project.sqlite. */
+  private descriptions = new Map<string, string>();
   private tasks = new Map<string, TaskRecord>();
   private queue: string[] = [];
   private controllers = new Map<string, AbortController>();
@@ -337,6 +339,7 @@ export class VideoImportService {
       nativeAssetId: asset.id, nativeProjectId: state.id, nativeDirectory: state.directory, nativeSourceId: source?.id,
       nativeHasAudio: asset.hasAudio, nativeImportJobId: task.id, nativeTranscriptId: transcript?.id,
       sourceUrl: task.localFile ? undefined : task.url, sourceTitle: source?.title, sourceAuthor: source?.author,
+      ...(source?.id && this.descriptions.get(source.id) ? { sourceDescription: this.descriptions.get(source.id) } : {}),
       sourceOriginalText: task.localFile ? undefined : task.platform === 'X' ? (typeof source?.postText === 'string' ? source.postText : undefined) : task.originalText,
       ...(task.platform === 'X' ? { sourceStatus: this.xPostStatus(source) } : {}),
       // CORE-06: lines regrouped from word times, so no word is split across two lines.
@@ -384,6 +387,7 @@ export class VideoImportService {
         });
         this.checkAbort(signal);
         if (imported.kind !== 'video') throw new Error('链接取得的文件不是视频。');
+        if (downloaded.description) this.descriptions.set(source.id, downloaded.description);
         asset = { ...imported, id: randomUUID(), sourceId: source.id, createdAt: now() };
         this.store.commit(state => {
           state.assets.push(asset!);

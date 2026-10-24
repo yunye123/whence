@@ -6,7 +6,7 @@ import { BoardContext } from '../src/board-context';
 import type { BoardActions } from '../src/board-context';
 import { createNode, exportMarkdown } from '../src/board-utils';
 import {
-  applySurfaceTranslation, cardDataAfterEdit, normalizeTranslatedSegmentBatch, splitTranslationText,
+  applyFreshTranslation, applySurfaceTranslation, cardDataAfterEdit, collectFreshSegments, normalizeTranslatedSegmentBatch, splitTranslationText,
   surfaceTranslation, translateEnglish, translationSettingsFromEnv, translationSystemPrompt,
 } from '../src/english-translation';
 import QuoteCitationPanel from '../src/inspector/QuoteCitationPanel';
@@ -277,6 +277,8 @@ test('English notes, excerpts, drafts, and transcript lines share one surface, a
   assert.deepEqual(job?.segments, [{ id: 'body', text: english }]);
   assert.equal(surfaceTranslation({ ...note, body: '河水还在走。' }, 'note'), null);
   assert.equal(surfaceTranslation({ kind: 'link', title: '链接', body: english }, 'note'), null);
+  assert.equal(surfaceTranslation({ kind: 'link', title: '链接', body: english }, 'link')?.segments[0].id, 'body');
+  assert.equal(surfaceTranslation({ kind: 'video', title: 'Talk', body: '', sourceDescription: english }, 'description')?.segments[0].id, 'description');
   assert.equal(surfaceTranslation({ kind: 'quote', title: '摘录', body: english }, 'note'), null);
   const quote: CardData = { kind: 'quote', title: '摘录', body: '', citation: { nodeId: 's', title: 'Talk', text: english } };
   assert.equal(surfaceTranslation(quote, 'excerpt')?.segments[0].id, 'excerpt');
@@ -377,4 +379,44 @@ test('an English excerpt offers 译成中文, and a Chinese excerpt does not', (
   assert.match(english, /译成中文/);
   assert.match(english, /需在桌面版配置密钥/);
   assert.equal(render('当时的原文').includes('译成中文'), false);
+});
+
+test('a fresh paste translates the new English only, and a video note does not wipe the description', () => {
+  const english = 'The river keeps moving tonight.';
+  const link: CardData = { kind: 'link', title: 'example.com', body: '' };
+  assert.deepEqual(collectFreshSegments(link), [], 'a link with no article does not send its hostname');
+  const article: CardData = { kind: 'link', title: 'The Quiet Bank', body: english };
+  assert.deepEqual(collectFreshSegments(article).map(segment => segment.id), ['body', 'title']);
+  const chinese: CardData = { kind: 'link', title: '河岸', body: '河水今夜还在走。' };
+  assert.deepEqual(collectFreshSegments(chinese), []);
+  const waiting: CardData = { kind: 'video', title: '正在导入 · YouTube', body: '笔记', sourceTitle: english };
+  assert.deepEqual(collectFreshSegments(waiting), [], 'the task title is not the downloaded title');
+  const video: CardData = {
+    kind: 'video', title: english, body: '我的观看笔记', sourceTitle: english, sourceDescription: english,
+    transcript: [{ id: 'line-1', start: 0, end: 1, text: english }, { id: 'line-2', start: 1, end: 2, text: '中文一句。' }],
+  };
+  assert.deepEqual(collectFreshSegments(video).map(segment => segment.id), ['title', 'description', 'line-1']);
+  const renamed: CardData = { ...video, title: '我改过的标题' };
+  assert.deepEqual(collectFreshSegments(renamed).map(segment => segment.id), ['description', 'line-1']);
+  const patch = applyFreshTranslation(video, [
+    { id: 'body', text: '不该写到视频上', source: english },
+    { id: 'description', text: '河水今夜还在走。', source: english },
+    { id: 'title', text: '安静的河岸', source: english },
+    { id: 'line-1', text: '河水今夜还在走。', source: english },
+  ]);
+  assert.equal(patch?.translation, '河水今夜还在走。');
+  assert.equal(patch?.title, '安静的河岸');
+  assert.equal(patch?.sourceTitle, english);
+  assert.equal(patch?.transcript?.[0].translation, '河水今夜还在走。');
+  assert.equal(patch?.transcript?.[0].text, english);
+  const editedTitle = applyFreshTranslation({ ...video, title: '我改过的标题' }, [{ id: 'title', text: '安静的河岸', source: english }]);
+  assert.equal(editedTitle, null);
+  const notes = cardDataAfterEdit({ ...video, translation: '河水今夜还在走。' }, { body: '又写了一句笔记' });
+  assert.equal(notes.translation, '河水今夜还在走。');
+  const replaced = cardDataAfterEdit({ ...video, translation: '河水今夜还在走。' }, { sourceDescription: 'A different night on the river.' });
+  assert.equal(replaced.translation, undefined);
+  const linkPatch = applyFreshTranslation(article, [{ id: 'body', text: '河水今夜还在走。', source: english }, { id: 'title', text: '安静的河岸', source: 'The Quiet Bank' }]);
+  assert.equal(linkPatch?.translation, '河水今夜还在走。');
+  assert.equal(linkPatch?.title, '安静的河岸');
+  assert.equal(linkPatch?.sourceTitle, 'The Quiet Bank');
 });

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  applySurfaceTranslation, surfaceTranslation,
+  acceptTranslationUpdates, applySurfaceTranslation, surfaceTranslation, translationNotice,
   type SurfaceTranslation, type TranslationSurface, type TranslationUpdate,
 } from '../english-translation';
 import type { CardData } from '../model';
@@ -56,26 +56,9 @@ export function EnglishTranslation({
         targetLanguage: 'zh',
       });
       if (!alive.current) return;
-      const fresh = new Map(latestSegments.current.map(segment => [segment.id, segment.text]));
-      const accepted: TranslationUpdate[] = [];
-      let stale = 0;
-      let tooLong = 0;
-      for (const segment of result.segments) {
-        const source = sent.find(item => item.id === segment.id);
-        if (!segment.text || !source) continue;
-        if (fresh.get(segment.id) !== source.text) { stale += 1; continue; }
-        if (segment.text.length > job.maxLength) { tooLong += 1; continue; }
-        accepted.push({ id: segment.id, text: segment.text, source: source.text });
-      }
-      if (accepted.length) onTranslatedRef.current(accepted);
-      const failed = result.segments.filter(segment => !segment.text).length + stale + tooLong;
-      if (!accepted.length) {
-        setStatus(stale ? '原文已改变，没有写入过期译文。' : tooLong ? '译文超过可保存长度。' : (result.error || '没有得到可用的中文译文。'));
-      } else if (failed) {
-        setStatus(`已译出 ${accepted.length} 段，还有 ${failed} 段没有译出。${result.error || ''}`);
-      } else {
-        setStatus('已译成中文。原文仍保留。');
-      }
+      const judged = acceptTranslationUpdates(sent, result, id => latestSegments.current.find(segment => segment.id === id)?.text, job.maxLength);
+      if (judged.updates.length) onTranslatedRef.current(judged.updates);
+      setStatus(translationNotice(judged.updates.length, judged.stale, judged.tooLong, judged.empty, result.error));
     } catch (error) {
       if (alive.current) setStatus(error instanceof Error && error.message ? error.message : '翻译失败。');
     } finally {
@@ -97,20 +80,22 @@ export function EnglishTranslation({
 }
 
 export function TranslationForCard({
-  data, surface, nodeId, readOnly = false, suspended = false, update,
+  data, surface, nodeId, readOnly = false, suspended = false, showExisting = true, update,
 }: {
   data: CardData;
   surface: TranslationSurface;
   nodeId: string;
   readOnly?: boolean;
   suspended?: boolean;
+  /** The watch page already shows a description's Chinese in 简介. */
+  showExisting?: boolean;
   update: (id: string, patch: Partial<CardData>) => boolean;
 }) {
   const dataRef = useRef(data);
   dataRef.current = data;
   return <EnglishTranslation
     job={surfaceTranslation(data, surface)}
-    existing={surface === 'transcript' ? undefined : data.translation}
+    existing={showExisting && surface !== 'transcript' ? data.translation : undefined}
     readOnly={readOnly}
     suspended={suspended}
     onTranslated={updates => {

@@ -88,6 +88,8 @@ function ReadingProgress({ scrollRef }: { scrollRef: RefObject<HTMLDivElement | 
 
 interface InspectorProps {
   node: BoardNode;
+  /** A pinned draft ignores Esc and the narrow scrim. A companion is the left column. */
+  slot?: 'pinned' | 'companion';
   onClose: () => void;
   onImportSubtitles: (nodeId: string) => void;
   onNativeTranscribe?: (nodeId: string) => void | Promise<void>;
@@ -100,7 +102,7 @@ interface InspectorProps {
  * frame, and dispatches each card kind to its sections in `./inspector/`.
  * Layouts, regions and slots: DESIGN_SYSTEM §6.18 and docs/redesign/integration/inspector-shell.md.
  */
-export default function Inspector({ node, onClose, onImportSubtitles, onNativeTranscribe, onNotify, imagePreviewToken = 0 }: InspectorProps) {
+export default function Inspector({ node, slot, onClose, onImportSubtitles, onNativeTranscribe, onNotify, imagePreviewToken = 0 }: InspectorProps) {
   const board = useBoard();
   const { data } = node;
   const nativeMediaUrl = data.url && /^(?:media|field-media):\/\//.test(data.url) ? data.url : undefined;
@@ -431,6 +433,8 @@ export default function Inspector({ node, onClose, onImportSubtitles, onNativeTr
     }
     // On a trip from a draft the workbench's first button is “返回文稿 Esc”: Esc goes back to the draft (INSP-13).
     if (tripBack) { rememberVisit(); board.returnToDraft(); return; }
+    // A pinned draft stays until its own close button. Esc has already collapsed writing or reading above.
+    if (slot === 'pinned') return;
     closeInspector();
   };
   const latestEscape = useRef(handleEscape);
@@ -531,6 +535,7 @@ export default function Inspector({ node, onClose, onImportSubtitles, onNativeTr
 
   const shellClassName = [
     'inspector', `inspector--${layout === 'docked' ? 'docked' : layout === 'video' ? 'video' : layout === 'reading' ? 'reading-expanded' : 'writing-expanded'}`,
+    slot === 'pinned' && 'inspector--pinned', slot === 'companion' && 'inspector--companion',
     isDraft && 'inspector--draft', isTextSource && reading && 'inspector--reading', `inspector--motion-${motion.current.kind}`,
   ].filter(Boolean).join(' ');
   const shellContext = useMemo<InspectorShellContextValue>(() => ({ layout, slots }), [layout, slots]);
@@ -587,7 +592,7 @@ export default function Inspector({ node, onClose, onImportSubtitles, onNativeTr
     }}
     onPointerDown={event => event.stopPropagation()}
     // Narrow windows show the docked panel over the canvas with a scrim (its ::before); a click there closes it.
-    onClick={event => { if (layout === 'docked' && event.target === event.currentTarget && event.clientX < event.currentTarget.getBoundingClientRect().left) closeInspector(); }}
+    onClick={event => { if (slot === 'pinned' || layout !== 'docked' || event.target !== event.currentTarget || event.clientX >= event.currentTarget.getBoundingClientRect().left) return; closeInspector(); }}
   >
     {layout === 'docked' && <div
       className="inspector-resize"
@@ -670,7 +675,7 @@ export default function Inspector({ node, onClose, onImportSubtitles, onNativeTr
           importActionPending={importActionPending}
           nativeTranscribeBusy={nativeTranscribeBusy}
         />
-        <VideoNotesSection data={data} patch={patch} />
+        <VideoNotesSection nodeId={node.id} data={data} patch={patch} />
         {sourceUrlField}
         {tagsField}
       </div>
@@ -736,6 +741,7 @@ export default function Inspector({ node, onClose, onImportSubtitles, onNativeTr
 
           {isDraft ? <DraftWritingSection
             key={node.id}
+            nodeId={node.id}
             data={data}
             editorRef={editorRef}
             normalizedBody={normalizedBody}

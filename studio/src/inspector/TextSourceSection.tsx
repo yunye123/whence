@@ -381,7 +381,7 @@ export default function TextSourceSection({
       placeholder="粘贴一段资料，或写下值得留下的想法……"
       spellCheck={false}
     />}
-    {data.kind === 'note' && <TranslationForCard data={data} surface="note" nodeId={nodeId} readOnly={!!board.readOnly} update={(_id, next) => patch(next)} />}
+    {(data.kind === 'note' || data.kind === 'link') && <TranslationForCard data={data} surface={data.kind === 'link' ? 'link' : 'note'} nodeId={nodeId} readOnly={!!board.readOnly} update={(_id, next) => patch(next)} />}
     {showLead && <InspectorSlot name="lead"><ReadingLead document={headings} excerpts={excerpts} characters={characters} bodyRef={bodyRef} onJump={reading ? undefined : jumpInEditor} /></InspectorSlot>}
   </section>;
 }

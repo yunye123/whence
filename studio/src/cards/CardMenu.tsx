@@ -4,7 +4,7 @@ import {
 } from 'react';
 import { createPortal } from 'react-dom';
 import { useStoreApi } from '@xyflow/react';
-import { Copy, Focus, MoreHorizontal, Scaling, Trash2, Ungroup } from 'lucide-react';
+import { Copy, Focus, MoreHorizontal, PanelRightOpen, Scaling, TextQuote, Trash2, Ungroup } from 'lucide-react';
 import type { CardData } from '../model';
 import { ThreadIcon } from '../icons/field-icons';
 import { quoteDisplayTitle } from '../source-location';
@@ -272,6 +272,10 @@ export interface CardMenuActions {
   readOnly?: boolean;
   tool?: 'select' | 'hand';
   canConnect?: boolean;
+  /** Same as a double click: open this card's panel. Available in a read-only window. */
+  onOpen?: () => void;
+  /** Video only: excerpt every transcript line with the existing addQuote. */
+  onExcerptTranscript?: () => void;
   onView?: () => void;
   onConnect?: () => void;
   onResize?: () => void;
@@ -284,17 +288,31 @@ export interface CardMenuActions {
 
 const READ_ONLY_REASON = '只读窗口';
 const READ_ONLY_TITLE = '当前窗口只读';
+const TRANSCRIPT_BUSY = new Set(['queued', 'downloading', 'transcribing']);
+
+function excerptBlock(data: Pick<CardData, 'transcript' | 'videoImport'>, readOnly: boolean): { reason: string; title: string } | null {
+  if (readOnly) return { reason: READ_ONLY_REASON, title: READ_ONLY_TITLE };
+  if (data.videoImport && TRANSCRIPT_BUSY.has(data.videoImport.status)) return { reason: '逐字稿还在提取', title: '逐字稿还在提取' };
+  if (!data.transcript?.some(line => line.text.trim())) return { reason: '还没有逐字稿', title: '还没有逐字稿' };
+  return null;
+}
 
 /**
  * The five card actions shared by the card “…”, the right-click menu and the toolbar “更多” (K4 names).
  * A group is not a card: its rows say what happens to the tray and to what lies in it (“解散分组” keeps the
  * cards; “删除分组和 5 张图片” removes them too and is the only destructive row).
  */
-export function cardMenuEntries(data: Pick<CardData, 'kind'>, actions: CardMenuActions): ActionMenuEntry[] {
+export function cardMenuEntries(data: Pick<CardData, 'kind' | 'transcript' | 'videoImport'>, actions: CardMenuActions): ActionMenuEntry[] {
   const readOnly = !!actions.readOnly;
   const frame = data.kind === 'frame';
   const locked = (entry: ActionMenuItem): ActionMenuItem => readOnly ? { ...entry, disabled: true, reason: READ_ONLY_REASON, title: READ_ONLY_TITLE } : entry;
   const entries: ActionMenuEntry[] = [];
+  if (actions.onOpen) entries.push({ id: 'open', label: '打开', icon: <PanelRightOpen size={16} />, onSelect: actions.onOpen });
+  if (data.kind === 'video' && actions.onExcerptTranscript) {
+    const block = excerptBlock(data, readOnly);
+    const excerpt: ActionMenuItem = { id: 'excerpt-transcript', label: '摘录全部逐字稿到画布', icon: <TextQuote size={16} />, onSelect: actions.onExcerptTranscript };
+    entries.push(block ? { ...excerpt, disabled: true, reason: block.reason, title: block.title } : excerpt);
+  }
   if (actions.onView) entries.push({ id: 'view', label: frame ? '查看这个分组' : '查看这张卡片', icon: <Focus size={16} />, onSelect: actions.onView });
   if (!frame && actions.onConnect) {
     const connect: ActionMenuItem = { id: 'connect', label: '连接到卡片…', icon: <ThreadIcon size={16} />, onSelect: actions.onConnect };
@@ -327,15 +345,15 @@ interface CardMenuProps extends CardBodyProps {
  * The header's “…” menu. Open state lives in CanvasCard so outside clicks, overview and hand mode can
  * close it; the menu itself is portalled to the body (CD-M6) and never scales with the canvas.
  */
-export function CardMenu({ id, data, board, activate, menuOpen, setMenuOpen, menuRef }: CardMenuProps) {
+export function CardMenu({ id, data, board, activate, openCard, menuOpen, setMenuOpen, menuRef }: CardMenuProps) {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuId = useId();
   const store = useStoreApi();
   const [point, setPoint] = useState<{ x: number; y: number } | null>(null);
   useEffect(() => { if (!menuOpen) setPoint(null); }, [menuOpen]);
 
-  // Right-click on the card opens the same menu at the pointer (§6.21, CV-m1). A right-button drag pans the
-  // canvas instead, and text fields keep the system menu (copy / paste).
+  // Right-click on the card opens the same menu at the pointer (§6.21, CV-m1). A right-button drag past 4px
+  // does not move the card and does not open the menu. Text fields keep the system menu (copy / paste).
   useEffect(() => {
     const node = menuRef.current?.closest<HTMLElement>('.react-flow__node');
     if (!node) return;
@@ -363,6 +381,8 @@ export function CardMenu({ id, data, board, activate, menuOpen, setMenuOpen, men
   const entries = cardMenuEntries(data, {
     readOnly: board.readOnly,
     tool: board.tool,
+    onOpen: () => openCard(),
+    onExcerptTranscript: data.kind === 'video' ? () => { board.addQuote(id, data.transcript ?? []); } : undefined,
     onView: () => { requestCardCommand(id, 'view'); },
     onConnect: () => { requestCardCommand(id, 'connect'); },
     onResize: () => { requestCardCommand(id, 'resize'); },

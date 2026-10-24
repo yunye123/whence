@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type Dispatch, type RefObject, type SetStateAction } from 'react';
 import { flushSync } from 'react-dom';
-import { applyEdgeChanges, addEdge, type Node, type NodeChange, type EdgeChange, type Connection, type OnConnectEnd, type OnSelectionChangeParams, type ReactFlowInstance } from '@xyflow/react';
+import { applyEdgeChanges, addEdge, useStoreApi, type Node, type NodeChange, type EdgeChange, type Connection, type OnConnectEnd, type OnSelectionChangeParams, type ReactFlowInstance } from '@xyflow/react';
 import type { Board, BoardNode, CardData, TranscriptLine, Workspace } from '../model';
 import { uid } from '../model';
 import { STORAGE_LIMITS } from '../storage';
@@ -15,6 +15,7 @@ import { isSubstantiveNodeChange, applyCanvasNodeChanges } from './canvas-change
 import { canvasTabOrder } from './studio-dom';
 import { getVisibleCardBounds, type CaptionRules } from './caption-rules';
 import { lodForZoom } from '../canvas/lod';
+import { nodeFlowBox, nodeFullyInside, pointerDragged } from './canvas-pointer';
 
 /** Smart snapping (§6.7; CORE-32: moved out of App.tsx unchanged): the remembered switch, the guides, Alt to bypass. */
 export function useSnapGuides({board,effectiveTool,view}:{board:Board|null;effectiveTool:CanvasTool;view:CanvasView}) {
@@ -151,5 +152,89 @@ export function useCanvasHandlers({boardRef,workspaceRef,readOnlyRef,modal,conte
     void importFiles(Array.from(e.dataTransfer.files),point);
   },[addQuote,flow,importFiles,notify]);
   return {onNodesChange,onEdgesChange,onSelectionChange,connectCards,onConnect,onConnectEnd,onNodeDragStart,onNodeDragStop,onCanvasKey,onCanvasDrop};
+}
+
+/**
+ * Select tool: a right-drag on empty canvas draws the existing selection box and keeps cards that sit fully inside it.
+ * A right-click that stays within 4px still opens the canvas menu. The hand tool never draws this box.
+ */
+export function usePaneMarquee({enabled,flow,flowStore}:{
+  enabled:boolean;
+  flow:ReactFlowInstance<Node<CardData>>;
+  flowStore:ReturnType<typeof useStoreApi>;
+}) {
+  useEffect(()=>{
+    if(!enabled||typeof document==='undefined')return;
+    const root=document.querySelector('.react-flow');
+    if(!(root instanceof HTMLElement))return;
+    let start:{x:number;y:number;pointerId:number}|null=null;
+    let box:HTMLDivElement|null=null;
+    let dragged=false;
+    let suppressMenu=false;
+    const onDown=(event:PointerEvent)=>{
+      if(event.button!==2)return;
+      const target=event.target;
+      if(!(target instanceof Element)||!target.classList.contains('react-flow__pane'))return;
+      start={x:event.clientX,y:event.clientY,pointerId:event.pointerId};
+      dragged=false;
+    };
+    const onMove=(event:PointerEvent)=>{
+      if(!start||event.pointerId!==start.pointerId)return;
+      if(!pointerDragged(event.clientX-start.x,event.clientY-start.y))return;
+      dragged=true;
+      const renderer=root.querySelector('.react-flow__renderer');
+      if(!(renderer instanceof HTMLElement))return;
+      if(!box){box=document.createElement('div');box.className='react-flow__selection react-flow__container';renderer.appendChild(box);}
+      const bounds=renderer.getBoundingClientRect();
+      const left=Math.min(start.x,event.clientX)-bounds.left;
+      const top=Math.min(start.y,event.clientY)-bounds.top;
+      box.style.width=`${Math.abs(event.clientX-start.x)}px`;
+      box.style.height=`${Math.abs(event.clientY-start.y)}px`;
+      box.style.transform=`translate(${left}px, ${top}px)`;
+    };
+    const finish=(event:PointerEvent)=>{
+      if(!start||event.pointerId!==start.pointerId)return;
+      const origin=start;
+      start=null;
+      box?.remove();
+      box=null;
+      if(!dragged)return;
+      suppressMenu=true;
+      window.setTimeout(()=>{suppressMenu=false;},0);
+      const a=flow.screenToFlowPosition({x:origin.x,y:origin.y});
+      const b=flow.screenToFlowPosition({x:event.clientX,y:event.clientY});
+      const rect={x:Math.min(a.x,b.x),y:Math.min(a.y,b.y),width:Math.abs(a.x-b.x),height:Math.abs(a.y-b.y)};
+      const store=flowStore.getState();
+      const ids=flow.getIntersectingNodes(rect,false).flatMap(node=>{
+        const internal=store.nodeLookup.get(node.id) as {internals?:{positionAbsolute?:{x:number;y:number}};position?:{x:number;y:number};measured?:{width?:number;height?:number};width?:number;height?:number}|undefined;
+        const position=internal?.internals?.positionAbsolute??internal?.position??node.position;
+        const flowBox=nodeFlowBox({position,measured:internal?.measured,width:internal?.width??node.width,height:internal?.height??node.height});
+        return flowBox&&nodeFullyInside(flowBox,rect)?[node.id]:[];
+      });
+      const previous=store.multiSelectionActive;
+      flowStore.setState({multiSelectionActive:event.shiftKey});
+      flowStore.getState().addSelectedNodes(ids);
+      flowStore.setState({multiSelectionActive:previous});
+    };
+    const onMenu=(event:MouseEvent)=>{
+      if(!suppressMenu)return;
+      event.preventDefault();
+      event.stopPropagation();
+      suppressMenu=false;
+    };
+    root.addEventListener('pointerdown',onDown);
+    window.addEventListener('pointermove',onMove);
+    window.addEventListener('pointerup',finish);
+    window.addEventListener('pointercancel',finish);
+    window.addEventListener('contextmenu',onMenu,true);
+    return ()=>{
+      box?.remove();
+      root.removeEventListener('pointerdown',onDown);
+      window.removeEventListener('pointermove',onMove);
+      window.removeEventListener('pointerup',finish);
+      window.removeEventListener('pointercancel',finish);
+      window.removeEventListener('contextmenu',onMenu,true);
+    };
+  },[enabled,flow,flowStore]);
 }
 

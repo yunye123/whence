@@ -40,6 +40,11 @@ test('stale attempts cannot revive a removed or retried card, and valid completi
   assert.equal(result.board.nodes[0].data.body,node.data.body);
   assert.equal(result.board.nodes[0].data.sourceUrl,node.data.sourceUrl);
   assert.equal(result.board.nodes[0].data.transcript?.[0].text,'完成的逐字稿');
+  const described=prepareVideoImportUpdate(board,node.id,'attempt-1',{sourceTitle:'Platform title',sourceDescription:'A quiet river at night.',body:'下载器想覆盖笔记',title:'平台标题'},{status:'transcribing'});
+  assert.equal(described.board?.nodes[0].data.sourceDescription,'A quiet river at night.');
+  assert.equal(described.board?.nodes[0].data.sourceTitle,'Platform title');
+  assert.equal(described.board?.nodes[0].data.body,'我在等待时写的笔记');
+  assert.equal(described.board?.nodes[0].data.title,'我改过的标题');
 });
 
 test('restored native snapshots cannot downgrade a cached poster or replace the same asset media copy',()=>{
