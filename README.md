@@ -69,7 +69,7 @@ studio/
   tests/           测试
   scripts/         启动、构建与检查脚本
 electron/          桌面端与媒体处理支持
-shared/            共享类型与逻辑
+shared/            只有类型
 docs/              使用文档与截图
 ```
 

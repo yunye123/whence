@@ -106,7 +106,7 @@ export default function ImportDialog({ mode, onModeChange, value, onTextChange, 
                 <textarea
                   autoFocus
                   aria-label={mode === 'video' ? '视频链接或分享文案' : '网页链接或分享文案'}
-                  placeholder={mode === 'video' ? '粘贴抖音、小红书、B 站、YouTube 的分享文案或视频链接' : '粘贴文章、研究资料或其他网页链接'}
+                  placeholder={mode === 'video' ? '粘贴抖音、小红书、B 站、YouTube 的分享文案或视频链接' : '粘贴网页链接或分享文字。只保存链接和这段文字，不抓取网页正文'}
                   value={value}
                   maxLength={20000}
                   onChange={event => onTextChange(event.target.value)}

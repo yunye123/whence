@@ -1,5 +1,9 @@
 # v0.1.0 validation / 版本验证
 
+下面的 896 项通过、构建和桌面核心流程，是 tag `v0.1.0`（`2d8653f`）那一次的 Windows 记录。当前 HEAD 在该 tag 之后还有未发布修复。这次没有按当前 HEAD 重跑这些检查。
+
+The 896 passing tests, the build, and the desktop core-flow check below are the Windows record for tag `v0.1.0` (`2d8653f`). The current HEAD includes further unpublished fixes after that tag. Those checks were not re-run against the current HEAD.
+
 Verified on Windows 11 with Node.js 24.20.0, using a fresh dependency installation in the standalone public source tree:
 
 - `npm ci`: passed, including the official Electron runtime download and checksum verification. This machine required its existing network proxy for the download; proxy settings are not part of the repository.
