@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, protocol, shell, clipboard } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, nativeTheme, protocol, shell, clipboard } from 'electron';
 import fs from 'node:fs/promises';
 import { createReadStream } from 'node:fs';
 import path from 'node:path';
@@ -8,9 +8,14 @@ import { randomUUID } from 'node:crypto';
 import { ProjectStore } from './store';
 import { exportDocument, exportProject, restoreProject } from './export';
 import { detectTools, importMedia, transcribeMedia, captureFrame, resolveLink } from './media';
+import { followAppearance, savedAppearance, windowGround } from '../studio/native/window-appearance';
+import * as canvasDesktop from '../studio/native/canvas-desktop';
 import type { Asset, CanvasItem, Content, Job, ProjectState, Source } from '../shared/types';
 
-protocol.registerSchemesAsPrivileged([{ scheme: 'media', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } }]);
+/** Bundled main.cjs lives in studio/dist-native. Workers, the icon and the offline page stay in studio/. */
+const studioRoot = path.join(__dirname, '..');
+
+protocol.registerSchemesAsPrivileged(['media', 'field-media'].map(scheme => ({ scheme, privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, corsEnabled: true } })));
 let window: BrowserWindow;
 let store: ProjectStore | null = null;
 let closing = false;
@@ -183,7 +188,18 @@ async function pasteClipboard() {
 
 async function mediaResponse(request: Request): Promise<Response> {
   try {
-    const url = new URL(request.url); const target = current();
+    // Only this launcher's loopback frontend can read native media into IndexedDB.
+    // Native <video>/<img> requests may omit Origin and continue to work normally.
+    let allowedOrigin = '';
+    try {
+      const configured = new URL(process.env.CANVAS_DEV_URL || '');
+      if (configured.protocol === 'http:' && configured.hostname === '127.0.0.1' && configured.port && !configured.username && !configured.password) allowedOrigin = configured.origin;
+    } catch { /* The packaged file:// fallback has no cross-origin read grant. */ }
+    const origin = request.headers.get('Origin');
+    if (origin && origin !== allowedOrigin) return new Response('Forbidden origin', { status: 403 });
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method)) return new Response('Method not allowed', { status: 405 });
+    const url = new URL(request.url);
+    const target = canvasDesktop.projectForMedia(url.hostname) ?? current();
     if (url.hostname !== target.state.id) return new Response('Project closed', { status: 404 });
     const relative = decodeURIComponent(url.pathname.slice(1)).replace(/\\/g, '/');
     if (!/^(media|cache)\//.test(relative) || relative.split('/').some(s => s === '..' || s === '.')) return new Response('Forbidden', { status: 403 });
@@ -193,6 +209,13 @@ async function mediaResponse(request: Request): Promise<Response> {
     const stat = await fs.stat(absolute); if (!stat.isFile()) return new Response('Not found', { status: 404 });
     const mime: Record<string, string> = { '.mp4': 'video/mp4', '.mov': 'video/quicktime', '.webm': 'video/webm', '.mkv': 'video/x-matroska', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.gif': 'image/gif' };
     const headers = new Headers({ 'Content-Type': mime[path.extname(absolute).toLowerCase()] ?? 'application/octet-stream', 'Accept-Ranges': 'bytes', 'Cache-Control': 'no-cache' });
+    if (allowedOrigin && origin === allowedOrigin) {
+      headers.set('Access-Control-Allow-Origin', allowedOrigin);
+      headers.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+      headers.set('Access-Control-Allow-Headers', 'Range');
+      headers.set('Vary', 'Origin');
+    }
+    if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers });
     let start = 0; let end = stat.size - 1; let status = 200;
     const range = request.headers.get('range');
     if (range) {
@@ -215,9 +238,10 @@ function registerIpc() {
     return handler(...args);
   });
   handle('state', () => store?.state ?? null);
+  canvasDesktop.register(handle, selectDirectory);
   handle('diagnostics', () => detectTools());
   handle('create', async (name: string, parentDirectory?: string) => projectOperation(async () => { const selected = parentDirectory ?? await selectDirectory('选择保存位置（自动创建项目子文件夹）'); if (!selected) return null; return useStore(ProjectStore.createInDirectory(selected, name.trim() || '未命名项目')); }));
-  handle('open', async (directory?: string) => projectOperation(async () => { const selected = directory ?? await selectDirectory('打开包含 project.sqlite 的项目文件夹'); if (!selected) return null; return useStore(ProjectStore.open(selected)); }));
+  handle('open', async (directory?: string) => projectOperation(async () => { const selected = directory ?? await selectDirectory('打开包含 project.sqlite 的项目文件夹'); if (!selected) return null; canvasDesktop.rejectManagedLibrary(selected); return useStore(ProjectStore.open(selected)); }));
   handle('rename', (name: string) => { assertWritable(); const result = current().rename(name.trim() || '未命名项目'); send(); return result; });
   handle('save', (content: Content, baseRevision?: number) => { if (exporting) throw new Error('正在导出，请稍后保存'); const result = current().saveContent(content, baseRevision); send(); return result; });
   handle('import', async (paths?: string[], sourceId?: string) => {
@@ -267,10 +291,19 @@ else {
   app.on('second-instance', () => { window?.show(); window?.focus(); });
   app.whenReady().then(async () => {
     await fs.mkdir(app.getPath('userData'), { recursive: true });
-    process.env.CANVAS_WORKER_DIR = path.join(app.getAppPath(), 'workers');
+    process.env.CANVAS_WORKER_DIR = path.join(studioRoot, 'native', 'workers');
+    await canvasDesktop.open({ userData: app.getPath('userData'), legacyProject: () => store, window: () => window });
+    protocol.handle('field-media', request => canvasDesktop.fieldMedia(request));
     protocol.handle('media', mediaResponse);
-    window = new BrowserWindow({ width: 1540, height: 980, minWidth: 1000, minHeight: 650, backgroundColor: '#181c20', title: '云野参考画布', show: !process.env.CANVAS_HEADLESS, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true } });
+    // field.ico keeps its file name so an existing desktop shortcut still points at it.
+    window = new BrowserWindow({
+      width: 1540, height: 980, minWidth: 1000, minHeight: 650,
+      backgroundColor: windowGround(savedAppearance(app.getPath('userData')), nativeTheme.shouldUseDarkColors),
+      title: '来处', icon: path.join(studioRoot, 'desktop-assets', 'field.ico'), show: !process.env.CANVAS_HEADLESS,
+      webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: !process.env.CANVAS_HEADLESS },
+    });
     window.setMenuBarVisibility(false);
+    followAppearance(window, { ipcMain, nativeTheme, directory: app.getPath('userData') });
     window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     window.webContents.on('will-navigate', (event, url) => { if (url !== window.webContents.getURL()) event.preventDefault(); });
     try { const last = JSON.parse(await fs.readFile(path.join(app.getPath('userData'), 'last-project.json'), 'utf8')); if (!process.env.CANVAS_TEST) store = ProjectStore.open(last.directory); } catch { /* Welcome screen remains available. */ }
@@ -279,17 +312,17 @@ else {
       if (closing) return; event.preventDefault();
       void (async () => {
         try {
-          if (exporting) { await dialog.showMessageBox(window, { type: 'info', message: '正在切换或打包项目，请完成后再退出。' }); return; }
+          if (exporting) { await dialog.showMessageBox(window, { title: '来处', type: 'info', message: '正在切换或打包项目，请完成后再退出。' }); return; }
           await requestFlush();
-          if (queueRunning || queue.length) { const result = await dialog.showMessageBox(window, { type: 'question', buttons: ['继续等待', '保存并退出'], defaultId: 0, cancelId: 0, message: '还有后台任务，退出后可从任务列表重试。' }); if (result.response === 0) return; }
+          if (queueRunning || queue.length || canvasDesktop.hasActiveImports()) { const result = await dialog.showMessageBox(window, { title: '来处', type: 'question', buttons: ['继续等待', '保存并退出'], defaultId: 0, cancelId: 0, message: '还有后台任务。退出会暂停后台处理；重新打开后可在视频卡片上继续。' }); if (result.response === 0) return; }
           for (const controller of controllers.values()) controller.abort();
-          queue.length = 0; closing = true; window.destroy();
-        } catch (error) { await dialog.showMessageBox(window, { type: 'error', message: '尚未保存成功，已保留窗口', detail: errorText(error) }); }
+          queue.length = 0; await canvasDesktop.close(); closing = true; window.destroy();
+        } catch (error) { await dialog.showMessageBox(window, { title: '来处', type: 'error', message: '尚未保存成功，已保留窗口', detail: errorText(error) }); }
       })();
     });
     const dev = process.env.CANVAS_DEV_URL;
     if (dev && /^http:\/\/127\.0\.0\.1:\d+\/?$/.test(dev)) await window.loadURL(dev);
-    else await window.loadFile(path.join(app.getAppPath(), 'dist', 'index.html'));
-  }).catch(error => { console.error(error); dialog.showErrorBox('画布启动失败', errorText(error)); app.quit(); });
-  app.on('window-all-closed', () => app.quit());
+    else await window.loadFile(path.join(studioRoot, 'dist', 'index.html'));
+  }).catch(error => { console.error(error); dialog.showErrorBox('画布启动失败', errorText(error)); void canvasDesktop.close().finally(() => app.quit()); });
+  app.on('window-all-closed', () => { void canvasDesktop.close().finally(() => app.quit()); });
 }

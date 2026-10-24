@@ -35,7 +35,7 @@ To run the project tests:
 npm test
 ```
 
-Browser contract tests use Microsoft Edge on Windows by default. After `npm run build`, run `npm run test:e2e` for the real desktop core-flow check. It opens isolated test windows, uses localhost port 5198, and stores temporary data and reports in the ignored `studio/output/` directory.
+Browser contract tests use Playwright's bundled Chromium unless `FIELD_TEST_CHANNEL` is set, in which case they use that channel. After `npm run build`, run `npm run test:e2e` for the real desktop core-flow check. It opens isolated test windows, uses localhost port 5198, and stores temporary data and reports in the ignored `studio/output/` directory.
 
 Daily application data lives in `studio/.native-profile/` and is not committed to Git. Export a backup before moving computers or replacing your source directory. After the first build, Windows users can also double-click `Start Whence.cmd` at the repository root.
 
@@ -62,6 +62,8 @@ The examples demonstrate interaction. Their transcripts are not results from a v
 3. **Add your interpretation.** Write your observations in “我的理解” (My interpretation), then organize the material with connections and groups. Source text and your own interpretation remain separate.
 4. **Develop a draft.** Create a draft, write, insert references, and save a version when you want to keep a particular stage. Autosaving and explicitly saving a version serve different purposes.
 5. **Check the original.** Follow a reference or use “本稿来源” (Sources in this draft) to return to the source. Video references can locate the relevant timestamp. Use “返回文稿” (Return to draft) to resume writing.
+
+A web link card stores only the URL and the text you pasted. It does not fetch the page body. Importing a public X post in the desktop app requests `api.fxtwitter.com`. Images are accepted only from `pbs.twimg.com`.
 
 Later edits to a source or transcript do not automatically rewrite existing excerpt snapshots. A snapshot can remain after its source is removed, but the original material may no longer be available to revisit.
 
@@ -102,6 +104,8 @@ Python packages must be installed in the environment the application actually us
 | `CANVAS_FFPROBE` | The ffprobe executable. |
 | `CANVAS_MODEL` | A local model directory compatible with `faster-whisper`. |
 
+When these variables are unset, Windows keeps the AppData defaults for Python 3.12, FFmpeg, and ffprobe. macOS and Linux default to `python3`, `ffmpeg`, and `ffprobe`. On every system the model directory defaults to `~/.cache/faster-whisper/large-v3`. Non-Windows systems are no longer blocked by a hard-coded `.exe` path. That does not mean video download or transcription has been verified on macOS or Linux.
+
 Install and configure these dependencies separately: `npm ci` does not install Python tools or download a model. Model size, processing speed, and available compute devices depend on your environment. This workflow has not yet been verified end to end on a fresh machine.
 
 Once configured, submit a link through “导入 → 视频链接” (Import → Video link), then follow the interface to download and transcribe. Review and correct automatically recognized text. You can also organize existing subtitles. Downloads contact the source site; login requirements, access restrictions, expired links, or deleted content can prevent retrieval. Not every site is guaranteed to work. If a download fails, keep the source link and check the reason shown on its task card.
@@ -109,7 +113,7 @@ Once configured, submit a link through “导入 → 视频链接” (Import →
 ## MVP limits
 
 - No accounts, cloud sync, collaboration, or cloud AI. Automatic speech recognition is optional local processing.
-- Only one window can write to a workspace at a time. A second window is read-only; close the first and reload the second before editing.
+- Starting the desktop app again returns to the window that is already open. Read-only applies only to a second page from the same origin, for example two browser tabs on the same workspace: the later page is read-only. Close the page that is editing, then reload the other page before editing.
 - Up to 500 cards and 1,500 connections per canvas, 100 canvases per workspace, and 100 saved versions per draft.
 - Portable canvas files are limited to 96 MiB, with up to 64 MiB per media item and 68 MiB of total binary media. These are portable file limits, not universal limits on all media. Use complete directory export in the desktop app when needed.
 - TXT / Markdown imports are limited to 100,000 characters and 1 MB. Groups organize the canvas; they are not permanent nested grouping entities.
@@ -122,7 +126,7 @@ Once configured, submit a link through “导入 → 视频链接” (Import →
 | `node` or `npm` is not found | Finish installing Node.js, reopen the terminal, and check the versions. |
 | `npm ci` fails | Confirm the repository root, Node 24, and network access for dependency downloads. Keep the actual error output. |
 | `npm start` fails | Confirm that `npm run build` succeeded, then inspect the terminal error. |
-| The canvas is read-only | Check whether another window has the same workspace open. |
+| The canvas is read-only | Check whether another browser tab has the same workspace open. Starting the desktop app again returns to the existing window. |
 | Downloads or transcription fail | Check the Python environment, tool paths, model availability, and the task card's error message. |
 | Portable export exceeds its limit | Use “另存完整画布目录” in the desktop app and confirm that the media is still readable. |
 

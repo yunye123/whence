@@ -20,7 +20,8 @@ const configs = [['light', 1366, 768, 1], ['dark', 1366, 768, 1.25]];
 await fs.mkdir(out, { recursive: true });
 
 const report = { url, runsPerConfig: runs, status: 'running', configs: [] };
-const browser = await chromium.launch({ channel: process.env.FIELD_TEST_CHANNEL || 'msedge', headless: true });
+const channel = process.env.FIELD_TEST_CHANNEL;
+const browser = await chromium.launch({ headless: true, ...(channel ? { channel } : {}) });
 try {
   for (const [theme, width, height, dpr] of configs) {
     const item = { theme, width, height, dpr, runs, failedRuns: 0, events: [] };

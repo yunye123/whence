@@ -18,7 +18,7 @@ const {preview}=await import('vite');
 const server=await preview({root,configFile:false,build:{outDir:path.join(root,'dist')},preview:{host:'127.0.0.1',port:5198,strictPort:true}});
 let app,page,observer;
 async function launch(){
- app=await electron.launch({executablePath:path.join(root,'../node_modules/electron/dist/electron.exe'),args:[path.join(root,'dist-native/main.cjs')],env});
+ app=await electron.launch({executablePath:path.join(root,'../node_modules/electron/dist',process.platform==='win32'?'electron.exe':'electron'),args:[path.join(root,'dist-native/main.cjs')],env});
  app.process().stdout?.on('data',bytes=>{void fs.appendFile(path.join(out,'native.stdout.log'),bytes);});
  app.process().stderr?.on('data',bytes=>{void fs.appendFile(path.join(out,'native.stderr.log'),bytes);});
  page=await app.firstWindow();page.setDefaultTimeout(15000);

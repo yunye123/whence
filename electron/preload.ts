@@ -32,3 +32,6 @@ const api: StudioAPI = {
   }
 };
 contextBridge.exposeInMainWorld('studio', api);
+import { exposeVideoImports, reportAppearance } from '../studio/native/preload-bridge';
+exposeVideoImports();
+reportAppearance();

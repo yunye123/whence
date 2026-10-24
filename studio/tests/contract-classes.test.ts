@@ -240,7 +240,8 @@ if(surface==='toast')setTimeout(()=>showToast('契约提示',{duration:null}),10
   t.signal.addEventListener('abort', () => { void browser?.close(); void server?.close(); }, { once: true });
   const errors: string[] = [], notifications: string[] = [], checks: string[] = [];
   try {
-    browser = await chromium.launch({ channel: process.env.FIELD_TEST_CHANNEL || 'msedge', headless: true });
+    const channel = process.env.FIELD_TEST_CHANNEL;
+    browser = await chromium.launch({ headless: true, ...(channel ? { channel } : {}) });
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     page.setDefaultTimeout(15000);
     page.on('pageerror', e => errors.push(e.message));

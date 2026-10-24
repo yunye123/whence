@@ -15,13 +15,14 @@ const abort = () => Object.assign(new Error('任务已取消'), { name: 'AbortEr
 function checkAbort(signal?: AbortSignal) { if (signal?.aborted) throw abort(); }
 const relative = (root: string, file: string) => path.relative(root, file).split(path.sep).join('/');
 
-export function toolPaths(): ToolPaths {
-  const home = homedir();
+/** Windows keeps the AppData defaults. macOS and Linux use python3, ffmpeg and ffprobe. CANVAS_* wins. Does not launch anything. */
+export function toolPaths(env: NodeJS.ProcessEnv = process.env, platform: NodeJS.Platform = process.platform, home: string = homedir()): ToolPaths {
+  const windows = platform === 'win32';
   return {
-    python: process.env.CANVAS_PYTHON || path.join(home, 'AppData/Local/Programs/Python/Python312/python.exe'),
-    ffmpeg: process.env.CANVAS_FFMPEG || path.join(home, 'AppData/Local/Programs/ffmpeg/bin/ffmpeg.exe'),
-    ffprobe: process.env.CANVAS_FFPROBE || path.join(home, 'AppData/Local/Programs/ffmpeg/bin/ffprobe.exe'),
-    model: process.env.CANVAS_MODEL || path.join(home, '.cache/faster-whisper/large-v3'),
+    python: env.CANVAS_PYTHON || (windows ? path.join(home, 'AppData/Local/Programs/Python/Python312/python.exe') : 'python3'),
+    ffmpeg: env.CANVAS_FFMPEG || (windows ? path.join(home, 'AppData/Local/Programs/ffmpeg/bin/ffmpeg.exe') : 'ffmpeg'),
+    ffprobe: env.CANVAS_FFPROBE || (windows ? path.join(home, 'AppData/Local/Programs/ffmpeg/bin/ffprobe.exe') : 'ffprobe'),
+    model: env.CANVAS_MODEL || path.join(home, '.cache/faster-whisper/large-v3'),
   };
 }
 

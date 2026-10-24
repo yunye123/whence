@@ -50,16 +50,27 @@ print(json.dumps({
 
 test('CORE-06: the desktop build uses FIELD’s own worker; the legacy worker stays untouched', () => {
   const build = fs.readFileSync(path.join(root, 'scripts', 'build-native.mjs'), 'utf8');
+  const main = fs.readFileSync(path.join(path.dirname(root), 'electron/main.ts'), 'utf8');
   assert.match(build, /path\.join\(studioRoot, 'native', 'workers'\)/);
+  assert.match(main, /CANVAS_WORKER_DIR = path\.join\(studioRoot, 'native', 'workers'\)/);
   assert.ok(fs.existsSync(path.join(root, 'native', 'workers', 'transcribe.py')));
   const legacy = path.join(path.dirname(root), 'workers', 'transcribe.py');
   if (fs.existsSync(legacy)) assert.doesNotMatch(fs.readFileSync(legacy, 'utf8'), /initial_prompt/, 'the older app keeps its own worker');
 });
 
 test('2026-10-07 rename: the desktop window is titled 来处 and carries the app icon (field.ico keeps its file name)', () => {
+  const main = fs.readFileSync(path.join(path.dirname(root), 'electron/main.ts'), 'utf8');
+  const preload = fs.readFileSync(path.join(path.dirname(root), 'electron/preload.ts'), 'utf8');
   const build = fs.readFileSync(path.join(root, 'scripts', 'build-native.mjs'), 'utf8');
-  assert.match(build, /title: '来处', icon: \$\{JSON\.stringify\(path\.join\(studioRoot, 'desktop-assets', 'field\.ico'\)\)\}/);
-  assert.equal(build.match(/"dialog\.showMessageBox\(window, \{ title: '来处', type: '(info|question|error)'/g)?.length, 3, 'the close-time message boxes are titled 来处, not the process name');
+  assert.match(main, /title: '来处'/);
+  assert.match(main, /path\.join\(studioRoot, 'desktop-assets', 'field\.ico'\)/);
+  assert.equal(main.match(/dialog\.showMessageBox\(window, \{ title: '来处', type: '(info|question|error)'/g)?.length, 3, 'the close-time message boxes are titled 来处, not the process name');
+  assert.match(preload, /from '\.\.\/studio\/native\/preload-bridge'/);
+  assert.match(preload, /exposeVideoImports\(\)/);
+  assert.match(preload, /reportAppearance\(\)/);
+  assert.doesNotMatch(build, /replaceOnce/);
+  assert.doesNotMatch(build, /云野参考画布/);
+  assert.doesNotMatch(build, /originalsUnchanged/);
   const ico = fs.readFileSync(path.join(root, 'desktop-assets', 'field.ico'));
   assert.deepEqual([ico.readUInt16LE(0), ico.readUInt16LE(2)], [0, 1], 'an .ico file');
   const sizes = Array.from({ length: ico.readUInt16LE(4) }, (_, index) => ico[6 + index * 16] || 256);

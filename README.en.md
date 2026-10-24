@@ -69,7 +69,7 @@ studio/
   tests/           Tests
   scripts/         Launch, build, and check scripts
 electron/          Desktop and media processing support
-shared/            Shared types and logic
+shared/            Types only
 docs/              Guides and screenshots
 ```
 
