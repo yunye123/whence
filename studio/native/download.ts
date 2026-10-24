@@ -177,7 +177,16 @@ export function downloadErrorMessage(error: unknown, platform: string): string {
 }
 
 /** Downloads only. The caller imports filePath and removes its unique parent directory on success. */
-export async function downloadVideo(input: string, projectDir: string, options: DownloadOptions = {}): Promise<{ filePath: string; source: Partial<XVideoSource> }> {
+/** Description text from yt-dlp's info.json. Not stored on the SQLite source. */
+export function infoDescription(info: unknown): string | undefined {
+  if (!info || typeof info !== 'object') return undefined;
+  const value = (info as { description?: unknown }).description;
+  if (typeof value !== 'string') return undefined;
+  const text = value.replace(/\u0000/g, '').trim().slice(0, 20_000);
+  return text || undefined;
+}
+
+export async function downloadVideo(input: string, projectDir: string, options: DownloadOptions = {}): Promise<{ filePath: string; source: Partial<XVideoSource>; description?: string }> {
   const normalized = normalizeVideoInput(input);
   if (options.signal?.aborted) throw abortError();
   const tmp = path.join(path.resolve(projectDir), 'cache', 'downloads', randomUUID());
@@ -190,6 +199,7 @@ export async function downloadVideo(input: string, projectDir: string, options: 
   try {
     options.onProgress?.(2, `正在解析${normalized.platform}视频链接`);
     let filePath = '';
+    let description: string | undefined;
     if (normalized.platform === '视频直链') {
       filePath = await downloadDirect(normalized.url, tmp, timedOptions);
       const title = new URL(normalized.url).pathname.split('/').pop() || '视频';
@@ -227,6 +237,7 @@ export async function downloadVideo(input: string, projectDir: string, options: 
         source.title = typeof info.title === 'string' ? info.title : source.title;
         source.author = typeof info.uploader === 'string' ? info.uploader : typeof info.creator === 'string' ? info.creator : '';
         source.contentId = typeof info.id === 'string' ? info.id : undefined;
+        description = infoDescription(info);
         // Keep the user's original URL including share credentials; the ID is the stable provenance.
       }
     }
@@ -235,7 +246,7 @@ export async function downloadVideo(input: string, projectDir: string, options: 
     if (!Array.isArray(metadata.streams) || !metadata.streams.some((stream: { codec_type?: string }) => stream.codec_type === 'video')) throw new Error('链接没有返回可用的视频画面。');
     // Silent videos remain valid canvas assets; ASR is skipped by the service.
     source.status = 'resolved'; options.onProgress?.(95, '视频已下载，正在加入画布');
-    return { filePath, source };
+    return { filePath, source, ...(description ? { description } : {}) };
   } catch (error) {
     await rm(tmp, { recursive: true, force: true });
     if (options.signal?.aborted) throw abortError();

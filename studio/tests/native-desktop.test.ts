@@ -67,6 +67,8 @@ test('English-to-Chinese is one IPC on the desktop shell', () => {
   assert.match(desktop, /handle\('translate-english', input => translateEnglish\(input, translationSettingsFromEnv\(process\.env\)\)\)/);
   assert.equal((desktop.match(/translateEnglish/g) ?? []).length, 2);
   assert.match(bridge, /studio:translate-english/);
+  assert.match(desktop, /handle\('fetch-web-page'/);
+  assert.match(bridge, /studio:fetch-web-page/);
 });
 
 test('2026-10-07 rename: the desktop window is titled 来处 and carries the app icon (field.ico keeps its file name)', () => {

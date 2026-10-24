@@ -2,7 +2,7 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { ReactFlow, ReactFlowProvider, useReactFlow, useStoreApi, type Node } from '@xyflow/react';
 import type { CardData } from './model';
 import { BoardContext, CardContext, type BoardActions, type CardActions } from './board-context';
-import { importBoard } from './storage';
+import { importBoard, validateBoard } from './storage';
 import { registerCanvasContainer } from './canvas/safe-area';
 import { alignCards } from './card-movement';
 import { canActivateCard, isCardControlTarget } from './card-interaction';
@@ -57,7 +57,8 @@ import { useDraftWriting } from './app/useDraftWriting';
 import { useRecentDraftEdits } from './app/useRecentDraftEdits';
 import { useTrayCommands } from './app/useTrayCommands';
 import { useCardExtras } from './app/useCardExtras';
-import { useSnapGuides, useCanvasHandlers } from './app/useCanvasInteraction';
+import { useSnapGuides, useCanvasHandlers, usePaneMarquee } from './app/useCanvasInteraction';
+import { bindFreshTranslation } from './app/fresh-translation';
 import { useKeyboardModality, useSpacePan, useGlobalShortcuts } from './app/useGlobalKeys';
 import { useDialogFocus, useCoverLayer } from './app/useFocusLayers';
 import { useSearchNavigation } from './app/useSearchNavigation';
@@ -96,7 +97,6 @@ function Studio() {
   const selectedIdsRef=useRef(selectedIds);selectedIdsRef.current=selectedIds;
   const [selectedEdgeIds, setSelectedEdgeIds] = useState<string[]>([]);
   const [measurements,setMeasurements]=useState<Record<string,{width:number;height:number}>>({});
-  const [inspectedId, setInspectedId] = useState<string|null>(null);
   const [view, setView] = useState<CanvasView>('canvas');
   const [tool, setTool] = useState<CanvasTool>('select');
   const [panPressed,setPanPressed]=useState(false);
@@ -132,7 +132,6 @@ function Studio() {
     =useCanvasViewport({flow,boardRef,measurementsRef,sidebarRef,setSidebar,captionRulesRef});
   useSpacePan({modal,view,setPanPressed});
   const {smartSnap,setSmartSnap,snapGuides,setSnapGuides,movingCardIds,snapBypass}=useSnapGuides({board,effectiveTool,view});
-  const inspected=board?.nodes.find(n=>n.id===inspectedId);
   const lastModifiedDraftId=useRecentDraftEdits(board);
   const workspaceReady=!!workspace;
   useIdlePreload(workspaceReady);
@@ -141,6 +140,16 @@ function Studio() {
   useEffect(()=>{if(board)document.title=`${(board.title||'').trim()||'未命名画布'} - 来处`;},[board?.title,board?.id]);
   /** Toast queue (§6.22): failures stay until closed; options add a location tag, an action (“查看”) or a precise “撤销”. */
   const notify=useCallback((message:string,options:ToastOptions={})=>{showToast(message,{tone:inferToastTone(message),...options});},[]);
+  const writeCardQuiet=useCallback((boardId:string,nodeId:string,patch:Partial<CardData>)=>{
+    const current=workspaceRef.current;if(!current||readOnlyRef.current)return false;
+    const target=current.boards.find(item=>item.id===boardId);const node=target?.nodes.find(item=>item.id===nodeId);
+    if(!target||!node)return false;
+    let nextBoard;
+    try{nextBoard=validateBoard({...target,nodes:target.nodes.map(item=>item.id===nodeId?{...item,data:{...item.data,...patch}}:item)});}catch{return false;}
+    setNext({...current,boards:current.boards.map(item=>item.id===boardId?nextBoard:item)});
+    return true;
+  },[setNext]);
+  bindFreshTranslation(()=>workspaceRef.current,writeCardQuiet,message=>notify(message,{key:'fresh-translate'}));
   useEffect(()=>{const observer=new MutationObserver(()=>setResolvedTheme(document.documentElement.dataset.theme==='dark'?'dark':'light'));observer.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});return()=>observer.disconnect();},[]);
 
   // --- Media, undo history, playback, background video tasks ---
@@ -154,26 +163,33 @@ function Studio() {
   const {videoActionIds,videoActions,videoRuns,pendingVideoSubmissions,nativeTasks,expectedAttempts,updateImportCard,setVideoAction,launchVideoImport,cancelVideoImportAction,retryVideoImportAction}=videoTasks;
 
   // --- Panels and the way back to sources (FIELD trace, draft round trip) ---
-  const {draftNavigation,draftReturn,draftRestore,clearDraftNavigation,sourceTextReveal,showCard,openCard,closeInspector,closeInspectorRef,focusSource,openDraftSource,returnToDraft,completeDraftRestore,completeSourceTextReveal}
-    =useSourceNavigation({board,boardRef,workspaceRef,inspectedId,setInspectedId,selectedIdsRef,setSelectedIds,setSelectedEdgeIds,view,setView,setCanvasReveal,setImagePreviewToken,keyboardInput,flow,notify,fieldTrace,activeVideo,setActiveVideo,setVideoPlaybackVersion,playbackSession,playbackRequest,getVideoPlayback,playVideo});
+  const {draftNavigation,draftReturn,draftRestore,clearDraftNavigation,sourceTextReveal,showCard,openCard,closeInspector,closeInspectorRef,focusSource,openDraftSource,returnToDraft,completeDraftRestore,completeSourceTextReveal,inspectedId,focusedId,pinnedId,companionId,watchId,soloId,closeCompanion,closeDraft,closePanels,releaseCards,panelDismissable}
+    =useSourceNavigation({board,boardRef,workspaceRef,selectedIdsRef,setSelectedIds,setSelectedEdgeIds,view,setView,setCanvasReveal,setImagePreviewToken,keyboardInput,flow,notify,fieldTrace,activeVideo,setActiveVideo,setVideoPlaybackVersion,playbackSession,playbackRequest,getVideoPlayback,playVideo});
 
   // --- Cards and boards ---
   const {freshCardIds,updateCard,markFresh,addCard,deleteCards,duplicateCardAction,addQuote,addTextQuote,addQuoteAndAnnotate}
-    =useCardCommands({boardRef,workspaceRef,readOnlyRef,measurements,measurementsRef,changeBoard,undoChange,notify,fieldTrace,visibleView,setSelectedIds,setSelectedEdgeIds,setView,setCanvasReveal,setContextMenu,inspectedId,setInspectedId,activeVideo,setActiveVideo,playbackRequest,playbackSession,clearDraftNavigation,showCard,closeInspectorRef,videoRuns,expectedAttempts,nativeTasks});
+    =useCardCommands({boardRef,workspaceRef,readOnlyRef,measurements,measurementsRef,changeBoard,undoChange,notify,fieldTrace,visibleView,setSelectedIds,setSelectedEdgeIds,setView,setCanvasReveal,setContextMenu,releaseCards,activeVideo,setActiveVideo,playbackRequest,playbackSession,clearDraftNavigation,showCard,closeInspectorRef,videoRuns,expectedAttempts,nativeTasks});
+  const panelsOpen=!!(pinnedId||companionId||soloId||watchId);
   // Below 1000px the sidebar drawer would cover the docked panel's close button: opening a panel closes the drawer.
-  useEffect(()=>{if(inspectedId&&matchMedia('(max-width: 999px)').matches)setSidebar(false);},[inspectedId]);
-  useRevealFollow({board,boardRef,canvasReveal,setCanvasReveal,inspectedId,view,revealNodes});
+  useEffect(()=>{if(panelsOpen&&matchMedia('(max-width: 999px)').matches)setSidebar(false);},[panelsOpen]);
+  useRevealFollow({board,boardRef,canvasReveal,setCanvasReveal,inspectedId:focusedId,view,revealNodes});
   const {switchBoard,changeWorkspace,chooseBoardDirectory,addBoard,insertBoard,duplicateBoard,renameBoard,dismissWelcome,openExample,decideRecovery,reconnectLocalBoard,recoveryPrompt,welcome,boardName,setBoardName,boardDirectory,setBoardDirectory,directoryError,setDirectoryError,creatingBoard,chosenTemplate,setChosenTemplate}
-    =useBoardManagement({workspaceRef,boardRef,readOnlyRef,readOnly,busyRef,setBusy,setWorkspace,setNext,saveQueue,initialRevealBoard,revealStartAreaWhenMeasured,notify,changeBoard,clearDraftNavigation,playbackRequest,playbackSession,setSelectedIds,setSelectedEdgeIds,setInspectedId,setActiveVideo,setLibraryFacet,setGroupPicker,setView,setModal,setCanvasReveal});
+    =useBoardManagement({workspaceRef,boardRef,readOnlyRef,readOnly,busyRef,setBusy,setWorkspace,setNext,saveQueue,initialRevealBoard,revealStartAreaWhenMeasured,notify,changeBoard,clearDraftNavigation,playbackRequest,playbackSession,setSelectedIds,setSelectedEdgeIds,closePanels,setActiveVideo,setLibraryFacet,setGroupPicker,setView,setModal,setCanvasReveal});
 
   // --- Bringing material in, transcripts, writing, trays ---
-  const {linkValue,setLinkValue,linkMode,setLinkMode,importFormError,setImportFormError,xImportProgress,xCommitting,xRun,closeModal:closeImportModal,importXLinks,readXPost,xPostErrors,xPostLoadingIds,queueVideoLinks,importFiles,replaceMedia,importUrl,runNative,pasteText,pasteFromMenu}
+  const {linkValue,setLinkValue,linkMode,setLinkMode,importFormError,setImportFormError,xImportProgress,xCommitting,xRun,closeModal:closeImportModal,importXLinks,readXPost,xPostErrors,xPostLoadingIds,importFiles,replaceMedia,runNative,pasteText,pasteFromMenu}
     =useImportFlows({workspaceRef,boardRef,readOnlyRef,readOnly,busyRef,setBusy,measurements,measurementsRef,persist,saveVersion,pushHistory,setNext,changeBoard,notify,fitCanvas,importToast,center,visibleView,batchFits,markFresh,openCard,insertBoard,setModal,setSelectedIds,setSelectedEdgeIds,setView,setCanvasReveal,updateImportCard,launchVideoImport,pendingVideoSubmissions});
   const {chooseSubtitles,loadSubtitle,transcribe,transcriptionMessages}=useTranscripts({boardRef,workspaceRef,readOnlyRef,notify,pushHistory,setNext,changeBoard,setVideoAction,videoActions,subtitleFile});
   /** Pan so this card is in the visible canvas and select it; the panel stays (inspector-shell B1). */
   const revealCard=useCallback((id:string)=>{const current=boardRef.current;if(!current?.nodes.some(node=>node.id===id))return;setSelectedIds([id]);setSelectedEdgeIds([]);setView('canvas');setCanvasReveal({boardId:current.id,ids:[id],instant:false});},[]);
+  const pinnedNode=pinnedId?board?.nodes.find(node=>node.id===pinnedId):undefined;
+  const companionNode=companionId?board?.nodes.find(node=>node.id===companionId):undefined;
+  const soloNode=soloId&&!pinnedNode?board?.nodes.find(node=>node.id===soloId):undefined;
+  const watchNode=watchId?board?.nodes.find(node=>node.id===watchId):undefined;
+  const focusedNode=focusedId?board?.nodes.find(node=>node.id===focusedId):undefined;
+  const writingDraft=pinnedNode?.data.kind==='draft'?pinnedNode:focusedNode?.data.kind==='draft'?focusedNode:undefined;
   const {focusWriting,exportDraft,writeLinesToDraft,writeToDraft}
-    =useDraftWriting({board,inspected,boardRef,readOnlyRef,measurementsRef,changeBoard,undoChange,markFresh,notify,draftNavigation,returnToDraft,openCard,showCard,clearDraftNavigation,playbackRequest,setCanvasReveal});
+    =useDraftWriting({board,inspected:writingDraft,boardRef,readOnlyRef,measurementsRef,changeBoard,undoChange,markFresh,notify,draftNavigation,returnToDraft,openCard,showCard,clearDraftNavigation,playbackRequest,setCanvasReveal});
   const {groupSelection,arrangeFrameAction,moveCardIntoFrame,addToGroup}
     =useTrayCommands({boardRef,readOnlyRef,measurementsRef,mediaUrlsRef,changeBoard,markFresh,revealRect,flow,notify,setSelectedIds,setSelectedEdgeIds,setCanvasReveal,setGroupPicker});
   /** Export dialog straight on the moodboard of one group (§6.20.1, entry one). */
@@ -185,14 +201,15 @@ function Studio() {
   // The watching workbench covers the save banner: it offers the same ways out (FD-02), reconnect only where the banner does.
   const canReconnect=isNative()&&!!workspace?.boards.some(item=>item.storage);
   const actions:BoardActions=useMemo(()=>({updateCard,openCard,readXPost,xPostLoading:id=>xPostLoadingIds.includes(id),xPostError:id=>xPostErrors[id],deleteCard:id=>deleteCards([id]),duplicateCard:duplicateCardAction,addQuote,addTextQuote,focusSource,openDraftSource,draftReturn,returnToDraft,draftRestore,completeDraftRestore,sourceTextReveal,completeSourceTextReveal,getMediaUrl:id=>id?mediaUrls[id]:undefined,getMediaStatus,retryMedia,tool:effectiveTool,activeVideo,inspectedId,playVideo,videoPlaybackVersion,getVideoPlayback,bindVideoPlayer,captureVideoPlayback,restoreVideoPlayback,setPendingTranscriptEdit,nodes:board?.nodes??[],cancelVideoImport:cancelVideoImportAction,retryVideoImport:retryVideoImportAction,videoImportAvailable:isVideoImportAvailable(),videoImportActionPending:id=>videoActionIds.includes(id),transcribeVideo:transcribe,transcriptionMessage:id=>transcriptionMessages[id]??'',nativeTranscribeAvailable:isNative()&&!readOnly,readOnly,revealCard,addQuoteAndAnnotate,edges:board?.edges??[],saveStatus,retrySave,saveError,reconnectFolder:canReconnect?reconnectLocalBoard:undefined,exportBackup:openExport,writeToDraft,writeLinesToDraft,...cardExtras}),[updateCard,openCard,readXPost,xPostLoadingIds,xPostErrors,deleteCards,duplicateCardAction,addQuote,addTextQuote,focusSource,openDraftSource,draftReturn,returnToDraft,draftRestore,completeDraftRestore,sourceTextReveal,completeSourceTextReveal,mediaUrls,getMediaStatus,retryMedia,effectiveTool,activeVideo,inspectedId,playVideo,videoPlaybackVersion,getVideoPlayback,bindVideoPlayer,captureVideoPlayback,restoreVideoPlayback,setPendingTranscriptEdit,board?.nodes,cancelVideoImportAction,retryVideoImportAction,videoActionIds,transcribe,transcriptionMessages,readOnly,revealCard,addQuoteAndAnnotate,board?.edges,saveStatus,retrySave,saveError,canReconnect,reconnectLocalBoard,openExport,writeToDraft,writeLinesToDraft,cardExtras]);
-  const cardActions:CardActions=useMemo(()=>({updateCard,openCard,deleteCard:id=>deleteCards([id]),duplicateCard:duplicateCardAction,focusSource,getMediaUrl:id=>id?mediaUrls[id]:undefined,getMediaStatus,retryMedia,tool:effectiveTool,activeVideo,inspectedId,playVideo,videoPlaybackVersion,getVideoPlayback,bindVideoPlayer,captureVideoPlayback,restoreVideoPlayback,sourceNodeIds,cancelVideoImport:cancelVideoImportAction,retryVideoImport:retryVideoImportAction,videoImportAvailable:isVideoImportAvailable(),videoImportActionPending:id=>videoActionIds.includes(id),transcribeVideo:transcribe,transcriptionMessage:id=>transcriptionMessages[id]??'',nativeTranscribeAvailable:isNative()&&!readOnly,readOnly,...cardExtras}),[updateCard,openCard,deleteCards,duplicateCardAction,focusSource,mediaUrls,getMediaStatus,retryMedia,effectiveTool,activeVideo,inspectedId,playVideo,videoPlaybackVersion,getVideoPlayback,bindVideoPlayer,captureVideoPlayback,restoreVideoPlayback,sourceNodeIds,cancelVideoImportAction,retryVideoImportAction,videoActionIds,transcribe,transcriptionMessages,readOnly,cardExtras]);
+  const cardActions:CardActions=useMemo(()=>({updateCard,openCard,deleteCard:id=>deleteCards([id]),duplicateCard:duplicateCardAction,addQuote,focusSource,getMediaUrl:id=>id?mediaUrls[id]:undefined,getMediaStatus,retryMedia,tool:effectiveTool,activeVideo,inspectedId,playVideo,videoPlaybackVersion,getVideoPlayback,bindVideoPlayer,captureVideoPlayback,restoreVideoPlayback,sourceNodeIds,cancelVideoImport:cancelVideoImportAction,retryVideoImport:retryVideoImportAction,videoImportAvailable:isVideoImportAvailable(),videoImportActionPending:id=>videoActionIds.includes(id),transcribeVideo:transcribe,transcriptionMessage:id=>transcriptionMessages[id]??'',nativeTranscribeAvailable:isNative()&&!readOnly,readOnly,...cardExtras}),[updateCard,openCard,deleteCards,duplicateCardAction,addQuote,focusSource,mediaUrls,getMediaStatus,retryMedia,effectiveTool,activeVideo,inspectedId,playVideo,videoPlaybackVersion,getVideoPlayback,bindVideoPlayer,captureVideoPlayback,restoreVideoPlayback,sourceNodeIds,cancelVideoImportAction,retryVideoImportAction,videoActionIds,transcribe,transcriptionMessages,readOnly,cardExtras]);
 
   // --- The canvas's own events, the window's keys and focus, search ---
   useVideoTaskRecovery({video:videoTasks,workspace,workspaceRef,readOnlyRef,readOnly,notify});
-  const {onNodesChange,onEdgesChange,onSelectionChange,connectCards,onConnect,onConnectEnd,onNodeDragStart,onNodeDragStop,onCanvasKey,onCanvasDrop}=useCanvasHandlers({boardRef,workspaceRef,readOnlyRef,modal,contextMenu,inspectedId,selectedIds,effectiveTool,measurements,flow,changeBoard,pushHistory,notify,openCard,addQuote,importFiles,setSelectedIds,setSelectedEdgeIds,setMeasurements,smartSnap,setSnapGuides,movingCardIds,snapBypass,captionRulesRef});
+  const {onNodesChange,onEdgesChange,onSelectionChange,connectCards,onConnect,onConnectEnd,onNodeDragStart,onNodeDragStop,onCanvasKey,onCanvasDrop}=useCanvasHandlers({boardRef,workspaceRef,readOnlyRef,modal,contextMenu,inspectedId:focusedId,selectedIds,effectiveTool,measurements,flow,changeBoard,pushHistory,notify,openCard,addQuote,importFiles,setSelectedIds,setSelectedEdgeIds,setMeasurements,smartSnap,setSnapGuides,movingCardIds,snapBypass,captionRulesRef});
+  usePaneMarquee({enabled:effectiveTool==='select'&&!!board,flow,flowStore});
   useDialogFocus({modal,modalHost});
   const closeModal=useCallback(()=>{if(modal==='export'&&busyRef.current)return;closeImportModal();},[modal,closeImportModal]);
-  useGlobalShortcuts({effectiveTool,notify,readOnlyRef,readOnly,workspaceRef,persist,saveVersion,modal,setModal,contextMenu,setContextMenu,creatingBoard,xRun,closeModal,inspectedId,closeInspector,selectedIds,setSelectedIds,selectedEdgeIds,setSelectedEdgeIds,recoveryPrompt,importFiles,pasteText,pasteFromMenu,undo,groupSelection,duplicateCardAction,deleteCards,changeBoard,addCard,setTool,view,setView,fitCanvas,boardRef});
+  useGlobalShortcuts({effectiveTool,notify,readOnlyRef,readOnly,workspaceRef,persist,saveVersion,modal,setModal,contextMenu,setContextMenu,creatingBoard,xRun,closeModal,panelDismissable,closeInspector,selectedIds,setSelectedIds,selectedEdgeIds,setSelectedEdgeIds,recoveryPrompt,importFiles,pasteText,pasteFromMenu,undo,groupSelection,duplicateCardAction,deleteCards,changeBoard,addCard,setTool,view,setView,fitCanvas,boardRef});
   const flowNodes=useFlowNodes({board,selectedIds,measurements,libraryFacet,imageRatioVersion,captions});
   // Stored lines plus the derived “摘录 → 文稿” citation lines (EG-M3), each with its look, lit/dim state and Chinese name.
   const flowEdges=useFieldFlowEdges(board,selectedIds,selectedEdgeIds);
@@ -213,7 +230,7 @@ function Studio() {
   const revealStorage=()=>void window.fieldBoardStorage?.reveal(board.storage!.id).catch(error=>notify(errorMessage(error)));
   const resizeSelectedCard=(id:string,width:number,height:number)=>{const current=boardRef.current;if(readOnlyRef.current||!current)return false;const next=resizeCard(current,id,width,height);if(next===current){const node=current.nodes.find(node=>node.id===id);return node?.style?.width===width&&node?.style?.height===height;}return changeBoard(()=>next);};
   const changeLinkText=(value:string)=>{setLinkValue(value);setImportFormError('');if(sharedLinks(value).some(isXUrl))setLinkMode('x');};
-  const submitLink=()=>{if(linkMode==='video')void queueVideoLinks(linkValue);else importUrl();};
+  const submitLink=()=>{pasteText(linkValue);};
   // "前往卡片": the reveal waits for the switched board instead of a 100ms timer (EN-m3).
   const goToImportCard=(boardId:string,nodeId:string)=>{switchBoard(boardId);setSelectedIds([nodeId]);setView('canvas');setModal(null);setCanvasReveal({boardId,ids:[nodeId],instant:false});};
   const exportHandlers={setBusy,notify,close:()=>setModal(null)};
@@ -227,7 +244,7 @@ function Studio() {
   return (
     <BoardContext.Provider value={actions}>
       <CardContext.Provider value={cardActions}>
-        <div className={`studio ${sidebar?'':'sidebar-hidden'} ${inspected?'inspector-visible':''}`} inert={showWelcome&&!modal}>
+        <div className={`studio ${sidebar?'':'sidebar-hidden'} ${panelsOpen?'inspector-visible':''}`} inert={showWelcome&&!modal}>
           <a className="skip-link" href="#" inert={coverLayer} onClick={event=>{event.preventDefault();/* CORE-38: land on the selected card or the first card (visible focus ring, no walk through every thread). */const selected=selectedIdsRef.current.map(id=>document.querySelector<HTMLElement>(nodeSelector(id))).find(Boolean);if(selected){selected.focus();return;}document.querySelector<HTMLElement>('[data-testid="canvas"]')?.focus({preventScroll:true});focusCanvasStart();}}>跳到画布</a>
           {/* display:contents keeps the shell layout; inert only takes the covered sidebar out of reach (FV-M9). */}
           <div className="layer-guard" style={{display:'contents'}} inert={coverLayer}>
@@ -324,11 +341,11 @@ function Studio() {
                     onPaneClick={()=>{setContextMenu(null);setSelectedIds([]);}}
                     onPaneContextMenu={e=>{e.preventDefault();if(!readOnly)setContextMenu({x:e.clientX,y:e.clientY});}}
                     onDoubleClick={e=>{if(effectiveTool==='select'&&!readOnly&&!e.shiftKey&&(e.target as HTMLElement).classList.contains('react-flow__pane'))addCard('note',flow.screenToFlowPosition({x:e.clientX,y:e.clientY}));}}
-                    panOnDrag={effectiveTool==='hand'?true:[1,2]}
-                    selectionOnDrag={effectiveTool==='select'}
+                    panOnDrag={effectiveTool==='hand'?true:[0,1]}
+                    selectionOnDrag={false}
                     panActivationKeyCode="Space"
                     multiSelectionKeyCode="Shift"
-                    selectionKeyCode="Shift"
+                    selectionKeyCode={null}
                     deleteKeyCode={null}
                     zoomOnDoubleClick={false}
                     minZoom={.2}
@@ -404,9 +421,41 @@ function Studio() {
                   />
                 )}
               </div>
-              {inspected&&(
+              {companionNode&&pinnedNode&&(
                 <InspectorPanel
-                  node={inspected}
+                  slot="companion"
+                  node={companionNode}
+                  imagePreviewToken={imagePreviewToken}
+                  onClose={closeCompanion}
+                  onImportSubtitles={chooseSubtitles}
+                  onNativeTranscribe={isNative()&&!readOnly?transcribe:undefined}
+                  onNotify={notify}
+                />
+              )}
+              {pinnedNode&&(
+                <InspectorPanel
+                  slot="pinned"
+                  node={pinnedNode}
+                  imagePreviewToken={imagePreviewToken}
+                  onClose={closeDraft}
+                  onImportSubtitles={chooseSubtitles}
+                  onNativeTranscribe={isNative()&&!readOnly?transcribe:undefined}
+                  onNotify={notify}
+                />
+              )}
+              {soloNode&&(
+                <InspectorPanel
+                  node={soloNode}
+                  imagePreviewToken={imagePreviewToken}
+                  onClose={closeInspector}
+                  onImportSubtitles={chooseSubtitles}
+                  onNativeTranscribe={isNative()&&!readOnly?transcribe:undefined}
+                  onNotify={notify}
+                />
+              )}
+              {watchNode&&(
+                <InspectorPanel
+                  node={watchNode}
                   imagePreviewToken={imagePreviewToken}
                   onClose={closeInspector}
                   onImportSubtitles={chooseSubtitles}
@@ -494,7 +543,7 @@ function Studio() {
                   board={board}
                   busy={!!busy}
                   directoryAvailable={!!window.fieldBoardStorage}
-                  currentDraftId={inspected?.data.kind==='draft'?inspected.id:undefined}
+                  currentDraftId={writingDraft?.id}
                   lastModifiedDraftId={lastModifiedDraftId}
                   onBusyChange={setBusy}
                   onExportComplete={()=>setModal(null)}

@@ -16,8 +16,10 @@ import { isVideoImportAvailable } from '../video-import';
 import { showToast, type ToastOptions } from '../shell/Toasts';
 import type { CanvasRevealRequest, CanvasView, LinkMode, Modal } from './types';
 import { errorMessage } from './utils';
-import { VIDEO_BATCH_LIMIT, sharedLinks, isXUrl, videoPlatform, recognizableVideo, taskTitle } from './video-links';
+import { VIDEO_BATCH_LIMIT, sharedLinks, isXUrl, videoPlatform, taskTitle } from './video-links';
 import { ImportRefusal, importFailure, importKind, importRefusal } from './import-messages';
+import { pastedMaterial, textBesideLinks } from './pasted-text';
+import { rememberFreshAttempts, rememberFreshCards, translateFreshCardNow } from './fresh-translation';
 
 /**
  * Everything that brings material in (CORE-32: moved out of App.tsx unchanged): files and pasted text (K9-11), web and
@@ -74,7 +76,7 @@ export function useImportFlows({workspaceRef,boardRef,readOnlyRef,readOnly,busyR
   /** CORE-07: an import that does not fit the view offers “查看全部”; running it (button, F, palette) takes the toast down. */
   const viewAllAction=useMemo(()=>({label:'查看全部',ariaLabel:'查看全部（F）',onAction:()=>fitCanvas()}),[fitCanvas]);
   const notifyImported=useCallback((message:string,overflow:boolean)=>{importToast.current=showToast(message,{tone:'info',key:'import-result',settle:true,...(overflow?{action:viewAllAction,duration:8000}:{})});},[viewAllAction]);
-  const importXLinks=useCallback(async(text:string,point?:{x:number;y:number},sourceOnly=false):Promise<string|undefined>=>{
+  const importXLinks=useCallback(async(text:string,point?:{x:number;y:number},sourceOnly=false,fresh=false):Promise<string|undefined>=>{
     if(xRun.current)return;
     const fail=(message:string)=>{setImportFormError(message);notify(message);};
     if(readOnlyRef.current){fail('当前窗口只读，请在正在编辑的窗口导入。');return;}
@@ -117,6 +119,12 @@ export function useImportFlows({workspaceRef,boardRef,readOnlyRef,readOnly,busyR
           prepared.videoNodeIds.forEach(id=>pendingVideoSubmissions.current.delete(id));
           for(const id of prepared.videoNodeIds){const node=prepared.board.nodes.find(item=>item.id===id)!;updateImportCard(boardId,id,node.data.videoImport!.attemptId,{}, {status:'failed',message:'任务尚未开始',error:`导入结果保存失败，请解决保存问题后重试：${errorMessage(error)}`.slice(0,4096)});}
           throw new Error(`导入结果未保存成功，视频下载尚未开始：${errorMessage(error)}`);
+        }
+        if(fresh){
+          const links=prepared.nodes.filter(node=>node.data.kind==='link');
+          rememberFreshCards(links.map(node=>node.id));
+          for(const link of links)translateFreshCardNow(boardId,link.id);
+          rememberFreshAttempts(prepared.videoNodeIds.flatMap(id=>{const attempt=prepared.board.nodes.find(node=>node.id===id)?.data.videoImport?.attemptId;return attempt?[attempt]:[];}));
         }
         for(const id of prepared.videoNodeIds){pendingVideoSubmissions.current.delete(id);const node=prepared.board.nodes.find(item=>item.id===id)!;launchVideoImport(boardId,id,node.data.videoImport!.attemptId);}
         imported++;videos+=prepared.videoNodeIds.length;run.committing=false;setXCommitting(false);
@@ -171,21 +179,21 @@ export function useImportFlows({workspaceRef,boardRef,readOnlyRef,readOnly,busyR
     }catch(error){setXPostErrors(previous=>({...previous,[id]:errorMessage(error)}));}
     finally{setXPostLoadingIds(previous=>previous.filter(item=>item!==id));}
   },[changeBoard,importXLinks,measurements,notify,openCard,persist,updateImportCard]);
-  const queueVideoLinks=useCallback(async(text:string,point?:{x:number;y:number},selectedLinks?:string[])=>{
+  const queueVideoLinks=useCallback(async(text:string,point?:{x:number;y:number},selectedLinks?:string[],fresh=false)=>{
     setImportFormError('');
     if(readOnlyRef.current){notify('当前窗口只读，请在正在编辑的窗口导入。');return;}
     const fail=(message:string)=>{setImportFormError(message);notify(message);};
     if(!isVideoImportAvailable()){fail('自动下载与逐字稿需要来处桌面版。在浏览器里仍可导入本机视频、字幕，或保存网页资料。');return;}
     if(text.length>20000){fail('分享文案较长，请保留视频链接后重试（最多 20,000 字符）。');return;}
     const urls=selectedLinks??sharedLinks(text);if(!urls.length){fail('没有找到完整的 http 或 https 链接。可直接粘贴平台的分享文案。');return;}
-    if(urls.some(isXUrl)){setLinkMode('x');await importXLinks(text,point);return;}
+    if(urls.some(isXUrl)){setLinkMode('x');await importXLinks(text,point,false,fresh);return;}
     if(urls.length>VIDEO_BATCH_LIMIT){fail(`一次最多导入 ${VIDEO_BATCH_LIMIT} 个视频，请分批粘贴。`);return;}
     const current=workspaceRef.current;const target=current?.boards.find(item=>item.id===current.activeBoardId);if(!current||!target)return;
     const existing=target.nodes.filter(node=>node.data.kind==='video'&&node.data.videoImport&&urls.includes(node.data.videoImport.url));
-    const fresh=urls.filter(url=>!existing.some(node=>node.data.videoImport?.url===url));
-    if(!fresh.length){setSelectedIds(existing.map(node=>node.id));setModal(null);setView('canvas');notify('这些视频已在画布中；未完成的任务可在原卡片重试。');return;}
+    const pending=urls.filter(url=>!existing.some(node=>node.data.videoImport?.url===url));
+    if(!pending.length){setSelectedIds(existing.map(node=>node.id));setModal(null);setView('canvas');notify('这些视频已在画布中；未完成的任务可在原卡片重试。');return;}
     const base=point??center();const now=new Date().toISOString();
-    const tasks=fresh.map(url=>{const node=createNode('video',base);node.style={width:320};node.data={...node.data,title:taskTitle(url),body:'',sourceUrl:url,sourceOriginalText:text,tags:[videoPlatform(url)],collectedAt:now,videoImport:{attemptId:uid(),url,originalText:text,status:'queued',message:'正在保存任务，随后开始下载',mediaReady:false,createdAt:now,updatedAt:now}};return node;});
+    const tasks=pending.map(url=>{const node=createNode('video',base);node.style={width:320};node.data={...node.data,title:taskTitle(url),body:'',sourceUrl:url,sourceOriginalText:text,tags:[videoPlatform(url)],collectedAt:now,videoImport:{attemptId:uid(),url,originalText:text,status:'queued',message:'正在保存任务，随后开始下载',mediaReady:false,createdAt:now,updatedAt:now}};return node;});
     // Task cards follow the import rule: visible canvas, revealed and selected (§5.4).
     const raw=measurementsRef.current,bounds=captionPlacementBounds(target.nodes,raw);
     const nodes=point?placeCards(tasks,target.nodes,{origin:base,measurements:raw,preserveFirst:true,bounds}):placeBatchInView(tasks,target.nodes,visibleView(),raw,bounds);
@@ -199,6 +207,7 @@ export function useImportFlows({workspaceRef,boardRef,readOnlyRef,readOnly,busyR
       for(const node of nodes)updateImportCard(target.id,node.id,node.data.videoImport!.attemptId,{}, {status:'failed',message:'任务尚未开始',error:`任务卡保存失败，请解决保存问题后重试：${errorMessage(error)}`.slice(0,4096)});
       notify('任务卡没有保存成功，视频下载尚未开始。');return;
     }
+    if(fresh)rememberFreshAttempts(nodes.map(node=>node.data.videoImport!.attemptId));
     for(const node of nodes){pendingVideoSubmissions.current.delete(node.id);launchVideoImport(target.id,node.id,node.data.videoImport!.attemptId);}
     notify(`已加入 ${nodes.length} 个视频任务${existing.length?`，${existing.length} 个已在画布中`:''}。可继续创作或切换画布。`);
   },[center,importXLinks,launchVideoImport,notify,persist,pushHistory,setNext,updateImportCard,measurements,visibleView]);
@@ -300,39 +309,83 @@ export function useImportFlows({workspaceRef,boardRef,readOnlyRef,readOnly,busyR
     },{once:true});
     input.click();
   },[changeBoard,notify]);
-  const importUrl=useCallback((text=linkValue,point?:{x:number;y:number},selectedLinks?:string[])=>{
+  const importUrl=useCallback((text=linkValue,point?:{x:number;y:number},selectedLinks?:string[],fresh=false)=>{
     if(readOnlyRef.current)return;
     const urls=selectedLinks??sharedLinks(text);
-    if(urls.some(isXUrl)){void importXLinks(text,point);return;}
+    if(urls.some(isXUrl)){void importXLinks(text,point,false,fresh);return;}
     if(!urls.length){const message='没有找到完整的 http 或 https 链接。';setImportFormError(message);notify(message);return;}
     if(urls.length>VIDEO_BATCH_LIMIT||text.length>20000){notify('请分批收集，每次最多 20 个链接和 20,000 字符。');return;}
-    const base=point??center();const current=boardRef.current;if(!current)return;
+    const base=point??center();
+    const current=workspaceRef.current?.boards.find(item=>item.id===workspaceRef.current?.activeBoardId)??boardRef.current;
+    if(!current)return;
     const collectedAt=new Date().toISOString();
-    const links=urls.map(url=>{const node=createNode('link',base);node.data.url=url;node.data.collectedAt=collectedAt;node.data.title=new URL(url).hostname.replace(/^www\./,'');node.data.body=text.trim()===url?'':text;return node;});
+    const links=urls.map(url=>{const node=createNode('link',base);node.data.url=url;node.data.collectedAt=collectedAt;node.data.title=new URL(url).hostname.replace(/^www\./,'');node.data.body='';return node;});
+    const beside=textBesideLinks(text,sharedLinks(text));
+    const note=beside&&beside.length<=300_000?createNode('note',base):null;
+    if(note)note.data.body=beside;
+    if(beside.length>300_000)notify('这段文字较长，请分成不超过 300,000 字符的笔记。');
+    const batch=note?[...links,note]:links;
     const raw=measurementsRef.current,bounds=captionPlacementBounds(current.nodes,raw);
-    const nodes=point?placeCards(links,current.nodes,{origin:base,measurements:raw,preserveFirst:true,bounds}):placeBatchInView(links,current.nodes,visibleView(),raw,bounds);
+    const nodes=point?placeCards(batch,current.nodes,{origin:base,measurements:raw,preserveFirst:true,bounds}):placeBatchInView(batch,current.nodes,visibleView(),raw,bounds);
     if(!changeBoard(b=>({...b,nodes:[...b.nodes,...nodes]})))return;
-    setSelectedIds(nodes.map(node=>node.id));setModal(null);setLinkValue('');setImportFormError('');markFresh(nodes.map(node=>node.id));notify(`已加入 ${nodes.length} 个链接`,{settle:true});
-    if(!point)setCanvasReveal({boardId:current.id,ids:nodes.map(node=>node.id),instant:false});
-  },[center,changeBoard,importXLinks,linkValue,markFresh,measurements,notify,visibleView]);
+    const boardId=current.id;
+    setSelectedIds(nodes.map(node=>node.id));setModal(null);setLinkValue('');setImportFormError('');markFresh(nodes.map(node=>node.id));
+    notify(`已加入 ${links.length} 个链接${note?'，旁边记下了链接以外的文字':''}`,{settle:true});
+    if(!point)setCanvasReveal({boardId,ids:nodes.map(node=>node.id),instant:false});
+    const pages=nodes.filter(node=>node.data.kind==='link');
+    void (async()=>{
+      const bridge=typeof window==='undefined'?undefined:window.fieldWebPage;
+      if(!bridge?.fetch){notify('抓取网页正文需要来处桌面版。已保存链接。',{key:'web-fetch'});return;}
+      const linkOnly:string[]=[];
+      for(const page of pages){
+        const url=page.data.url??'';
+        try{
+          const article=await bridge.fetch(url);
+          if(!article?.body?.trim()){linkOnly.push(url);continue;}
+          const latest=workspaceRef.current;const target=latest?.boards.find(item=>item.id===boardId);const node=target?.nodes.find(item=>item.id===page.id);
+          if(!latest||!target||!node||node.data.body.trim())continue;
+          const host=(()=>{try{return new URL(url).hostname.replace(/^www\./,'');}catch{return '';}})();
+          const title=!node.data.title||node.data.title===host?(article.title||host||node.data.title):node.data.title;
+          const nextBoard={...target,nodes:target.nodes.map(item=>item.id===page.id?{...item,data:{...item.data,title,body:article.body}}:item)};
+          try{validateBoard(nextBoard);}catch{linkOnly.push(url);continue;}
+          setNext({...latest,boards:latest.boards.map(item=>item.id===boardId?nextBoard:item)});
+          if(fresh){rememberFreshCards([page.id]);translateFreshCardNow(boardId,page.id);}
+        }catch{linkOnly.push(url);}
+      }
+      if(linkOnly.length)notify(`这些网页没有抽到正文，只保存了链接：${linkOnly.join('、')}`,{key:'web-fetch'});
+    })();
+  },[center,changeBoard,importXLinks,linkValue,markFresh,measurements,notify,setNext,visibleView]);
   const runNative=useCallback(async(action:'project'|'files')=>{
     if(readOnlyRef.current){notify('这是只读窗口，请在正在编辑的窗口导入素材。');return;}
     const targetBoard=workspaceRef.current?.activeBoardId;
     setBusy(action==='project'?'正在打开原有素材库…':'正在处理本机素材…');
     try{if(action==='project'){const b=await importNativeProject();if(b)insertBoard(b);}else{const nodes=await importNativeFiles();const collectedAt=new Date().toISOString();for(const node of nodes)node.data.collectedAt??=collectedAt;if(nodes.length){const current=boardRef.current;if(!current||current.id!==targetBoard)throw new Error('画布已切换，请回到原画布重新导入');const placed=placeBatchInView(nodes,current.nodes,visibleView(),measurementsRef.current,captionPlacementBounds(current.nodes,measurementsRef.current));if(!changeBoard(b=>({...b,nodes:[...b.nodes,...placed]})))return;setSelectedIds(placed.map(node=>node.id));setModal(null);setCanvasReveal({boardId:current.id,ids:placed.map(node=>node.id),instant:false});notifyImported(`已导入 ${nodes.length} 个素材`,!batchFits(placed));}}}catch(error){notify(errorMessage(error));}finally{setBusy('');}
   },[batchFits,changeBoard,insertBoard,notify,notifyImported,visibleView]);
-  /** Paste router (K9-11): X links, video links (desktop), web pages, or plain text as a note. */
+  /** Paste router: one reading of the text. X is whole, videos and ordinary pages are separate, leftover prose is a note. */
   const pasteText=useCallback((text:string)=>{
       if(!text)return;
-      const urls=sharedLinks(text);const videos=urls.filter(recognizableVideo);
-      if(urls.some(isXUrl)){void importXLinks(text);return;}
-      if(videos.length){
+      const plan=pastedMaterial(text);
+      if(plan.x){void importXLinks(text,undefined,false,true);return;}
+      if(plan.videos.length){
         if(!isVideoImportAvailable()){setLinkValue(text.slice(0,20000));setLinkMode('video');setImportFormError('自动下载与逐字稿需要来处桌面版。也可以切换为网页资料，先保存来源。');setModal('import');return;}
-        if(urls.length>VIDEO_BATCH_LIMIT||text.length>20000){notify('请分批粘贴，每次最多 20 个链接和 20,000 字符。');return;}
-        void queueVideoLinks(text,undefined,videos);
-        const webpages=urls.filter(url=>!videos.includes(url));if(webpages.length)importUrl(text,undefined,webpages);
-      }else if(urls.length)importUrl(text);
-      else{if(text.length>300000){notify('这段文字较长，请分成不超过 300,000 字符的笔记。');return;}const current=boardRef.current;if(!current)return;const created=createNode('note');created.data.body=text;const node=placeInView(created,current.nodes,visibleView(),measurementsRef.current,'straddle',captionPlacementBounds(current.nodes,measurementsRef.current));if(!changeBoard(b=>({...b,nodes:[...b.nodes,node]})))return;setSelectedIds([node.id]);setSelectedEdgeIds([]);markFresh([node.id]);setCanvasReveal({boardId:current.id,ids:[node.id],instant:false});notify('已粘贴为笔记');}
+        if(sharedLinks(text).length>VIDEO_BATCH_LIMIT||text.length>20000){notify('请分批粘贴，每次最多 20 个链接和 20,000 字符。');return;}
+        void queueVideoLinks(text,undefined,plan.videos,true);
+        if(plan.pages.length)importUrl(text,undefined,plan.pages,true);
+        else if(plan.note){
+          if(plan.note.length>300_000)notify('这段文字较长，请分成不超过 300,000 字符的笔记。');
+          else{
+            const current=workspaceRef.current?.boards.find(item=>item.id===workspaceRef.current?.activeBoardId)??boardRef.current;
+            if(!current)return;
+            const created=createNode('note');created.data.body=plan.note;
+            const node=placeInView(created,current.nodes,visibleView(),measurementsRef.current,'straddle',captionPlacementBounds(current.nodes,measurementsRef.current));
+            if(changeBoard(board=>({...board,nodes:[...board.nodes,node]})))markFresh([node.id]);
+          }
+        }
+        return;
+      }
+      if(plan.pages.length){importUrl(text,undefined,plan.pages,true);return;}
+      if(text.length>300000){notify('这段文字较长，请分成不超过 300,000 字符的笔记。');return;}
+      const current=boardRef.current;if(!current)return;const created=createNode('note');created.data.body=text;const node=placeInView(created,current.nodes,visibleView(),measurementsRef.current,'straddle',captionPlacementBounds(current.nodes,measurementsRef.current));if(!changeBoard(b=>({...b,nodes:[...b.nodes,node]})))return;setSelectedIds([node.id]);setSelectedEdgeIds([]);markFresh([node.id]);setCanvasReveal({boardId:current.id,ids:[node.id],instant:false});notify('已粘贴为笔记');
     },[changeBoard,importUrl,importXLinks,markFresh,notify,queueVideoLinks,visibleView]);
   /** “从剪贴板粘贴” in the add menu and the canvas menu: the same router as Ctrl V (toolbar 2.3). */
   const pasteFromMenu=useCallback(async()=>{

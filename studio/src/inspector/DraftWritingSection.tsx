@@ -56,7 +56,8 @@ const NARROW_DESK = '(max-width: 1279px)';
  *   the same body out as a shooting script (ScriptView). Its cells edit the same body in place (ScriptEditing: a range
  *   view of this editor, one document, one undo history); rows and scenes move by drag or Alt+↑ / Alt+↓.
  */
-export default function DraftWritingSection({ data, editorRef, normalizedBody, patch, onNotify, showReferences, setShowReferences, showVersions, setShowVersions, openDraftSource }: {
+export default function DraftWritingSection({ nodeId, data, editorRef, normalizedBody, patch, onNotify, showReferences, setShowReferences, showVersions, setShowVersions, openDraftSource }: {
+  nodeId?: string;
   data: CardData;
   editorRef: RefObject<TextEditorHandle | null>;
   normalizedBody: string;
@@ -83,7 +84,7 @@ export default function DraftWritingSection({ data, editorRef, normalizedBody, p
   const [popover, setPopover] = useState<{ index: number; anchor: HTMLElement; keyboard: boolean } | null>(null);
   const [sourcesDrawer, setSourcesDrawer] = useState(false);
   const [marginHidden, setMarginHidden] = useState(false);
-  const draftId = board.inspectedId;
+  const draftId = nodeId ?? board.inspectedId;
   const [view, setView] = useDraftView(draftId, normalizedBody);
   const script = view === 'script';
   // The view a draft first opens in stays its view (§6.29: 正文 unless it already reads as a script, like the example):

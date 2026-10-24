@@ -38,7 +38,7 @@ export function useSpacePan({modal,view,setPanPressed}:{modal:Modal;view:CanvasV
  * Window-wide shortcuts and paste (K9-11, KB-M1, CORE-15): links open in the system browser on the desktop, files dropped
  * outside the canvas never navigate away, Ctrl+S saves at once, Esc leaves one layer at a time, and the canvas keys.
  */
-export function useGlobalShortcuts({effectiveTool,notify,readOnlyRef,readOnly,workspaceRef,persist,saveVersion,modal,setModal,contextMenu,setContextMenu,creatingBoard,xRun,closeModal,inspectedId,closeInspector,selectedIds,setSelectedIds,selectedEdgeIds,setSelectedEdgeIds,recoveryPrompt,importFiles,pasteText,pasteFromMenu,undo,groupSelection,duplicateCardAction,deleteCards,changeBoard,addCard,setTool,view,setView,fitCanvas,boardRef}:{
+export function useGlobalShortcuts({effectiveTool,notify,readOnlyRef,readOnly,workspaceRef,persist,saveVersion,modal,setModal,contextMenu,setContextMenu,creatingBoard,xRun,closeModal,panelDismissable,closeInspector,selectedIds,setSelectedIds,selectedEdgeIds,setSelectedEdgeIds,recoveryPrompt,importFiles,pasteText,pasteFromMenu,undo,groupSelection,duplicateCardAction,deleteCards,changeBoard,addCard,setTool,view,setView,fitCanvas,boardRef}:{
   effectiveTool:CanvasTool;
   notify:(message:string,options?:ToastOptions)=>void;
   readOnlyRef:RefObject<boolean>;
@@ -53,7 +53,8 @@ export function useGlobalShortcuts({effectiveTool,notify,readOnlyRef,readOnly,wo
   creatingBoard:boolean;
   xRun:RefObject<{controller:AbortController;requestId:string;committing:boolean}|null>;
   closeModal:()=>void;
-  inspectedId:string|null;
+  /** Esc closes a watch page, a left column, or a panel that is not a pinned draft. */
+  panelDismissable:boolean;
   closeInspector:()=>void;
   selectedIds:string[];
   setSelectedIds:Dispatch<SetStateAction<string[]>>;
@@ -120,7 +121,7 @@ export function useGlobalShortcuts({effectiveTool,notify,readOnlyRef,readOnly,wo
         if(modal){closeModal();return;}
         if(contextMenu){setContextMenu(null);return;}
         if(e.target instanceof HTMLElement&&editableTarget(e.target)){e.target.blur();return;}
-        if(inspectedId)closeInspector();
+        if(panelDismissable)closeInspector();
         else if(selectedIds.length||selectedEdgeIds.length){setSelectedIds([]);setSelectedEdgeIds([]);}
         return;
       }
@@ -141,6 +142,6 @@ export function useGlobalShortcuts({effectiveTool,notify,readOnlyRef,readOnly,wo
       if(!mod&&!e.altKey){switch(e.key.toLowerCase()){case'n':addCard('note');break;case't':addCard('draft');break;case'v':setTool('select');break;case'h':setTool('hand');break;case'f':setView('canvas');requestAnimationFrame(()=>void fitCanvas());break;case'?':setModal('help');break;}}
     };
     window.addEventListener('keydown',key);window.addEventListener('paste',paste);return()=>{window.removeEventListener('keydown',key);window.removeEventListener('paste',paste);};
-  },[modal,contextMenu,creatingBoard,readOnly,importFiles,changeBoard,closeInspector,closeModal,notify,undo,selectedIds,selectedEdgeIds,duplicateCardAction,deleteCards,addCard,fitCanvas,persist,pasteText,pasteFromMenu,groupSelection,inspectedId,recoveryPrompt,view]);
+  },[modal,contextMenu,creatingBoard,readOnly,importFiles,changeBoard,closeInspector,closeModal,notify,undo,selectedIds,selectedEdgeIds,duplicateCardAction,deleteCards,addCard,fitCanvas,persist,pasteText,pasteFromMenu,groupSelection,panelDismissable,recoveryPrompt,view]);
 }
 

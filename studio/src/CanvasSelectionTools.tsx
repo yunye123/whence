@@ -761,6 +761,8 @@ export default function CanvasSelectionTools(props: CanvasSelectionToolsProps) {
     ? cardMenuEntries(single.data, {
       readOnly, tool,
       canConnect: candidates.length > 0,
+      onOpen: () => onOpen(single.id),
+      onExcerptTranscript: single.data.kind === 'video' ? () => { board?.addQuote(single.id, single.data.transcript ?? []); } : undefined,
       onView: onViewSelected || onViewCard ? () => view(single.id) : undefined,
       onConnect: () => openDialog('connect', single.id),
       onResize: () => openDialog('resize', single.id),

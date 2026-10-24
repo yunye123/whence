@@ -76,6 +76,9 @@ export interface FieldXImportsAPI {
 export interface FieldTranslateAPI {
   translate(input: EnglishTranslationRequest): Promise<EnglishTranslationResult>;
 }
-declare global { interface Window { fieldVideoImports?: FieldVideoImportsAPI; fieldBoardStorage?: FieldBoardStorageAPI; fieldLocalFiles?: FieldLocalFilesAPI; fieldFileExport?: FieldFileExportAPI; fieldXImports?: FieldXImportsAPI; fieldPdf?: FieldPdfAPI; fieldTranslate?: FieldTranslateAPI } }
+export interface FieldWebPageAPI {
+  fetch(url: string): Promise<{ title: string; body: string } | null>;
+}
+declare global { interface Window { fieldVideoImports?: FieldVideoImportsAPI; fieldBoardStorage?: FieldBoardStorageAPI; fieldLocalFiles?: FieldLocalFilesAPI; fieldFileExport?: FieldFileExportAPI; fieldXImports?: FieldXImportsAPI; fieldPdf?: FieldPdfAPI; fieldTranslate?: FieldTranslateAPI; fieldWebPage?: FieldWebPageAPI } }
 
 export const VIDEO_IMPORT_TERMINAL: ReadonlySet<VideoImportStage> = new Set(['completed', 'failed', 'cancelled', 'interrupted']);

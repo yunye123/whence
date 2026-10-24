@@ -197,9 +197,22 @@ test('real link imports and paste preserve source text while avoiding caption ob
     const imports = capture(() => useImportFlows(h.common as unknown as Parameters<typeof useImportFlows>[0]));
     if (via === 'paste') imports.pasteText('原始 😀 文本\r\n保留  空格');
     else imports.importUrl(text, via === 'pointer' ? { x: 0, y: 132 } : undefined);
-    const node = h.boardRef.current!.nodes.at(-1)!;
-    assert.ok(clear(getCardBounds(node), { x: 0, y: 0, width: 290, height: 124 }));
-    assert.equal(node.data.body, via === 'paste' ? '原始 😀 文本\r\n保留  空格' : text);
+    if (via === 'paste') {
+      const node = h.boardRef.current!.nodes.at(-1)!;
+      assert.equal(node.data.kind, 'note');
+      assert.ok(clear(getCardBounds(node), { x: 0, y: 0, width: 290, height: 124 }));
+      assert.equal(node.data.body, '原始 😀 文本\r\n保留  空格');
+    } else {
+      const created = h.boardRef.current!.nodes.slice(1);
+      const link = created.find(node => node.data.kind === 'link');
+      const note = created.find(node => node.data.kind === 'note');
+      assert.ok(link && note);
+      assert.equal(link.data.body, '');
+      assert.equal(link.data.url, 'https://example.org/a');
+      assert.equal(link.data.title, 'example.org');
+      assert.equal(note.data.body, '原始 😀 文本');
+      for (const node of created) assert.ok(clear(getCardBounds(node), { x: 0, y: 0, width: 290, height: 124 }));
+    }
     assert.equal(h.changes(), 1);
   }
 });

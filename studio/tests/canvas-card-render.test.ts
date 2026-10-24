@@ -20,7 +20,7 @@ import { assertNone, closest, getBy, getByLabel, hasAttr, hasClass, isButton, ro
 const noop = () => {};
 function render(kind: CardKind, overrides: Partial<CardActions> = {}) {
   const actions: CardActions = {
-    updateCard: () => true, openCard: noop, deleteCard: noop, duplicateCard: noop, focusSource: noop,
+    updateCard: () => true, openCard: noop, deleteCard: noop, duplicateCard: noop, addQuote: () => false, focusSource: noop,
     getMediaUrl: id => id ? 'blob:isolated-media' : undefined, activeVideo: null, inspectedId: null, playVideo: noop,
     videoPlaybackVersion: 0, getVideoPlayback: () => ({ time: 0, paused: true }), bindVideoPlayer: noop,
     captureVideoPlayback: noop, restoreVideoPlayback: noop, cancelVideoImport: noop, retryVideoImport: noop,

@@ -35,7 +35,7 @@ export type InspectorPanelProps = ComponentProps<typeof Inspector>;
  * a draft waits for it behind a fully transparent placeholder and then opens with its usual motion: the editor and its
  * caret are there from the first frame, never a stand-in that the editor replaces.
  */
-export default function InspectorPanel({ node, imagePreviewToken, onClose, onImportSubtitles, onNativeTranscribe, onNotify }: InspectorPanelProps) {
+export default function InspectorPanel({ node, slot, imagePreviewToken, onClose, onImportSubtitles, onNativeTranscribe, onNotify }: InspectorPanelProps) {
   // Direct or lazy is decided once, on the first render that shows the panel (a draft may first wait for its editor).
   const choice = useRef<ComponentType<InspectorPanelProps> | 'lazy' | null>(null);
   // Only a panel that opens waits; a draft opened while another card's panel is showing switches at once, as cards do
@@ -51,18 +51,19 @@ export default function InspectorPanel({ node, imagePreviewToken, onClose, onImp
     return () => { live = false; };
   }, [waitsForEditor, editorFailed]);
   const layout=node.data.kind==='video'?'inspector--video':'inspector--docked';
+  const slotClass=slot==='pinned'?' inspector--pinned':slot==='companion'?' inspector--companion':'';
   const style={'--inspector-w':`${readPanelWidth()}px`,...(node.data.kind==='video'?{background:'transparent',boxShadow:'none'}:{})} as CSSProperties;
   if (waitsForEditor && !editorFailed) {
-    return <aside className={`inspector ${layout} inspector--motion-none`} style={{...style,background:'transparent',boxShadow:'none',borderLeftColor:'transparent'}} aria-busy="true" aria-label="正在打开资料"><div className="inspector-loading sr-only" role="status">正在打开资料…</div></aside>;
+    return <aside className={`inspector ${layout}${slotClass} inspector--motion-none`} style={{...style,background:'transparent',boxShadow:'none',borderLeftColor:'transparent'}} aria-busy="true" aria-label="正在打开资料"><div className="inspector-loading sr-only" role="status">正在打开资料…</div></aside>;
   }
   choice.current ??= loadedInspector?.default ?? 'lazy';
   if (choice.current !== 'lazy') {
     const Loaded = choice.current;
-    return <Loaded key={node.id} node={node} imagePreviewToken={imagePreviewToken} onClose={onClose} onImportSubtitles={onImportSubtitles} onNativeTranscribe={onNativeTranscribe} onNotify={onNotify}/>;
+    return <Loaded key={node.id} node={node} slot={slot} imagePreviewToken={imagePreviewToken} onClose={onClose} onImportSubtitles={onImportSubtitles} onNativeTranscribe={onNativeTranscribe} onNotify={onNotify}/>;
   }
   return (
-    <Suspense fallback={<aside className={`inspector ${layout} inspector--motion-none`} style={style} aria-busy="true" aria-label="正在打开资料"><div className="inspector-loading sr-only" role="status">正在打开资料…</div></aside>}>
-      <Inspector key={node.id} node={node} imagePreviewToken={imagePreviewToken} onClose={onClose} onImportSubtitles={onImportSubtitles} onNativeTranscribe={onNativeTranscribe} onNotify={onNotify}/>
+    <Suspense fallback={<aside className={`inspector ${layout}${slotClass} inspector--motion-none`} style={style} aria-busy="true" aria-label="正在打开资料"><div className="inspector-loading sr-only" role="status">正在打开资料…</div></aside>}>
+      <Inspector key={node.id} node={node} slot={slot} imagePreviewToken={imagePreviewToken} onClose={onClose} onImportSubtitles={onImportSubtitles} onNativeTranscribe={onNativeTranscribe} onNotify={onNotify}/>
     </Suspense>
   );
 }

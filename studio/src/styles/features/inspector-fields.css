@@ -125,4 +125,18 @@
   }
   .inspector-translation__actions { display: flex; align-items: center; gap: var(--space-4); }
   .inspector-translation__hint, .inspector-translation__status { margin: 0; color: var(--fg-3); font: var(--type-meta); }
+
+  /* A pinned draft stays on the right. The left column sits against it, and hides while writing is full screen. */
+  .workspace-body:has(.inspector--pinned.inspector--writing-expanded) > .inspector--companion { display: none; }
+  @media (max-width: 999px) {
+    .inspector--pinned.inspector--docked::before { content: none; }
+    .inspector--companion.inspector--docked { right: min(400px, calc(100% - var(--space-11))); }
+  }
+  .watch-description__text {
+    margin: 0;
+    color: var(--fg-2);
+    font: var(--type-ui);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
 }

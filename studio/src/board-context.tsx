@@ -88,7 +88,7 @@ export function useBoard() { const value = useContext(BoardContext); if (!value)
 
 // Canvas cards do not subscribe to board text, positions or draft navigation.
 export type CardActions = Pick<BoardActions,
-  | 'updateCard' | 'openCard' | 'deleteCard' | 'duplicateCard' | 'focusSource'
+  | 'updateCard' | 'openCard' | 'deleteCard' | 'duplicateCard' | 'addQuote' | 'focusSource'
   | 'getMediaUrl' | 'getMediaStatus' | 'retryMedia' | 'activeVideo' | 'inspectedId' | 'playVideo'
   | 'videoPlaybackVersion' | 'getVideoPlayback' | 'bindVideoPlayer'
   | 'captureVideoPlayback' | 'restoreVideoPlayback'

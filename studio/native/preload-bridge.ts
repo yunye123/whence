@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { FieldTranslateAPI, FieldVideoImportsAPI, FieldBoardStorageAPI, FieldFileExportAPI, FieldPdfAPI, FieldXImportsAPI, VideoImportTask } from './contracts';
+import type { FieldTranslateAPI, FieldVideoImportsAPI, FieldBoardStorageAPI, FieldFileExportAPI, FieldPdfAPI, FieldWebPageAPI, FieldXImportsAPI, VideoImportTask } from './contracts';
 
 export function exposeVideoImports(): void {
   const request = (channel: string, ...args: unknown[]) => ipcRenderer.invoke(channel, ...args).catch(error => {
@@ -33,6 +33,8 @@ export function exposeVideoImports(): void {
   contextBridge.exposeInMainWorld('fieldXImports', xImports);
   const translate: FieldTranslateAPI = { translate: input => request('studio:translate-english', input) as ReturnType<FieldTranslateAPI['translate']> };
   contextBridge.exposeInMainWorld('fieldTranslate', translate);
+  const webPage: FieldWebPageAPI = { fetch: url => request('studio:fetch-web-page', url) as ReturnType<FieldWebPageAPI['fetch']> };
+  contextBridge.exposeInMainWorld('fieldWebPage', webPage);
 }
 
 /**

@@ -19,9 +19,11 @@ export interface CardData extends Record<string, unknown> {
   nativeImportJobId?: string; videoImport?: VideoImportState;
   sourceUrl?: string; sourceOriginalText?: string;
   sourceStatus?: string; sourceAuthor?: string; sourceTitle?: string;
+  /** English description from the video's info.json. Not a SQLite Source field. At most 20,000 characters. */
+  sourceDescription?: string;
   /** When a source card (video, image, link, text material) was collected into its board, ISO UTC (INSP-21). */
   collectedAt?: string;
-  /** Simplified Chinese for an English note, excerpt, or draft. The source text stays in body or citation.text. */
+  /** Simplified Chinese for an English note, excerpt, draft, link body, or video description. The source text stays put. */
   translation?: string;
   demo?: boolean;
 }

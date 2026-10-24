@@ -21,7 +21,7 @@ import { cardDataAfterEdit } from '../english-translation';
  * Making, changing and removing cards (CORE-32: moved out of App.tsx unchanged): a new card where §5.4 puts it, the
  * new-placement ring, excerpts from a film or a text (with their toast and precise undo), duplicate and delete.
  */
-export function useCardCommands({boardRef,workspaceRef,readOnlyRef,measurements,measurementsRef,changeBoard,undoChange,notify,fieldTrace,visibleView,setSelectedIds,setSelectedEdgeIds,setView,setCanvasReveal,setContextMenu,inspectedId,setInspectedId,activeVideo,setActiveVideo,playbackRequest,playbackSession,clearDraftNavigation,showCard,closeInspectorRef,videoRuns,expectedAttempts,nativeTasks}:{
+export function useCardCommands({boardRef,workspaceRef,readOnlyRef,measurements,measurementsRef,changeBoard,undoChange,notify,fieldTrace,visibleView,setSelectedIds,setSelectedEdgeIds,setView,setCanvasReveal,setContextMenu,releaseCards,activeVideo,setActiveVideo,playbackRequest,playbackSession,clearDraftNavigation,showCard,closeInspectorRef,videoRuns,expectedAttempts,nativeTasks}:{
   boardRef:RefObject<Board|null>;
   workspaceRef:RefObject<Workspace|null>;
   readOnlyRef:RefObject<boolean>;
@@ -37,14 +37,13 @@ export function useCardCommands({boardRef,workspaceRef,readOnlyRef,measurements,
   setView:Dispatch<SetStateAction<CanvasView>>;
   setCanvasReveal:Dispatch<SetStateAction<CanvasRevealRequest|null>>;
   setContextMenu:Dispatch<SetStateAction<{x:number;y:number}|null>>;
-  inspectedId:string|null;
-  setInspectedId:Dispatch<SetStateAction<string|null>>;
+  releaseCards:(ids:string[])=>void;
   activeVideo:string|null;
   setActiveVideo:Dispatch<SetStateAction<string|null>>;
   playbackRequest:RefObject<number>;
   playbackSession:RefObject<VideoPlaybackSession>;
   clearDraftNavigation:()=>void;
-  showCard:(id:string,known?:BoardNode)=>void;
+  showCard:(id:string,known?:BoardNode,options?:{dismissWatch?:boolean})=>void;
   closeInspectorRef:RefObject<()=>void>;
   videoRuns:RefObject<Map<string,{boardId:string;attemptId:string;controller:AbortController}>>;
   expectedAttempts:RefObject<Map<string,number>>;
@@ -95,9 +94,9 @@ export function useCardCommands({boardRef,workspaceRef,readOnlyRef,measurements,
     if(!changeBoard(b=>({...b,nodes:[...b.nodes,node]})))return;
     setSelectedIds([node.id]);setSelectedEdgeIds([]);setContextMenu(null);markFresh([node.id]);
     if(kind==='draft'||kind==='link'){
-      // A new draft opens its writing panel: the editor chunk starts now (CORE-32).
-      if(kind==='draft')void preloadDraftEditor().catch(()=>{});
-      playbackRequest.current++;clearDraftNavigation();setInspectedId(node.id);
+      // A new draft opens its writing panel: the editor chunk starts now (CORE-32). A new link opens beside a pinned draft.
+      if(kind==='draft'){void preloadDraftEditor().catch(()=>{});playbackRequest.current++;clearDraftNavigation();}
+      showCard(node.id,node);
       setCanvasReveal({boardId:current.id,ids:[node.id],instant:false,whenInspected:node.id});
       if(kind==='draft')focusWhenReady('.inspector [aria-label="文稿正文"]');
     }else{
@@ -105,7 +104,7 @@ export function useCardCommands({boardRef,workspaceRef,readOnlyRef,measurements,
       if(kind==='note')beginNoteEdit(node.id);
     }
     return node;
-  },[beginNoteEdit,changeBoard,clearDraftNavigation,focusWhenReady,markFresh,visibleView]);
+  },[beginNoteEdit,changeBoard,clearDraftNavigation,focusWhenReady,markFresh,showCard,visibleView]);
   const deleteCards=useCallback((ids:string[])=>{
     if(!ids.length||readOnlyRef.current)return;
     for(const node of boardRef.current?.nodes.filter(item=>ids.includes(item.id)&&pendingImport(item.data.videoImport?.status))??[]){
@@ -116,14 +115,14 @@ export function useCardCommands({boardRef,workspaceRef,readOnlyRef,measurements,
     const removedNodes=before?.nodes.filter(node=>ids.includes(node.id))??[];
     const removedEdges=before?.edges.filter(edge=>ids.includes(edge.source)||ids.includes(edge.target))??[];
     if(!before||!changeBoard(b=>({...b,nodes:b.nodes.filter(n=>!ids.includes(n.id)),edges:b.edges.filter(e=>!ids.includes(e.source)&&!ids.includes(e.target))})))return;
-    if(inspectedId&&ids.includes(inspectedId))setInspectedId(null);if(activeVideo&&ids.includes(activeVideo)){playbackRequest.current++;playbackSession.current.stop();setActiveVideo(null);}setSelectedIds([]);
+    releaseCards(ids);if(activeVideo&&ids.includes(activeVideo)){playbackRequest.current++;playbackSession.current.stop();setActiveVideo(null);}setSelectedIds([]);
     // “已移除 3 张卡片　[撤销]” (§8.3 #9): puts back exactly these cards and their lines.
     notify(`已移除 ${removedNodes.length||ids.length} 张卡片`,{undo:undoChange(before.id,b=>{
       const present=new Set(b.nodes.map(node=>node.id));
       const nodes=[...b.nodes,...removedNodes.filter(node=>!present.has(node.id))];const all=new Set(nodes.map(node=>node.id));const edgeIds=new Set(b.edges.map(edge=>edge.id));
       return {...b,nodes,edges:[...b.edges,...removedEdges.filter(edge=>!edgeIds.has(edge.id)&&all.has(edge.source)&&all.has(edge.target))]};
     })});
-  },[activeVideo,changeBoard,inspectedId,notify,undoChange]);
+  },[activeVideo,changeBoard,notify,releaseCards,undoChange]);
   const duplicateCardAction=useCallback((id:string)=>{const current=boardRef.current;const n=current?.nodes.find(n=>n.id===id);if(!n||!current)return;const original=duplicateNode(n);const raw=measurementsRef.current;const [copy]=placeCards([original],current.nodes,{origin:original.position,measurements:raw,bounds:captionPlacementBounds(current.nodes,raw)});if(changeBoard(b=>({...b,nodes:[...b.nodes,copy]}))){setSelectedIds([copy.id]);markFresh([copy.id]);}},[changeBoard,markFresh]);
   const placeQuotes=(current:Board,batch:{board:Board;quotes:BoardNode[]})=>{
     const quotes=avoidCaptionObstacles(batch.quotes,current.nodes,measurementsRef.current);
@@ -166,12 +165,13 @@ export function useCardCommands({boardRef,workspaceRef,readOnlyRef,measurements,
       if(!changed||!quotes.length)return false;
       const ids=quotes.map(quote=>quote.id);const first=ids[0];
       notifyExcerpt(boardId,quotes);fieldTrace.tie(ids);markFresh(ids);
-      playbackRequest.current++;clearDraftNavigation();showCard(first,quotes[0]);
+      // The quote has to be visible: a watch page would cover it, so that page steps aside first.
+      showCard(first,quotes[0],{dismissWatch:true});
       setCanvasReveal({boardId,ids:[first],instant:false,whenInspected:first});
       // The quote panel's “我的理解” field (CardBodySection, label for=card-body).
       focusWhenReady('.inspector textarea.inspector-mine');
       return true;
     }catch(error){notify(errorMessage(error));return false;}
-  },[changeBoard,clearDraftNavigation,fieldTrace,focusWhenReady,markFresh,measurements,notify,notifyExcerpt,showCard]);
+  },[changeBoard,fieldTrace,focusWhenReady,markFresh,measurements,notify,notifyExcerpt,showCard]);
   return {freshCardIds,updateCard,markFresh,addCard,deleteCards,duplicateCardAction,addQuote,addTextQuote,addQuoteAndAnnotate};
 }

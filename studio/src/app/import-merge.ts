@@ -24,12 +24,13 @@ export function prepareVideoImportUpdate(target:Board,nodeId:string,attemptId:st
   const node=target.nodes.find(item=>item.id===nodeId);
   if(!node?.data.videoImport||node.data.videoImport.attemptId!==attemptId)return {valid:false};
   const old=node.data.videoImport;
-  const {body:_body,title:materialTitle,videoImport:_task,sourceUrl:_sourceUrl,sourceOriginalText:_sourceText,sourceStatus:_sourceStatus,sourceAuthor:_sourceAuthor,sourceTitle:_sourceTitle,tags:_tags,...providedMedia}=material;
+  const {body:_body,title:materialTitle,videoImport:_task,sourceUrl:_sourceUrl,sourceOriginalText:_sourceText,sourceStatus:_sourceStatus,sourceAuthor:_sourceAuthor,sourceTitle:_sourceTitle,sourceDescription:_sourceDescription,tags:_tags,...providedMedia}=material;
   let media:Partial<CardData>=Object.fromEntries(Object.entries(providedMedia).filter(([key,value])=>value!==undefined||key==='nativeImportJobId'));
   if(!isXUrl(old.url)){
     if(_sourceAuthor!==undefined)media.sourceAuthor=_sourceAuthor;
     if(_sourceTitle!==undefined)media.sourceTitle=_sourceTitle;
     if(_sourceStatus!==undefined)media.sourceStatus=_sourceStatus;
+    if(_sourceDescription!==undefined)media.sourceDescription=_sourceDescription;
   }
   for(const key of ['mediaId','poster','nativeMediaWarning'] as const)if(keepCachedImportMedia(node.data,material,key))delete media[key];
   if(differentNativeAsset(node.data,material)){media.mediaId=material.mediaId;media.poster=material.poster;media.transcript=material.transcript;}
