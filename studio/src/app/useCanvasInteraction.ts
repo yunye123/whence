@@ -93,10 +93,11 @@ export function useCanvasHandlers({boardRef,workspaceRef,readOnlyRef,modal,conte
     if(substantive.some(c=>c.type==='dimensions'&&c.resizing===false)&&resizeSnapshot.current){pushHistory(resizeSnapshot.current);resizeSnapshot.current=null;}
   },[changeBoard,pushHistory,flow,measurements,smartSnap]);
   const onEdgesChange=useCallback((changes:EdgeChange[])=>{const selection=changes.filter(change=>change.type==='select');if(selection.length)setSelectedEdgeIds(current=>{const ids=new Set(current);for(const change of selection)if(change.type==='select'){if(change.selected)ids.add(change.id);else ids.delete(change.id);}return [...ids];});const edits=storedEdgeChanges(changes.filter(c=>c.type!=='select'));if(edits.length)changeBoard(b=>({...b,edges:applyEdgeChanges(edits,b.edges)}));},[changeBoard]);
-  const onSelectionChange=useCallback(({nodes,edges}:OnSelectionChangeParams)=>{
-    const ids=nodes.map(n=>n.id);const edgeIds=edges.map(e=>e.id);
+  const onSelectionChange=useCallback(({nodes}:OnSelectionChangeParams)=>{
+    // 连线的选中只由 onEdgesChange 维护。这里不能再写 selectedEdgeIds：React Flow 报告的连线选中滞后一拍，
+    // 框选扫到连线时会和 flowEdges 的 selected 互相改写，形成“Maximum update depth exceeded”死循环。
+    const ids=nodes.map(n=>n.id);
     setSelectedIds(old=>old.length===ids.length&&old.every((id,i)=>id===ids[i])?old:ids);
-    setSelectedEdgeIds(old=>old.length===edgeIds.length&&old.every((id,i)=>id===edgeIds[i])?old:edgeIds);
   },[]);
   const connectCards=useCallback((source:string,target:string)=>{
     const current=boardRef.current;

@@ -10,6 +10,7 @@
 - 修复：链接卡工具栏的“打开网页”在桌面版点了没有反应。桌面版会拦截页面自行打开新窗口，现在改为通过系统浏览器打开，失败时给出提示。
 - 修复：内置示例画布里，文章卡与链接卡、视频卡与剧照互相压住的问题，现在卡片之间留有间距。
 - 修复：欢迎页启动时偶发的 `ResizeObserver loop completed with undelivered notifications` 报错；新增冷启动回归测试（需先构建并预览，不属于 `npm test`）。
+- 修复：用鼠标拖动框选画布时界面崩溃（“界面出了错 / Maximum update depth exceeded”）。框选扫到已保存的连线时，连线的选中状态被两处代码互相改写成死循环，现在只由一处维护；新增框选回归测试 `studio/tests/marquee-select.browser.mjs`（需先启动开发服务，不属于 `npm test`）。
 
 ### English
 
@@ -17,6 +18,7 @@
 - Fix: the "Open page" button on a link card did nothing in the desktop app, because the desktop shell blocks pages from opening windows themselves. It now opens in the system browser and shows a message if that fails.
 - Fix: in the built-in example boards, the article card overlapped the link card, and the video card overlapped its stills. The cards now keep a gap.
 - Fix: an occasional `ResizeObserver loop completed with undelivered notifications` error when the welcome screen starts. Added a cold-start regression test (it needs a build and preview first, so it is not part of `npm test`).
+- Fix: dragging a selection box on the canvas crashed the app ("界面出了错" / "Maximum update depth exceeded"). When the box swept over a saved line, two pieces of code kept overwriting that line's selected state in a loop; it is now maintained in one place. Added a marquee-select regression test, `studio/tests/marquee-select.browser.mjs` (it needs the dev server running, so it is not part of `npm test`).
 
 ## 0.1.0 — MVP
 
