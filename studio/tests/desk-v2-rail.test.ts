@@ -14,7 +14,7 @@ test('rail owns the sole hint in a persistent middle slot; ReactFlow layers no l
   })));
   const middle = getBy(rail, { className: 'canvas-rail__hint' });
   assert.ok(hasClass(getBy(rail, { className: 'canvas-rail' }), 'canvas-rail'));
-  assert.ok(textContent(getBy(middle, { className: 'canvas-hint' })).includes('按住空格拖动画布'));
+  assert.ok(textContent(getBy(middle, { className: 'canvas-hint' })).includes('按住空格再用左键'));
   assertNone(rail, { attrs: { 'data-canvas-overlay': true } });
   const layers = renderToStaticMarkup(createElement(ReactFlowProvider, null, createElement(CanvasLayers, { guides: [] })));
   for (const className of ['canvas-hint', 'canvas-hint-panel', 'react-flow__background']) assertNone(layers, { className });

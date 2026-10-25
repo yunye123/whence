@@ -24,7 +24,7 @@ export function CanvasHint({ readOnly = false }: { readOnly?: boolean }) {
     window.addEventListener('wheel', pane, { capture: true, passive: true });
     return () => { window.clearTimeout(timer); window.removeEventListener('pointerdown', pane, true); window.removeEventListener('wheel', pane, true); };
   }, [hint]);
-  return hint ? <p className="canvas-hint"><span>按住<kbd>空格</kbd>拖动画布</span>{canWrite && <span>双击空白处写笔记</span>}</p> : null;
+  return hint ? <p className="canvas-hint"><span>右键拖动画布，或按住<kbd>空格</kbd>再用左键</span>{canWrite && <span>双击空白处写笔记</span>}</p> : null;
 }
 
 /** Only snap guides stay inside ReactFlow. Keep optional legacy props compatible with existing App calls. */

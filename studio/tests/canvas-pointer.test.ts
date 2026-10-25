@@ -1,12 +1,22 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { nodeFlowBox, nodeFullyInside, pointerDragged, POINTER_DRAG_THRESHOLD } from '../src/app/canvas-pointer';
+import { nodeFlowBox, nodeFullyInside, nodeOverlaps, pointerDragged, POINTER_DRAG_THRESHOLD } from '../src/app/canvas-pointer';
 
-test('a right-drag counts only after the same 4px threshold as a card drag', () => {
+test('a drag counts only after the same 4px threshold as a card drag', () => {
   assert.equal(POINTER_DRAG_THRESHOLD, 4);
   assert.equal(pointerDragged(3, 0), false);
   assert.equal(pointerDragged(0, 4), false);
   assert.equal(pointerDragged(5, 0), true);
+});
+
+test('a card counts when the box covers any part of it', () => {
+  const card = { x: 10, y: 10, width: 20, height: 20 };
+  assert.equal(nodeOverlaps(card, { x: 0, y: 0, width: 40, height: 40 }), true);
+  assert.equal(nodeOverlaps(card, { x: 12, y: 12, width: 30, height: 30 }), true, 'a box inside a card selects it');
+  assert.equal(nodeOverlaps(card, { x: 0, y: 0, width: 25, height: 40 }), true, 'a card that sticks out still counts');
+  assert.equal(nodeOverlaps(card, { x: 29, y: 12, width: 8, height: 4 }), true, 'covering the edge counts');
+  assert.equal(nodeOverlaps(card, { x: 40, y: 10, width: 10, height: 10 }), false);
+  assert.equal(nodeOverlaps({ x: 0, y: 0, width: 0, height: 10 }, card), false);
 });
 
 test('a card counts only when the whole card is inside the box', () => {

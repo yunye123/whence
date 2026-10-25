@@ -343,7 +343,7 @@ function Studio() {
                     onPaneClick={()=>{setContextMenu(null);setSelectedIds([]);}}
                     onPaneContextMenu={e=>{e.preventDefault();if(!readOnly)setContextMenu({x:e.clientX,y:e.clientY});}}
                     onDoubleClick={e=>{if(effectiveTool==='select'&&!readOnly&&!e.shiftKey&&(e.target as HTMLElement).classList.contains('react-flow__pane'))addCard('note',flow.screenToFlowPosition({x:e.clientX,y:e.clientY}));}}
-                    panOnDrag={effectiveTool==='hand'?true:[0,1]}
+                    panOnDrag={effectiveTool==='hand'?[0,1,2]:[1,2]}
                     selectionOnDrag={false}
                     panActivationKeyCode="Space"
                     multiSelectionKeyCode="Shift"

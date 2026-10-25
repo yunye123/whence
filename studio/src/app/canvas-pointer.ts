@@ -15,6 +15,13 @@ export function nodeFullyInside(node: FlowBox, box: FlowBox, epsilon = 0.5): boo
     && node.y + node.height <= box.y + box.height + epsilon;
 }
 
+/** A card counts when the box covers any part of it, including a box drawn inside the card. */
+export function nodeOverlaps(node: FlowBox, box: FlowBox, epsilon = 0.5): boolean {
+  if (node.width <= 0 || node.height <= 0 || box.width <= 0 || box.height <= 0) return false;
+  return node.x < box.x + box.width + epsilon && box.x < node.x + node.width + epsilon
+    && node.y < box.y + box.height + epsilon && box.y < node.y + node.height + epsilon;
+}
+
 export function nodeFlowBox(node: {
   position: { x: number; y: number };
   measured?: { width?: number; height?: number };

@@ -26,9 +26,10 @@ export function useKeyboardModality() {
 export function useSpacePan({modal,view,setPanPressed}:{modal:Modal;view:CanvasView;setPanPressed:Dispatch<SetStateAction<boolean>>}) {
   useEffect(()=>{
     setPanPressed(false);
-    const down=(event:KeyboardEvent)=>{if(event.code==='Space'&&!event.repeat&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.isComposing&&!modal&&view==='canvas'&&!editableTarget(event.target)&&!isCardControlTarget(event.target)){event.preventDefault();event.stopPropagation();setPanPressed(true);}};
-    const up=(event:KeyboardEvent)=>{if(event.code==='Space')setPanPressed(false);};
-    const reset=()=>setPanPressed(false);
+    delete document.documentElement.dataset.spacePan;
+    const down=(event:KeyboardEvent)=>{if(event.code==='Space'&&!event.repeat&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.isComposing&&!modal&&view==='canvas'&&!editableTarget(event.target)&&!isCardControlTarget(event.target)){event.preventDefault();event.stopPropagation();document.documentElement.dataset.spacePan='1';setPanPressed(true);}};
+    const up=(event:KeyboardEvent)=>{if(event.code==='Space'){delete document.documentElement.dataset.spacePan;setPanPressed(false);}};
+    const reset=()=>{delete document.documentElement.dataset.spacePan;setPanPressed(false);};
     window.addEventListener('keydown',down,true);window.addEventListener('keyup',up,true);window.addEventListener('blur',reset);
     return()=>{window.removeEventListener('keydown',down,true);window.removeEventListener('keyup',up,true);window.removeEventListener('blur',reset);};
   },[modal,view]);
