@@ -1,14 +1,16 @@
 {
   "name": "field-creator-canvas",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
+  "main": "studio/dist-native/main.cjs",
   "scripts": {
     "postinstall": "node node_modules/electron/install.js",
     "runtime:install": "node node_modules/electron/install.js",
     "dev": "node studio/scripts/launch.mjs",
     "dev:browser": "node studio/scripts/launch.mjs --browser",
     "build": "npm run build --prefix studio && node studio/scripts/build-native.mjs",
+    "dist": "node studio/scripts/dist-desktop.mjs",
     "start": "node studio/scripts/launch.mjs --production-root studio/dist --native-entry studio/dist-native/main.cjs",
     "test": "npm test --prefix studio",
     "test:e2e": "node studio/scripts/mvp-smoke.mjs"
@@ -49,6 +51,7 @@
     "@types/yazl": "3.3.1",
     "@vitejs/plugin-react": "6.1.1",
     "electron": "44.5.0",
+    "electron-builder": "26.18.0",
     "esbuild": "0.28.2",
     "playwright": "1.63.0",
     "postcss": "8.5.29",

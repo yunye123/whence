@@ -1,0 +1,60 @@
+# Unsigned desktop installers. Signing identity is null, Windows signing is off, and notarization is off.
+# field.icns is rasterized from studio/desktop-assets/field.svg. field.ico keeps its file name.
+appId: com.yunye.whence
+productName: 来处
+extraMetadata:
+  productName: 来处
+publish: null
+npmRebuild: false
+forceCodeSigning: false
+directories:
+  output: release
+# "!**/*" is first so production node_modules are not copied. The app is already bundled.
+files:
+  - "!**/*"
+  - package.json
+  - studio/dist/**/*
+  - studio/dist-native/**/*
+  - "!studio/dist-native/**/*.map"
+  - "!studio/dist-native/build-info.json"
+  - studio/native/workers/**/*
+  - studio/desktop-assets/field.ico
+  - studio/desktop-assets/field.icns
+  - studio/THIRD_PARTY_NOTICES.txt
+asarUnpack:
+  - "**/native/workers/**"
+mac:
+  icon: studio/desktop-assets/field.icns
+  category: public.app-category.productivity
+  darkModeSupport: true
+  identity: null
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  notarize: false
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  artifactName: whence-${version}-mac-${arch}.${ext}
+dmg:
+  sign: false
+  writeUpdateInfo: false
+  artifactName: whence-${version}-mac-${arch}.${ext}
+win:
+  icon: studio/desktop-assets/field.ico
+  signExecutable: false
+  verifyUpdateCodeSignature: false
+  target:
+    - target: nsis
+      arch:
+        - x64
+  artifactName: whence-${version}-win-${arch}.${ext}
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  differentialPackage: false
+  installerIcon: studio/desktop-assets/field.ico
+  uninstallerIcon: studio/desktop-assets/field.ico
+  artifactName: whence-${version}-win-${arch}.${ext}

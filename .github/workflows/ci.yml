@@ -19,3 +19,41 @@ jobs:
         env:
           FIELD_TEST_CHANNEL: chromium
       - run: npm run build
+  package-windows:
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run dist
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: whence-windows
+          path: release/whence-*-win-x64.exe
+          if-no-files-found: error
+  package-macos:
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run dist
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: whence-macos
+          path: |
+            release/whence-*-mac-x64.dmg
+            release/whence-*-mac-arm64.dmg
+          if-no-files-found: error

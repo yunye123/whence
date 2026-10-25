@@ -4,6 +4,6 @@
 
 Issues and pull requests in Chinese or English are welcome. Include your OS, version, reproduction steps, and expected and actual behavior. Remove personal content from screenshots.
 
-Use Node.js 24. Run `npm ci`, `npm test`, and `npm run build` from the repository root. Use `npm run dev` for the desktop development window. Make focused changes and verify affected user flows in the app. Commit neither local profiles nor media libraries.
+Use Node.js 24. Run `npm ci`, `npm test`, and `npm run build` from the repository root. Use `npm run dev` for the desktop development window. `npm run build` is not an installer; `npm run dist` builds the unsigned Windows or macOS package on that operating system. Make focused changes and verify affected user flows in the app. Commit neither local profiles nor media libraries.
 
 Keep `field` storage keys, the `field://` scheme and export format identifiers compatible with existing data. The public name is 来处 / whence. Original contributions are licensed under MIT; preserve third-party notices and font licenses.
