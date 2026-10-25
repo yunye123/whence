@@ -2,7 +2,7 @@
 
 [简体中文](GETTING_STARTED.md) · [Back to the introduction](../README.en.md)
 
-This guide covers **MVP 0.1.0**. The application UI is in Simplified Chinese, so the guide retains Chinese control labels alongside English explanations. Windows 11 has been checked in actual use. macOS, Linux, and video download and transcription workflows on a fresh machine have not yet been verified.
+This guide covers **0.2.0**. The application UI is in Simplified Chinese, so the guide retains Chinese control labels alongside English explanations. Windows 11 has been checked by running from source. macOS, Linux, and video download and transcription workflows on a fresh machine have not yet been verified. The installers are produced by GitHub Actions and are not code-signed.
 
 ## 1. Set up and launch
 
@@ -21,7 +21,7 @@ npm run build
 npm start
 ```
 
-`npm ci` installs dependencies from the lockfile and needs network access; the Electron download may also be affected by network restrictions. `npm run build` builds the application, and `npm start` opens the desktop window. These commands do not produce a signed installer.
+`npm ci` installs dependencies from the lockfile and needs network access; the Electron download may also be affected by network restrictions. `npm run build` builds the application, and `npm start` opens the desktop window. `npm run build` itself is not an installer.
 
 To work on the source, run this from the root:
 
@@ -37,7 +37,39 @@ npm test
 
 Browser contract tests use Playwright's bundled Chromium unless `FIELD_TEST_CHANNEL` is set, in which case they use that channel. After `npm run build`, run `npm run test:e2e` for the real desktop core-flow check. It opens isolated test windows, uses localhost port 5198, and stores temporary data and reports in the ignored `studio/output/` directory.
 
-Daily application data lives in `studio/.native-profile/` and is not committed to Git. Export a backup before moving computers or replacing your source directory. After the first build, Windows users can also double-click `Start Whence.cmd` at the repository root.
+When you run from source, daily application data still lives in `studio/.native-profile/` and is not committed to Git. The installer product name 来处 does not move that folder. `npm start` and `npm run dev` both use it. Export a backup before moving computers or replacing your source directory. After the first build, Windows users can also double-click `Start Whence.cmd` at the repository root. That still launches the source tree, not the installer.
+
+### Unsigned installers
+
+The packaging command is:
+
+```sh
+npm run dist
+```
+
+It runs the same build as `npm run build`, then packages it.
+
+| System | Output |
+| --- | --- |
+| Windows | An NSIS installer, x64 only: `whence-0.2.0-win-x64.exe` |
+| macOS | Two disk images: `whence-0.2.0-mac-x64.dmg` (Intel) and `whence-0.2.0-mac-arm64.dmg` (Apple silicon) |
+| Linux | Neither installer can be built here. Download the Actions artifacts below. Do not use Wine to produce a Mac package. |
+
+These packages have no Windows certificate, Apple notarization, or Developer ID, and no in-app auto-update. The existing `v0.1.0` git tag stays where it is; 0.2.0 does not add another tag. The installers are workflow artifacts, not a GitHub Release.
+
+Download:
+
+1. Open <https://github.com/yunye123/whence/actions> and the workflow named Build and test.
+2. Open the run for the commit you want. A pull request check is another way in.
+3. At the bottom of that run, download the `whence-windows` or `whence-macos` artifact and unzip it. The files inside use the names in the table.
+
+After installation the displayed name is 来处. The application inside the disk image is named 来处.
+
+The first time you open it on a Mac, do not rely on a double-click. Control-click or right-click 来处, choose Open, then confirm Open in the dialog. macOS says the developer cannot be verified, because the package is not notarized. After you confirm once, later launches can use a double-click.
+
+Windows SmartScreen may say “Windows protected your PC” during install or the first launch. Choose More info, then Run anyway. The installer has no certificate. Continue only when you trust the file you downloaded from the Actions run above.
+
+The installed app does not use `studio/.native-profile/`. Its files are in a user-data folder named `whence`: `%APPDATA%\whence` on Windows and `~/Library/Application Support/whence` on macOS. The two profiles are not merged. `field`, `field://`, and the IndexedDB name `field-creator-workspace` are unchanged.
 
 If the Electron download fails, restore network access and retry with `npm run runtime:install`. When using a network proxy, ensure the terminal's Node.js process can also reach GitHub.
 

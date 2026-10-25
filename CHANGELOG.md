@@ -4,8 +4,11 @@
 
 ## 未发布 / Unreleased
 
+## 0.2.0
+
 ### 中文
 
+- 新增：未签名的 Windows NSIS 安装包（仅 x64）和 macOS dmg（x64、arm64 各一份）。没有代码签名、Apple 公证或应用内自动更新。`npm start` 的资料仍在 `studio/.native-profile/`；安装后的资料在名为 `whence` 的用户数据目录，不与开发目录合并。
 - 新增：桌面版可以把笔记、摘录、文稿和逐字稿里的英语译成简体中文。原文保留，译文写在同一张卡片或同一句字幕上。启动前设置 `CANVAS_TRANSLATE_API_KEY`，可选 `CANVAS_TRANSLATE_BASE_URL` 与 `CANVAS_TRANSLATE_MODEL`。请求的做法改编自 Zara Zhang 的 [youtube-digest](https://github.com/zarazhangrui/youtube-digest)（MIT）。
 - 修复：链接卡工具栏的“打开网页”在桌面版点了没有反应。桌面版会拦截页面自行打开新窗口，现在改为通过系统浏览器打开，失败时给出提示。
 - 修复：内置示例画布里，文章卡与链接卡、视频卡与剧照互相压住的问题，现在卡片之间留有间距。
@@ -14,6 +17,7 @@
 
 ### English
 
+- Add: unsigned installers — a Windows NSIS package (x64 only) and macOS dmg files (one x64, one arm64). There is no code signing, Apple notarization, or in-app auto-update. `npm start` still stores data in `studio/.native-profile/`. The installed app stores data in a user-data folder named `whence`, separate from the development profile.
 - Add: the desktop app can translate English in notes, excerpts, drafts, and transcripts into Simplified Chinese. The source stays in place, and the translation is stored on the same card or transcript line. Set `CANVAS_TRANSLATE_API_KEY` before launch. `CANVAS_TRANSLATE_BASE_URL` and `CANVAS_TRANSLATE_MODEL` are optional. The request behavior is adapted from Zara Zhang's [youtube-digest](https://github.com/zarazhangrui/youtube-digest) (MIT).
 - Fix: the "Open page" button on a link card did nothing in the desktop app, because the desktop shell blocks pages from opening windows themselves. It now opens in the system browser and shows a message if that fails.
 - Fix: in the built-in example boards, the article card overlapped the link card, and the video card overlapped its stills. The cards now keep a gap.

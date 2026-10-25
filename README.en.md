@@ -6,7 +6,7 @@
 
 whence is a local creative canvas for writers, video creators, and creative professionals. Keep text, images, and video together, extract useful passages, connect ideas, and develop a draft. Excerpts retain their sources so you can return to the original text or video timestamp while writing.
 
-The current version is **MVP 0.1.0**. The application UI is in **Simplified Chinese**. English documentation does not imply an English interface.
+The current version is **0.2.0**. The application UI is in **Simplified Chinese**. English documentation does not imply an English interface.
 
 ![whence in light mode: sources, excerpts, and drafts in one workspace](docs/images/canvas-light.png)
 
@@ -46,7 +46,7 @@ npm run dev
 npm test
 ```
 
-The application has been run and checked on Windows 11. macOS and Linux have not yet been verified. These instructions run the source; the build command does not produce a signed installer. See [Getting started](docs/GETTING_STARTED.en.md) for setup and your first canvas.
+The application has been run from source and checked on Windows 11. macOS and Linux have not yet been verified. The commands above run the source. `npm run build` itself is not an installer. Unsigned Windows NSIS and macOS dmg packages, and the system prompts on first open, are in [Getting started](docs/GETTING_STARTED.en.md#unsigned-installers).
 
 ## Local use and MVP limitations
 

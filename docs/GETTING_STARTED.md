@@ -2,7 +2,7 @@
 
 [English](GETTING_STARTED.en.md) · [返回介绍](../README.md)
 
-本指南适用于 **MVP 0.1.0**。应用界面为简体中文。Windows 11 已有实际运行验证；macOS、Linux 以及全新机器上的视频下载与自动转写流程暂未验证。
+本指南适用于 **0.2.0**。应用界面为简体中文。Windows 11 已有源码运行验证；macOS、Linux 以及全新机器上的视频下载与自动转写流程暂未验证。安装包由 GitHub Actions 生成，没有代码签名。
 
 ## 1. 准备与启动
 
@@ -21,7 +21,7 @@ npm run build
 npm start
 ```
 
-`npm ci` 按锁文件安装依赖，需要网络；Electron 下载也可能受网络影响。`npm run build` 构建应用，`npm start` 打开桌面窗口。这些命令不会生成签名安装包。
+`npm ci` 按锁文件安装依赖，需要网络；Electron 下载也可能受网络影响。`npm run build` 构建应用，`npm start` 打开桌面窗口。`npm run build` 本身不是安装包。
 
 需要修改源码时，在根目录运行：
 
@@ -37,7 +37,39 @@ npm test
 
 测试中的浏览器契约检查在未设置 `FIELD_TEST_CHANNEL` 时使用 Playwright 自带的 Chromium；设置该变量后仍走指定通道。执行 `npm run build` 后，可运行 `npm run test:e2e` 完成桌面核心流程检查：它会打开独立测试窗口，在忽略的 `studio/output/` 内保存临时资料与报告，并使用本机端口 5198。
 
-日常资料保存在 `studio/.native-profile/`，不会提交到 Git。迁移电脑或更新源码前请导出备份。首次构建后也可双击根目录的 `Start Whence.cmd` 启动。
+用源码运行时，日常资料仍保存在 `studio/.native-profile/`，不会提交到 Git，也不会因为安装包的产品名是「来处」而改到别处。`npm start` 和 `npm run dev` 都是这条路径。迁移电脑或更新源码前请导出备份。首次构建后也可双击根目录的 `Start Whence.cmd`，那仍是源码启动，不是安装包。
+
+### 未签名安装包
+
+生成安装包的命令是：
+
+```sh
+npm run dist
+```
+
+它会先执行与 `npm run build` 相同的构建，再打包。
+
+| 系统 | 产物 |
+| --- | --- |
+| Windows | NSIS 安装包，只有 x64：`whence-0.2.0-win-x64.exe` |
+| macOS | 两份 dmg：`whence-0.2.0-mac-x64.dmg`（Intel）和 `whence-0.2.0-mac-arm64.dmg`（Apple 芯片） |
+| Linux | 打不出这两种安装包。请下载下面的 Actions 产物。不要用 Wine 做一个 Mac 包。 |
+
+这些包没有 Windows 证书，也没有 Apple 公证或 Developer ID，没有应用内自动更新。仓库里的 `v0.1.0` 标签保持不动；0.2.0 不另打 git tag。安装包不在 GitHub Release 上，而在 Actions 的构建产物里。
+
+下载：
+
+1. 打开 <https://github.com/yunye123/whence/actions>，进入名为 Build and test 的工作流。
+2. 打开一次对应提交的运行。Pull request 页面的检查项也可以点进去。
+3. 在页面底部的 Artifacts 里下载 `whence-windows` 或 `whence-macos`，解压后得到上表里的文件。
+
+安装之后，程序显示名称是「来处」。磁盘镜像里的应用也叫「来处」。
+
+Mac 第一次打开：不要只双击。在「来处」上按住 Control 点按（或右键），选择「打开」，再在对话框里确认打开。系统会提示无法验证开发者，因为这个包没有公证。确认过一次之后，以后可以双击打开。
+
+Windows SmartScreen：安装或第一次运行时，可能出现「Windows 已保护你的电脑」。选择「更多信息」，再选择「仍要运行」。这是因为安装包没有证书。只在你信任从上述 Actions 下载的文件时继续。
+
+安装包的资料不在 `studio/.native-profile/`。它单独放在名为 `whence` 的用户数据目录：Windows 是 `%APPDATA%\whence`，macOS 是 `~/Library/Application Support/whence`。两套资料不会合并。`field`、`field://` 和浏览器里的 IndexedDB 名 `field-creator-workspace` 都没有改。
 
 Electron 下载失败时，网络恢复后运行 `npm run runtime:install` 重试。使用网络代理时，需让终端的 Node.js 进程也能访问 GitHub。
 

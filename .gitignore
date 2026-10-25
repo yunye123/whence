@@ -1,6 +1,7 @@
 node_modules/
 dist/
 dist-native/
+release/
 output/
 .native-profile/
 .cache/

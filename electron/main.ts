@@ -285,13 +285,20 @@ async function requestFlush() {
   });
 }
 
+// npm start passes CANVAS_USER_DATA (studio/.native-profile). An installed app uses
+// the fixed folder name "whence", so productName 来处 does not move either profile.
 if (process.env.CANVAS_USER_DATA) app.setPath('userData', path.resolve(process.env.CANVAS_USER_DATA));
+else if (app.isPackaged) app.setPath('userData', path.join(app.getPath('appData'), 'whence'));
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
   app.on('second-instance', () => { window?.show(); window?.focus(); });
   app.whenReady().then(async () => {
     await fs.mkdir(app.getPath('userData'), { recursive: true });
     process.env.CANVAS_WORKER_DIR = path.join(studioRoot, 'native', 'workers');
+    // Python cannot read a script inside app.asar. electron-builder unpacks the worker beside it.
+    if (process.env.CANVAS_WORKER_DIR.includes(`${path.sep}app.asar${path.sep}`)) {
+      process.env.CANVAS_WORKER_DIR = process.env.CANVAS_WORKER_DIR.replace(`${path.sep}app.asar${path.sep}`, `${path.sep}app.asar.unpacked${path.sep}`);
+    }
     await canvasDesktop.open({ userData: app.getPath('userData'), legacyProject: () => store, window: () => window });
     protocol.handle('field-media', request => canvasDesktop.fieldMedia(request));
     protocol.handle('media', mediaResponse);
