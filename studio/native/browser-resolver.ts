@@ -48,7 +48,7 @@ export async function resolvePublicPageVideo(input: VideoInput, options: MediaOp
       return ['https:', 'http:'].includes(url.protocol) && !url.username && !url.password && domains.some(domain => domainIs(url.hostname, domain));
     } catch { return false; }
   };
-  const navigationGuard = (event: { preventDefault(): void }, url: string) => { if (!allowedPage(url)) event.preventDefault(); };
+  const navigationGuard = (event: { preventDefault(): void }, url: string) => { if (url !== 'about:blank' && !allowedPage(url)) event.preventDefault(); };
   window.webContents.on('will-navigate', navigationGuard);
   window.webContents.on('will-redirect', navigationGuard);
   const closeWindow = () => {
@@ -64,15 +64,35 @@ export async function resolvePublicPageVideo(input: VideoInput, options: MediaOp
   const deadline = Date.now() + 45_000;
   const timeoutError = () => new Error(`${input.platform}公开网页未在 45 秒内提供可播放视频，可能需要登录或该链接已失效。请在原平台确认后重试。`);
   const timeout = setTimeout(() => { rejectStopped(timeoutError()); closeWindow(); }, 45_000); timeout.unref();
+  const openPage = (url: string) => {
+    if (window.isDestroyed()) throw options.signal?.aborted ? abortError() : timeoutError();
+    return Promise.race([
+      window.loadURL(url).catch(error => {
+        if (window.isDestroyed() || options.signal?.aborted) return;
+        if (!/ERR_ABORTED/.test(String(error))) throw error;
+      }),
+      stopped,
+    ]);
+  };
   let expectedContentId = input.url.match(/\/(?:video|explore|discovery\/item)\/([\w-]+)/)?.[1];
   let sawEmptyPage = false;
   try {
-    try {
-      const debug = window.webContents.debugger;
-      debug.attach('1.3');
-      await debug.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: douyinBootstrap });
-    } catch { /* Xiaohongshu is still read from the page after it loads. */ }
-    await Promise.race([window.loadURL(input.url).catch(error => { if (!/ERR_ABORTED/.test(String(error))) throw error; }), stopped]);
+    // Electron does not answer a debugger command until some page has loaded.
+    // Waiting for the Douyin hook on the empty window never returns, so the real
+    // page is never opened. Xiaohongshu is read from the page itself and does not need the hook.
+    if (input.platform === '抖音' && !window.isDestroyed()) {
+      await openPage('about:blank');
+      if (!window.isDestroyed() && !options.signal?.aborted) {
+        try {
+          const debug = window.webContents.debugger;
+          debug.attach('1.3');
+          const pending = debug.sendCommand('Page.addScriptToEvaluateOnNewDocument', { source: douyinBootstrap });
+          pending.catch(() => undefined);
+          await Promise.race([pending, stopped]);
+        } catch { /* The page can still be read after it loads. */ }
+      }
+    }
+    await openPage(input.url);
     while (Date.now() < deadline) {
       if (options.signal?.aborted) throw abortError();
       if (window.isDestroyed()) break;
@@ -114,8 +134,9 @@ export async function resolvePublicPageVideo(input: VideoInput, options: MediaOp
     if (options.signal?.aborted) throw abortError();
     throw error;
   } finally {
-    clearTimeout(timeout); options.signal?.removeEventListener('abort', cancel); closeWindow();
-    await isolated.clearStorageData().catch(() => undefined);
-    await isolated.clearCache().catch(() => undefined);
+    clearTimeout(timeout); options.signal?.removeEventListener('abort', cancel);
+    try { closeWindow(); } catch { /* The page is already gone. */ }
+    try { await isolated.clearStorageData(); } catch { /* The page is already gone. */ }
+    try { await isolated.clearCache(); } catch { /* The page is already gone. */ }
   }
 }
