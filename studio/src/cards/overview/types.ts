@@ -14,6 +14,8 @@ export interface CardOverviewProps {
   frameCount?: number;
   /** Same outer CSS-px width as the face; overview planning must not read DOM geometry. */
   previewWidth?: number;
+  /** First picture, already resolved to a loadable address. The zoomed-out face uses it as its cover. */
+  cover?: string;
 }
 
 

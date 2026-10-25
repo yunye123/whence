@@ -5,7 +5,7 @@
   :where(.react-flow[data-lod="simple"]) .field-card[data-stationery="folder"][data-lod="simple"][data-lod-frame] .field-card__header h3 { font-size: max(var(--fs-xs), calc(13px / var(--z-tier, 1))); line-height: 1.5; }
   :where(.react-flow[data-lod="simple"]) .field-card[data-stationery="folder"][data-lod="simple"][data-lod-frame] .field-card__footer,
   :where(.react-flow[data-lod="simple"]) .field-card[data-stationery="folder"][data-lod="simple"][data-lod-frame] .field-card__folder-gap,
-  :where(.react-flow[data-lod="simple"]) .field-card[data-stationery="folder"][data-lod="simple"][data-lod-frame] .field-card__folder-paragraph:not([data-has-excerpt]) { display: none; }
+  :where(.react-flow[data-lod="simple"]) .field-card[data-stationery="folder"][data-lod="simple"][data-lod-frame] .field-card__folder-paragraph:not([data-has-excerpt]):not(:first-of-type) { display: none; }
   :where(.react-flow[data-lod="simple"]) .field-card[data-stationery="folder"][data-lod="simple"][data-lod-frame] .field-card__article { padding-inline: 14px; overflow: hidden; }
   :where(.react-flow[data-lod="simple"]) .field-card[data-stationery="folder"][data-lod="simple"][data-lod-frame] .field-card__folder-paragraph::before { content: none; }
   :where(.react-flow[data-lod="simple"]) .field-card[data-stationery="folder"][data-lod="simple"][data-lod-frame] .field-card__folder-paragraph { font-size: max(var(--fs-xs), calc(12px / var(--z-tier, 1))); line-height: 1.5; }

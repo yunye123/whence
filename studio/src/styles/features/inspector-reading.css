@@ -4,6 +4,8 @@
    （不用 counter()：回源跨段时的“平铺块”会合并几段，attr 保证段号仍与 paragraphIndexAt 一致）。 */
 @layer features {
   /* ---------- 正文排版 ---------- */
+  .inspector-note-gallery { display: grid; gap: 8px; margin: 0 0 16px; }
+  .inspector-note-gallery img { width: 100%; height: auto; border-radius: 8px; background: color-mix(in srgb, var(--fg-1) 6%, transparent); }
   .inspector-reading-body {
     position: relative;
     max-width: var(--measure-read);

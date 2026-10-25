@@ -22,14 +22,16 @@ import { InspectorSlot, isEditableTarget, keepEditorFocus, useInspectorLayout } 
 import { formatCount } from './draft-text';
 import type { PatchCard, SourceReveal, TextRange, TextSelection } from './shared';
 import { TranslationForCard } from './EnglishTranslation';
+import { pictureSource } from '../pictures';
 
 /** Optional App action (integration request inspector-shell / inspector-reading): bring a card into view. */
 type RevealBoard = BoardActions & { revealCard?: (id: string) => void };
 
 /** Imported text and saved post prose open in reading; a person's own notes keep opening in the editor (PR-M1). */
 export function readsByDefault(data: CardData): boolean {
-  if (!data.body.trim()) return false;
-  if (data.kind === 'note') return !!data.tags?.includes('文字资料');
+  const pictureNote = data.kind === 'note' && (data.pictures?.length ?? 0) > 0;
+  if (!data.body.trim()) return pictureNote;
+  if (data.kind === 'note') return pictureNote || !!data.tags?.includes('文字资料');
   return data.kind === 'link' && typeof data.sourceOriginalText === 'string';
 }
 
@@ -333,6 +335,9 @@ export default function TextSourceSection({
     origin={!sourceReveal.quoteNodeId && sourceReveal.quoteText ? 'search' : undefined}
   /> : null;
   const locatedNotice = !!revealCitation && sourceLocation?.status === 'matched' && !sourceLocation.changed;
+  const gallery = (data.kind === 'note' || data.kind === 'link')
+    ? (data.pictures || []).map(item => pictureSource(item, board.getMediaUrl)).filter((src): src is string => !!src)
+    : [];
 
   return <section className={`inspector-section inspector-text-source${reading ? ' is-reading' : ' is-editing'}`}>
     {meta}
@@ -341,6 +346,9 @@ export default function TextSourceSection({
       // Located: one short line in the sticky header instead of a pill over the first line of text (INSP-05).
       ? <InspectorSlot name="header-meta" fallback={notice}>{notice}</InspectorSlot>
       : notice)}
+    {gallery.length > 0 && <div className="inspector-note-gallery">
+      {gallery.map((src, index) => <img key={`${src}:${index}`} src={src} alt={`${data.title || '笔记'}，第 ${index + 1} 张，共 ${gallery.length} 张`} />)}
+    </div>}
     {reading ? normalizedBody ? <TextReading
       document={document}
       range={sourceRange ?? null}

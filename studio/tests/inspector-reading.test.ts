@@ -217,6 +217,7 @@ test('internal links never become hrefs and the duplicate title heading stays in
 test('imported text and saved post prose open in reading; own notes and empty bodies open the editor', () => {
   assert.equal(readsByDefault({ kind: 'note', title: '', body: '正文', tags: ['文字资料', 'Markdown'] }), true);
   assert.equal(readsByDefault({ kind: 'note', title: '', body: '我的想法' }), false);
+  assert.equal(readsByDefault({ kind: 'note', title: '', body: '图上的字', pictures: ['field-picture:pic-a:1'] }), true);
   assert.equal(readsByDefault({ kind: 'note', title: '', body: '  ', tags: ['文字资料'] }), false);
   assert.equal(readsByDefault({ kind: 'link', title: '', body: '推文', sourceOriginalText: '推文' }), true);
   assert.equal(readsByDefault({ kind: 'link', title: '', body: '网页摘要' }), false);

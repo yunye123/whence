@@ -82,7 +82,9 @@ export function CardShell(props: CardShellProps) {
   // measured height; an editor or a running player keeps the full layout. An image card is never held: its
   // height is the picture's ratio, which no tier changes, and a hold froze the 4:3 box measured before the
   // picture loaded (FC-03).
-  const lodBox = useLodFrame(id, lod, noteEditing || activeVideo || data.kind === 'image', contentKey);
+  // A note of pictures is a cover: its height is the first image, so a frozen full-text box would stay blank.
+  const coverNote = data.kind === 'note' && !variant && (data.pictures?.length ?? 0) > 0;
+  const lodBox = useLodFrame(id, lod, noteEditing || activeVideo || data.kind === 'image' || coverNote, contentKey);
   const className = [
     'field-card',
     `field-card--${data.kind}`,
@@ -112,6 +114,7 @@ export function CardShell(props: CardShellProps) {
       data-kind={data.kind}
       data-stationery={stationeryKind(data)}
       data-has-title={hasNoteTitle(data) ? '' : undefined}
+      data-has-cover={coverNote ? '' : undefined}
       data-display={overview ? 'overview' : 'detail'}
       data-lod={lod}
       data-lod-frame={lodBox.fixed ? '' : undefined}

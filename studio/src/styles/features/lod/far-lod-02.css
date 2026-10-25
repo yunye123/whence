@@ -3,6 +3,19 @@
 
   /* 视频：海报铺满，左上播放点，从 30% 处起的渐变上压白色标题（媒体覆盖层不随主题） */
   .field-card .field-card__overview:is(.field-card__overview--video, .field-card__overview--image) { background: var(--bg-sunken); }
+  .field-card .field-card__overview:is(.field-card__overview--note, .field-card__overview--article, .field-card__overview--link).has-picture .field-card__overview-content {
+    justify-content: flex-end;
+    padding: 28px 8px 8px;
+    background: linear-gradient(transparent, rgb(20 16 12 / .72));
+  }
+  .field-card .field-card__overview:is(.field-card__overview--note, .field-card__overview--article, .field-card__overview--link).has-picture h3,
+  .field-card .field-card__overview:is(.field-card__overview--note, .field-card__overview--article, .field-card__overview--link).has-picture .field-card__overview-sub {
+    color: #fff;
+    max-height: none;
+    -webkit-line-clamp: 2;
+    line-height: 1.35;
+    text-shadow: 0 1px 2px rgb(20 16 12 / .45);
+  }
   .field-card .field-card__overview > img {
     position: absolute;
     inset: 0;

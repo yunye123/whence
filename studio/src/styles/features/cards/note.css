@@ -13,17 +13,68 @@
   .field-card--note.field-card--blue { --card-tone: var(--note-tone-blue); }
   /* The header stays in the DOM even without a visible title. */
   .field-card--note:not(.field-card--article) .field-card__header { position: static; height: auto; padding: 0; }
-  .field-card__note-pictures { flex: none; display: grid; gap: 6px; margin: 12px var(--card-pad-x) 0; }
-  .field-card__note-pictures img, .field-card__figure, .md-figure { width: 100%; height: auto; object-fit: contain; border-radius: 8px; background: color-mix(in srgb, var(--fg-1) 6%, transparent); }
+  .field-card__figure, .md-figure { width: 100%; height: auto; object-fit: contain; border-radius: 8px; background: color-mix(in srgb, var(--fg-1) 6%, transparent); }
+  /* A note of pictures is one cover. The card follows the first picture; the rest open with the note. */
+  .field-card--note[data-has-cover] .field-card__note-cover {
+    position: relative;
+    flex: none;
+    width: 100%;
+    aspect-ratio: var(--note-cover-ratio, 3 / 4);
+    overflow: hidden;
+    border-radius: inherit;
+    background: color-mix(in srgb, var(--fg-1) 6%, transparent);
+  }
+  .field-card--note[data-has-cover] .field-card__note-cover img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .field-card--note[data-has-cover] .field-card__note-cover-pending {
+    display: grid;
+    place-items: center;
+    height: 100%;
+    color: var(--fg-3);
+    font: 13px/20px var(--font-ui);
+  }
+  .field-card--note[data-has-cover] .field-card__note-cover-count {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 1;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgb(20 16 12 / .62);
+    color: #fff;
+    font: 12px/16px var(--font-ui);
+  }
+  .field-card--note[data-has-cover] .field-card__header {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1;
+    padding: 36px 12px 10px;
+    background: linear-gradient(transparent, rgb(20 16 12 / .72));
+    pointer-events: none;
+  }
   .field-card__figure, .md-figure { display: block; margin: 8px 0; }
   .field-card__note-picture-count { flex: none; margin: 8px var(--card-pad-x) 0; color: var(--fg-2); font: 12px/16px inherit; }
-  .field-card--note:not(.field-card--article)[data-has-title] .field-card__header { padding: 14px calc(var(--card-pad-x) + 52px) 0 var(--card-pad-x); }
-  .field-card--note:not(.field-card--article) .field-card__header h3:not(.sr-only) {
+  .field-card--note:not(.field-card--article)[data-has-title]:not([data-has-cover]) .field-card__header { padding: 14px calc(var(--card-pad-x) + 52px) 0 var(--card-pad-x); }
+  .field-card--note:not(.field-card--article):not([data-has-cover]) .field-card__header h3:not(.sr-only) {
     font: var(--type-card-note-title);
     -webkit-line-clamp: 1;
     line-height: 24px;
     color: var(--fg-1);
     text-wrap: wrap;
+  }
+  .field-card--note[data-has-cover] .field-card__header h3:not(.sr-only) {
+    font: var(--type-card-note-title);
+    -webkit-line-clamp: 2;
+    line-height: 22px;
+    color: #fff;
+    text-shadow: 0 1px 2px rgb(20 16 12 / .45);
   }
   .field-card--note .field-card__note-content {
     flex: 1 1 auto;

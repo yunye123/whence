@@ -19,6 +19,7 @@ import { excerptDisplayTitle, hasNoteTitle, isImportPending, isImportStopped, is
 import { cardExtras, type CardBodyProps, type CardLod, type CardMedia, type ExcerptMark } from './cards/types';
 import { useCanvasLod } from './canvas/lod';
 import { isLocalVideoSource, knownMediaRatio, probeVideoRatio, rememberMediaRatio } from './cards/media-ratio';
+import { firstCardPicture } from './pictures';
 
 const NO_MARKS: readonly ExcerptMark[] = [];
 
@@ -256,7 +257,7 @@ function CanvasCardView({ id, data, selected, width }: NodeProps<Node<CardData>>
       style={data.kind === 'video' && mediaRatio ? { '--media-ratio': String(mediaRatio) } as CSSProperties : undefined}
       contentKey={data.kind === 'video' ? mediaRatio : data.kind === 'draft'
         ? [data.body, previewWidth, previewHeight, draftFontVersion].join('\0') : undefined}
-      overviewLayer={overview && <CardOverview id={id} data={data} media={media} title={title} previewWidth={previewWidth} playing={activeVideo && playing} frameCount={isFrame ? extras.frameMemberCount?.(id) : undefined} />}
+      overviewLayer={overview && <CardOverview id={id} data={data} media={media} title={title} previewWidth={previewWidth} cover={firstCardPicture(data, board.getMediaUrl)} playing={activeVideo && playing} frameCount={isFrame ? extras.frameMemberCount?.(id) : undefined} />}
     >
       {data.kind === 'video' && (
         <VideoCardBody

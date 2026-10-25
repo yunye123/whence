@@ -14,20 +14,20 @@
   .field-card--quote[data-lod="simple"][data-lod-frame] > .react-flow__handle-left,
   .field-card--quote[data-lod="simple"][data-lod-frame] > .react-flow__handle-right { top: max(calc(19px * var(--z-tier)), 13px); }
   .field-card--quote[data-lod="simple"][data-lod-frame] .field-card__quote-content {
-    --lod-zoom: max(1, calc(14 / 16 / var(--z-tier)));
     --mine-space: 0px;
-    flex: 1 1 0;
+    flex: 1 1 auto;
+    min-height: 0;
     max-height: none;
     height: auto;
-    zoom: var(--lod-zoom);
-    container-type: size;
-    padding: 0 calc(var(--card-pad-x) / var(--lod-zoom));
+    overflow: hidden;
+    zoom: 1;
+    padding: 0 var(--card-pad-x);
   }
   .field-card--quote[data-lod="simple"][data-lod-frame] .field-card__quote-text {
     font-size: 16px;
-    line-height: clamp(18px, calc(100cqh - 1px), 26px);
-    -webkit-line-clamp: max(1, round(down, 100cqh / 1lh, 1));
-    max-height: max(0px, round(down, 100cqh, 1lh));
+    line-height: 26px;
+    max-height: none;
+    overflow: hidden;
     white-space: pre-wrap;
   }
   .field-card--quote[data-lod="simple"][data-lod-frame] .field-card__quote-note { display: none; }

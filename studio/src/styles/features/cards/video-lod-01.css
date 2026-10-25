@@ -12,8 +12,8 @@
   /* Rows compensate their own zoom; keep the hover arrow inside the scaled 8px paper margin. */
   .field-card--video[data-lod="simple"] .field-card__line-play { left: calc(1px - 8px * var(--z-tier)); }
   .field-card--video[data-lod="simple"][data-lod-frame]:not(.is-playing) .field-card__archive { display: none; }
-  .field-card--video[data-lod="simple"][data-lod-frame]:not(.is-playing) .field-card__transcript { min-height: 0; container-type: size; overflow: visible clip; }
-  .field-card--video[data-lod="simple"][data-lod-frame]:not(.is-playing) .field-card__transcript-lines { zoom: var(--lod-k); max-height: max(0px, round(down, calc(100cqh * var(--z-tier)), 22px)); }
+  .field-card--video[data-lod="simple"][data-lod-frame]:not(.is-playing) .field-card__transcript { min-height: 0; overflow: hidden; }
+  .field-card--video[data-lod="simple"][data-lod-frame]:not(.is-playing) .field-card__transcript-lines { zoom: 1; max-height: none; }
   .field-card--video[data-lod="simple"][data-lod-frame]:not(.is-playing) .field-card__transcript-gap { display: none; }
   /* An active player uses the existing natural-height hold; its visible text still follows simple-tier compensation. */
   .field-card--video[data-lod="simple"].is-playing .field-card__surface { grid-template-rows: auto calc(26px / var(--z-tier)) 22px auto auto; }
@@ -31,7 +31,7 @@
     padding: 4px 8px 6px; background: var(--paper-plain); overflow: hidden;
   }
   .field-card--video .field-card__overview--video h3 {
-    display: block; --o-max: 1; margin: 0; max-height: 20px; zoom: var(--lod-k);
+    display: block; --o-max: 1; margin: 0; max-height: 20px; zoom: 1;
     font: 600 13px/20px var(--font-ui); color: var(--fg-1); text-shadow: none;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-wrap: nowrap;
   }

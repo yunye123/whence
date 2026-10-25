@@ -60,6 +60,23 @@ for (const tone of ['paper', 'butter', 'mint', 'lavender', 'blue'] as CardTone[]
   assertNone(readOnly, { label: /^编辑笔记：/ });
 });
 
+test('a note of pictures folds to the first picture and keeps the rest for opening', () => {
+  const body = '这是不该摊在画布上的长正文。识别出来的字留到打开之后。';
+  const html = render({
+    kind: 'note', title: '酒照喝', body,
+    pictures: ['field-picture:pic-a:1', 'field-picture:pic-b:2', 'field-picture:pic-c:3'],
+  });
+  const article = getBy(html, { tag: 'article' });
+  assert.equal(attr(article, 'data-has-cover'), '');
+  const images = queryAll(html, { tag: 'img' });
+  assert.equal(images.length, 1);
+  assert.equal(attr(images[0], 'src'), 'blob:isolated-media');
+  assert.match(textContent(html), /3 张/);
+  assert.equal(html.includes(body), false);
+  assertNone(html, { attrs: { 'data-note-preview': true } });
+  getByLabel(html, '展开阅读：酒照喝');
+});
+
 test('note editor retains nokey/maxLength, source body and no preview focus trap', () => {
   const body = '第一行：想法。\n第二行。';
   const props = { id: 'note', data: { kind: 'note', title: '笔记', body }, board: { updateCard: noop },

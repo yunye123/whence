@@ -7,7 +7,8 @@
     inset: 0 calc(var(--card-inset-right) * var(--z-tier)) calc(var(--card-inset-bottom) * var(--z-tier)) calc(var(--card-inset-left) * var(--z-tier));
     z-index: 1;
     display: block;
-    zoom: var(--lod-k);
+    /* Growing this layer past the card clips the preview away and leaves a blank sheet. */
+    zoom: 1;
     container-type: size;
     overflow: hidden;
     border-radius: calc(var(--card-radius) * var(--z-tier));
@@ -43,8 +44,8 @@
     flex: none;
     display: -webkit-box;
     -webkit-box-orient: vertical;
-    -webkit-line-clamp: min(var(--o-max), max(1, round(down, var(--o-avail) / 1lh, 1)));
-    max-height: round(down, var(--o-avail), 1lh);
+    -webkit-line-clamp: min(var(--o-max), max(1, round(down, max(1lh, var(--o-avail)) / 1lh, 1)));
+    max-height: max(1.32em, round(down, max(0px, var(--o-avail)), 1lh));
     margin: 0;
     overflow: hidden;
     font: var(--fw-semibold) var(--fs-sm)/1.32 var(--font-ui);

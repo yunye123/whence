@@ -259,11 +259,11 @@
   .field-card__chip.is-text { width: auto; padding: 0 8px 0 6px; color: var(--fg-1); }
   .field-card__hint { font: var(--type-meta); color: var(--fg-3); white-space: nowrap; padding-right: 2px; }
   /* 叠在媒体画面上的操作：浮层不随主题（画面本身不随主题） */
-  .field-card:is(.field-card--video, .field-card--image) .field-card__actions :is(.field-card__chip, .field-card__icon-button) {
+  .field-card:is(.field-card--video, .field-card--image, .field-card--note[data-has-cover]) .field-card__actions :is(.field-card__chip, .field-card__icon-button) {
     background: var(--media-button-bg);
     box-shadow: 0 0 0 1px var(--paper-edge);
   }
-  .field-card:is(.field-card--video, .field-card--image) .field-card__actions :is(.field-card__chip, .field-card__icon-button) svg { color: var(--media-button-fg); }
+  .field-card:is(.field-card--video, .field-card--image, .field-card--note[data-has-cover]) .field-card__actions :is(.field-card__chip, .field-card__icon-button) svg { color: var(--media-button-fg); }
 
   /* 卡片里的小按钮：次级实底（§6.1 .btn--soft / .btn--sm），禁用不用整体透明度 */
   .field-card .field-card__btn,
