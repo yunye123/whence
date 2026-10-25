@@ -2,7 +2,7 @@ import { normalizeXLink, type XImportResult } from '../shared/x-import';
 import { createNode, safeUrl } from './board-utils';
 import { placeCards, type CardMeasurements } from './card-placement';
 import { uid, type Board, type BoardEdge, type BoardNode, type MediaRecord } from './model';
-import { removeMedia as deleteMedia, saveMedia as storeMedia, STORAGE_LIMITS, validateBoard } from './storage';
+import { cardMediaIds, removeMedia as deleteMedia, saveMedia as storeMedia, STORAGE_LIMITS, validateBoard } from './storage';
 import { getStoredXPostText } from './x-post-source';
 
 export interface XImportDuplicate {
@@ -83,6 +83,15 @@ function existingVideoNumber(node: BoardNode): number | undefined {
   // Treat that existing card as video 1; its file and task ownership stay untouched.
   try { return /\/status\/\d+\/?$/.test(new URL(node.data.sourceUrl ?? node.data.videoImport?.url ?? node.data.url ?? '').pathname) ? 1 : undefined; } catch { return undefined; }
 }
+function storedPictureOrdinals(node: BoardNode): number[] {
+  const found: number[] = [];
+  for (const picture of node.data.pictures || []) {
+    const match = /^field-picture:[^\s:]+:([1-9]\d*)$/.exec(picture);
+    if (match) found.push(Number(match[1]));
+  }
+  for (const match of node.data.body.matchAll(/field-picture:[^\s:)]+:([1-9]\d*)/g)) found.push(Number(match[1]));
+  return found;
+}
 function existingImageNumber(node: BoardNode): number | undefined {
   const explicit = mediaNumber(node, 'photo');
   if (explicit !== undefined) return explicit;
@@ -99,7 +108,10 @@ export function getXImportDuplicate(board: Board, input: string): XImportDuplica
   const source = [...sources].reverse().find(isCompleteCapture) ?? sources[0];
   return {
     postId, ...(source ? { sourceNodeId: source.id } : {}), nodeIds: matches.map(node => node.id),
-    imageNumbers: [...new Set(matches.filter(node => node.data.kind === 'image' && (node.data.mediaId || /^(media|field-media):/.test(node.data.url ?? ''))).map(existingImageNumber).filter((value): value is number => value !== undefined))],
+    imageNumbers: [...new Set([
+      ...matches.filter(node => node.data.kind === 'image' && (node.data.mediaId || /^(media|field-media):/.test(node.data.url ?? ''))).map(existingImageNumber).filter((value): value is number => value !== undefined),
+      ...matches.flatMap(storedPictureOrdinals),
+    ])],
     videoNumbers: [...new Set(matches.filter(node => node.data.kind === 'video').map(existingVideoNumber).filter((value): value is number => value !== undefined))],
   };
 }
@@ -158,7 +170,7 @@ export async function prepareXImport(result: XImportResult, board: Board, option
   if (result.post.completeness === 'partial') warnings.push('仅取得正文预览，原帖可能还有内容；已在来源状态中标明。');
   const originalText = options.originalText ?? link.url;
   const incoming: BoardNode[] = newSource ? [source] : [];
-  const images: { node: BoardNode; image: XImportResult['images'][number] }[] = [];
+  const picturesToSave: { ordinal: number; remoteUrl: string; image: XImportResult['images'][number]; mediaId?: string }[] = [];
   const videoNodeIds: string[] = [];
   const totalImages = result.post.media.filter(media => media.kind === 'image').length;
   let imageNumber = 0, videoNumber = 0, availableImages = duplicate.imageNumbers.filter(number => number <= totalImages).length;
@@ -190,15 +202,8 @@ export async function prepareXImport(result: XImportResult, board: Board, option
       if (!mime || !['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'].includes(mime)) throw new Error(`图片 ${imageNumber} 格式不受支持，尚未添加卡片。`);
       if (!(image.data instanceof Uint8Array) || image.data.byteLength > STORAGE_LIMITS.mediaBytes) throw new Error(`图片 ${imageNumber} 无效或超过 64 MiB，尚未添加卡片。`);
       if (!image.name?.trim() || image.name.length > 500 || image.name.includes('\0')) throw new Error(`图片 ${imageNumber} 文件名无效，尚未添加卡片。`);
-      const node = createNode('image', options.position);
-      node.data = {
-        ...node.data, title: mediaTitle(result.post.title, ` · 图片 ${imageNumber}`), body: media.altText ?? '',
-        // A real new ID makes prevalidation identical to the eventual persisted shape.
-        mediaId: uid(), sourceOriginalText: result.post.text, sourceUrl: result.post.contentKind === 'article' ? link.url : `${link.url}/photo/${imageNumber}`,
-        ...(result.post.contentKind === 'article' ? { sourceStatus: `文章图片 ${imageNumber}；原图：${media.url}` } : {}),
-        sourceTitle: result.post.title, sourceAuthor: author, tags: mediaTags('图片'),
-      };
-      images.push({ node, image: { ...image, mime } }); incoming.push(node); availableImages++;
+      picturesToSave.push({ ordinal: imageNumber, remoteUrl: media.url, image: { ...image, mime } });
+      availableImages++;
     } else if (media.kind === 'video' || media.kind === 'gif') {
       videoNumber++;
       if (duplicate.videoNumbers.includes(videoNumber)) continue;
@@ -255,7 +260,8 @@ export async function prepareXImport(result: XImportResult, board: Board, option
     if (incoming.length) { data.sourceStatus = status; changed = true; }
     if (changed) replacements.set(source.id, { ...source, data });
   }
-  if (!incoming.length && !edges.length && !replacements.size) {
+  if (!newSource && picturesToSave.length && !replacements.has(source.id)) replacements.set(source.id, { ...source, data: { ...source.data, sourceStatus: status } });
+  if (!incoming.length && !edges.length && !replacements.size && !picturesToSave.length) {
     checkAbort(options.signal);
     return { board, nodes: [], videoNodeIds: [], mediaIds: [], warnings: uniqueWarnings(warnings), sourceNodeId: source.id, duplicate: true };
   }
@@ -267,17 +273,28 @@ export async function prepareXImport(result: XImportResult, board: Board, option
   validateBoard(next);
   checkAbort(options.signal);
   const mediaIds: string[] = [], save = options.saveMedia ?? storeMedia, remove = options.removeMedia ?? deleteMedia;
-  const existingMedia = new Set(board.nodes.flatMap(node => node.data.mediaId ? [node.data.mediaId] : []));
+  const existingMedia = new Set(board.nodes.flatMap(node => cardMediaIds(node.data)));
   try {
-    for (const { node, image } of images) {
+    for (const item of picturesToSave) {
       checkAbort(options.signal);
-      const record = await save(new Blob([new Uint8Array(image.data!)], { type: image.mime! }), image.name);
+      const record = await save(new Blob([new Uint8Array(item.image.data!)], { type: item.image.mime! }), item.image.name);
       // A faulty injected store must never make rollback delete an existing asset.
       if (existingMedia.has(record.id) || mediaIds.includes(record.id)) throw new Error('图片存储返回了重复媒体 ID，尚未添加卡片。');
       mediaIds.push(record.id);
-      const saved = next.nodes.find(item => item.id === node.id)!;
-      saved.data.mediaId = record.id;
+      item.mediaId = record.id;
       checkAbort(options.signal);
+    }
+    const savedSource = next.nodes.find(item => item.id === source.id);
+    if (savedSource && picturesToSave.some(item => item.mediaId)) {
+      let body = savedSource.data.body;
+      const pictures = [...(savedSource.data.pictures || [])];
+      for (const item of picturesToSave) {
+        if (!item.mediaId) continue;
+        const ref = `field-picture:${item.mediaId}:${item.ordinal}`;
+        if (item.remoteUrl && body.includes(item.remoteUrl)) body = body.split(item.remoteUrl).join(ref);
+        else if (!pictures.includes(ref) && !body.includes(ref)) pictures.push(ref);
+      }
+      savedSource.data = { ...savedSource.data, body, ...(pictures.length ? { pictures } : {}) };
     }
     validateBoard(next);
     checkAbort(options.signal);

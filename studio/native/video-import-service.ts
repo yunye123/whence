@@ -6,6 +6,8 @@ import { ProjectStore } from '../../electron/store';
 import { detectTools, importMedia, transcribeMedia } from '../../electron/media';
 import type { Asset, ProjectState, Source, Transcript } from '../../shared/types';
 import { downloadVideo, normalizeVideoInput, xPostSourceFields, type DownloadOptions, type XVideoSource } from './download';
+import { imageNoteText, tidyImageText } from './page-media';
+import { recognizeImages } from './image-text';
 import { normalizeXLink, type XPost } from '../shared/x-import';
 import { VIDEO_IMPORT_TERMINAL, type VideoImportInput, type VideoImportStage, type VideoImportTask } from './contracts';
 import { readingLines } from './transcript-sentences';
@@ -269,12 +271,61 @@ export class VideoImportService {
     } finally { this.running = false; }
   }
 
+  private async importImages(task: TaskRecord, source: { id: string }, downloaded: { imageFiles?: string[]; source: Partial<XVideoSource>; description?: string }, signal: AbortSignal) {
+    const files = downloaded.imageFiles || [];
+    if (!files.length) throw new Error('公开页没有返回可下载的图片。');
+    this.progress(task, 'processing', 8, '正在识别图片上的文字');
+    const recognized = await recognizeImages(files, signal);
+    this.checkAbort(signal);
+    const pages = files.map((_file, index) => tidyImageText(recognized.texts[index] || ''));
+    const assets: Asset[] = [];
+    for (let index = 0; index < files.length; index++) {
+      this.progress(task, 'processing', 30 + 50 * index / files.length, `正在保存图片（${index + 1}/${files.length}）`);
+      const imported = await (this.options.importMedia || importMedia)(files[index], this.store.directory, { signal });
+      this.checkAbort(signal);
+      if (imported.kind !== 'image') throw new Error('链接取得的文件不是图片。');
+      assets.push({ ...imported, id: randomUUID(), sourceId: source.id, name: `${downloaded.source.title || task.platform} ${index + 1}`.slice(0, 500), createdAt: now() });
+    }
+    const title = String(downloaded.source.title || `${task.platform}图文`).replace(/\s*[-–|]\s*(抖音|小红书).*$/, '').trim().slice(0, 500) || `${task.platform}图文`;
+    const author = String(downloaded.source.author || '').trim().slice(0, 500);
+    const description = downloaded.description?.trim().slice(0, 20_000);
+    const body = imageNoteText({ ...(author ? { author } : {}), ...(description ? { description } : {}), pages });
+    const recognizedCount = pages.filter(page => page.trim()).length;
+    const message = !recognized.available
+      ? `已导入 ${files.length} 张图片。本机识字工具未就绪，图片上的文字还没有识别。`
+      : recognizedCount ? `已导入 ${files.length} 张图片，并识别了其中 ${recognizedCount} 张上的文字。` : `已导入 ${files.length} 张图片。没有识别到图片上的文字。`;
+    const library = this.store.state;
+    const carried = {
+      sourceUrl: task.url, sourceTitle: title, ...(author ? { sourceAuthor: author } : {}), sourceOriginalText: task.originalText,
+      nativeProjectId: library.id, nativeDirectory: library.directory, nativeSourceId: source.id, nativeImportJobId: task.id, collectedAt: now(),
+    };
+    const companions = assets.map((asset, index) => ({
+      id: randomUUID(),
+      data: {
+        kind: 'image' as const, title: `${index + 1} ${title}`.slice(0, 500), body: (pages[index] || '这一张没有识别到文字。').slice(0, 300_000),
+        url: mediaUrl(library.id, asset.path), ...(asset.poster ? { poster: mediaUrl(library.id, asset.poster) } : {}), ...carried,
+      },
+    }));
+    const card = {
+      kind: 'note' as const, title, body, pictures: companions.map(item => item.data.url).filter((url): url is string => !!url),
+      ...carried, ...(description ? { sourceDescription: description } : {}), sourceStatus: '已从公开页保存图片',
+    };
+    if (description) this.descriptions.set(source.id, description);
+    this.store.commit(state => {
+      for (const asset of assets) state.assets.push(asset);
+      const item = state.sources.find(entry => entry.id === source.id);
+      if (item) Object.assign(item, downloaded.source, { id: item.id, url: task.url, originalText: task.originalText, status: '已导入', error: undefined,
+        title: title.slice(0, 2000), author: author.slice(0, 2000) });
+    });
+    this.update(task, { sourceId: source.id, status: 'completed', progress: 100, message, card, companions, error: undefined });
+  }
+
   private async reusableAsset(task: TaskRecord): Promise<Asset | undefined> {
     const state = this.store.state;
     const sourceIds = new Set(state.sources.filter(source => {
       try { return normalizeVideoInput(source.url).key === task.key; } catch { return false; }
     }).map(source => source.id));
-    const candidates = state.assets.filter(asset => asset.id === task.assetId || (asset.sourceId && sourceIds.has(asset.sourceId))).reverse();
+    const candidates = state.assets.filter(asset => asset.kind === 'video' && (asset.id === task.assetId || (asset.sourceId && sourceIds.has(asset.sourceId)))).reverse();
     for (const asset of candidates) {
       try { if ((await fs.stat(path.join(this.store.directory, asset.path))).isFile()) return asset; } catch { /* A deleted cache will be downloaded again. */ }
     }
@@ -381,6 +432,10 @@ export class VideoImportService {
       });
       try {
         this.checkAbort(signal);
+        if (downloaded.imageFiles?.length) {
+          await this.importImages(task, source, downloaded, signal);
+          return;
+        }
         this.progress(task, 'processing', 0, '视频已下载，正在准备播放画面');
         const imported = await (this.options.importMedia || importMedia)(downloaded.filePath, this.store.directory, {
           signal, onProgress: (progress, message) => this.progress(task, 'processing', progress, message),

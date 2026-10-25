@@ -6,6 +6,9 @@
 
 ### 中文
 
+- 新增：同一篇图文的图片收在同一张卡片上，张数不设上限。网页和 X 按原来的顺序留下文字和图片。抖音、小红书的公开内容用页面自己给出的地址下载。
+- 修复：逐字稿若大段重复「请不吝点赞 订阅 转发 打赏支持明镜与点点栏目」，会去掉这段提示后再转一次。
+- 新增：桌面版导出可以复制一个本地链接。智能体打开链接就能看到怎么读取这张画布；使用者要求修改时，链接里也写着怎么把改动写回。读到的是来处里正在使用的画布，不会另存一份。来处要开着。图片和视频仍留在来处里。
 - 新增：桌面版可以把笔记、摘录、文稿和逐字稿里的英语译成简体中文。原文保留，译文写在同一张卡片或同一句字幕上。启动前设置 `CANVAS_TRANSLATE_API_KEY`，可选 `CANVAS_TRANSLATE_BASE_URL` 与 `CANVAS_TRANSLATE_MODEL`。请求的做法改编自 Zara Zhang 的 [youtube-digest](https://github.com/zarazhangrui/youtube-digest)（MIT）。
 - 修复：链接卡工具栏的“打开网页”在桌面版点了没有反应。桌面版会拦截页面自行打开新窗口，现在改为通过系统浏览器打开，失败时给出提示。
 - 修复：内置示例画布里，文章卡与链接卡、视频卡与剧照互相压住的问题，现在卡片之间留有间距。
@@ -14,6 +17,9 @@
 
 ### English
 
+- Add: pictures from one post stay on a single card, with no count limit. Web articles and X posts keep images in their original order. Public Douyin and Xiaohongshu media download from the addresses the page itself provides.
+- Fix: when a transcript repeats the fixed line "请不吝点赞 订阅 转发 打赏支持明镜与点点栏目", that pass is discarded and the clip is transcribed again without the prompt.
+- Add: desktop export can copy a local link. Opening it tells an agent how to read the canvas, and how to write changes back when the user asks for them. The link reads the canvas open in Whence and does not save a second copy. Whence needs to be open. Images and videos stay in Whence.
 - Add: the desktop app can translate English in notes, excerpts, drafts, and transcripts into Simplified Chinese. The source stays in place, and the translation is stored on the same card or transcript line. Set `CANVAS_TRANSLATE_API_KEY` before launch. `CANVAS_TRANSLATE_BASE_URL` and `CANVAS_TRANSLATE_MODEL` are optional. The request behavior is adapted from Zara Zhang's [youtube-digest](https://github.com/zarazhangrui/youtube-digest) (MIT).
 - Fix: the "Open page" button on a link card did nothing in the desktop app, because the desktop shell blocks pages from opening windows themselves. It now opens in the system browser and shows a message if that fails.
 - Fix: in the built-in example boards, the article card overlapped the link card, and the video card overlapped its stills. The cards now keep a gap.

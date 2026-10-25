@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import { Readable } from 'node:stream';
 import type { ClientRequest, IncomingMessage } from 'node:http';
-import { fetchXResource } from '../native/x-import';
+import { fetchXResource, parseFxTwitterResponse } from '../native/x-import';
 import { openXPublicResponse, validateXResourceUrl, isPublicXAddress, type XPublicRequestOptions } from '../native/x-public-request';
 
 const imageUrl = 'https://pbs.twimg.com/media/photo.png';
@@ -118,4 +118,29 @@ test('metadata stream requires JSON format and returns bounded actual bytes', as
   const result = await fetchXResource(metadataUrl, 'metadata', 1024, { lookup: publicDNS, request: direct([{ chunks: [json], headers: { 'content-type': 'application/json; charset=utf-8', 'content-length': String(json.length) } }]) });
   assert.equal(Buffer.from(result.data).toString(), json.toString());
   await assert.rejects(fetchXResource(metadataUrl, 'metadata', 5, { lookup: publicDNS, request: direct([{ chunks: [json], headers: { 'content-type': 'application/json' } }]) }), /正文响应过大/);
+});
+test('an X article keeps its cover and inline pictures in the text', () => {
+  const post = parseFxTwitterResponse({
+    code: 200,
+    status: {
+      id: '2104200939095904322', text: '短', author: { name: '作者', screen_name: 'creator' },
+      article: {
+        title: '一篇文章',
+        cover_media: { type: 'photo', url: 'https://pbs.twimg.com/media/cover.jpg' },
+        content: {
+          blocks: [
+            { text: '开头', type: 'unstyled', entityRanges: [] },
+            { text: ' ', type: 'unstyled', entityRanges: [{ offset: 0, length: 1, key: 0 }] },
+          ],
+          entityMap: { 0: { type: 'MEDIA', data: { mediaItems: [{ mediaId: 'm1' }] } } },
+        },
+        media_entities: [{ media_id: 'm1', type: 'photo', url: 'https://pbs.twimg.com/media/inline.jpg', alt_text: '文中的图' }],
+      },
+    },
+  }, 'https://x.com/creator/status/2104200939095904322');
+  assert.match(post.text, /^!\[文章封面：一篇文章\]\(https:\/\/pbs\.twimg\.com\/media\/cover\.jpg\?name=orig\)/);
+  assert.match(post.text, /!\[文中的图\]\(https:\/\/pbs\.twimg\.com\/media\/inline\.jpg\?name=orig\)/);
+  assert.ok(post.text.indexOf('cover.jpg') < post.text.indexOf('开头'));
+  assert.ok(post.text.indexOf('开头') < post.text.indexOf('inline.jpg'));
+  assert.deepEqual(post.media.map(item => item.kind), ['image', 'image']);
 });

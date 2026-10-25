@@ -6,7 +6,7 @@ import { copyNativeCardMedia } from '../native';
 import { importVideoLink, isVideoImportAvailable, listVideoImports, subscribeVideoImports, cancelVideoImport as cancelNativeVideoImport, retryVideoImport as retryNativeVideoImport, type VideoImportTask } from '../video-import';
 import type { ToastOptions } from '../shell/Toasts';
 import { pendingImport, importStageStatus } from './video-links';
-import { differentNativeAsset, keepCachedImportMedia, needsImportPosterRestore, prepareVideoImportUpdate } from './import-merge';
+import { differentNativeAsset, keepCachedImportMedia, needsImportPosterRestore, placeImageNote, prepareVideoImportUpdate } from './import-merge';
 import { clone, errorMessage } from './utils';
 import { translateFreshAttempt } from './fresh-translation';
 
@@ -33,6 +33,20 @@ export function useVideoTasks({workspaceRef,readOnlyRef,notify,setNext,persist,s
   const rejectedNativeResults=useRef(new Map<string,string>());
   const restoredNativePosters=useRef(new Map<string,Promise<Partial<CardData>>>());
   const recoveredImports=useRef(false);
+  const placedNotes=useRef(new Set<string>());
+  const placeNote=useCallback((task:VideoImportTask)=>{
+    if(task.card?.kind!=='note'||importStageStatus(task.status)!=='completed')return;
+    const key=`${task.id}:${task.attempt}`;
+    if(placedNotes.current.has(key))return;
+    const current=workspaceRef.current;const board=current?.boards.find(item=>item.id===task.boardId);
+    if(!current||!board)return;
+    const result=placeImageNote(board,task.nodeId,task.card,task.companions);
+    if(!result.valid){notify(result.error||'图文笔记没有放进画布');return;}
+    placedNotes.current.add(key);
+    if(!result.board)return;
+    setNext({...current,boards:current.boards.map(item=>item.id===board.id?result.board!:item)});
+    notify('图文笔记已放进画布');
+  },[notify,setNext]);
   // Background imports always address their original board and card. They never enter undo history.
   const updateImportCard=useCallback((boardId:string,nodeId:string,attemptId:string,material:Partial<CardData>={},taskPatch:Partial<VideoImportState>={})=>{
     const current=workspaceRef.current;if(!current||readOnlyRef.current)return false;
@@ -43,6 +57,7 @@ export function useVideoTasks({workspaceRef,readOnlyRef,notify,setNext,persist,s
     setNext({...current,boards:current.boards.map(item=>item.id===boardId?result.board!:item)});return result.valid;
   },[notify,setNext]);
   const applyNativeImport=useCallback((task:VideoImportTask)=>{
+    if(task.card?.kind==='note'&&importStageStatus(task.status)==='completed'){placeNote(task);return;}
     if(task.attempt<(expectedAttempts.current.get(task.id)??0))return;
     expectedAttempts.current.set(task.id,task.attempt);nativeTasks.current.set(task.id,task);
     const revision=JSON.stringify([task.attempt,task.updatedAt,task.card?.mediaId,task.card?.poster,task.card?.nativeMediaWarning,task.card?.sourceOriginalText,task.card?.sourceStatus]);
@@ -62,7 +77,7 @@ export function useVideoTasks({workspaceRef,readOnlyRef,notify,setNext,persist,s
     });
     if(!accepted)rejectedNativeResults.current.set(task.id,revision);
     else if(!wasCompleted&&importStageStatus(task.status)==='completed')translateFreshAttempt(task.boardId,task.nodeId,node.data.videoImport.attemptId);
-  },[updateImportCard]);
+  },[notify,placeNote,setNext,updateImportCard]);
   const setVideoAction=useCallback((id:string,pending:boolean)=>{if(pending)videoActions.current.add(id);else videoActions.current.delete(id);setVideoActionIds([...videoActions.current]);},[]);
   const launchVideoImport=useCallback((boardId:string,nodeId:string,attemptId:string)=>{
     const node=workspaceRef.current?.boards.find(item=>item.id===boardId)?.nodes.find(item=>item.id===nodeId);
@@ -76,15 +91,17 @@ export function useVideoTasks({workspaceRef,readOnlyRef,notify,setNext,persist,s
         expectedAttempts.current.set(event.jobId,event.attempt);
         updateImportCard(boardId,nodeId,attemptId,{nativeImportJobId:event.jobId},{status:importStageStatus(event.stage),progress:Number.isFinite(event.progress)?Math.max(0,Math.min(100,event.progress)):undefined,message:event.message.slice(0,4096),...(event.stage==='media-ready'?{mediaReady:true}:{})});
       },
-      onMediaReady:patch=>{updateImportCard(boardId,nodeId,attemptId,patch,{mediaReady:true,status:'transcribing',message:'视频已就绪，正在提取逐字稿'});},
+      onMediaReady:patch=>{if(patch.kind==='note')return;updateImportCard(boardId,nodeId,attemptId,patch,{mediaReady:true,status:'transcribing',message:'视频已就绪，正在提取逐字稿'});},
+      onComplete:task=>{if(task.card?.kind==='note')placeNote(task);},
     }).then(patch=>{
+      if(patch.kind==='note')return;
       const saved=updateImportCard(boardId,nodeId,attemptId,patch,{mediaReady:true,status:'completed',progress:100,message:patch.transcript?.length?`逐字稿已就绪，共 ${patch.transcript.length} 句`:'视频已就绪',error:undefined});
       if(saved){notify('视频已加入原画布，可播放与阅读逐字稿');translateFreshAttempt(boardId,nodeId,attemptId);}
     }).catch(error=>{
       const cancelled=controller.signal.aborted||(error instanceof Error&&error.name==='AbortError');
       updateImportCard(boardId,nodeId,attemptId,{},cancelled?{status:'cancelled',message:'已取消，下载好的视频会保留',error:undefined}:{status:'failed',message:'导入未完成，可重试',error:errorMessage(error).slice(0,4096)});
     }).finally(()=>{if(videoRuns.current.get(nodeId)?.attemptId===attemptId)videoRuns.current.delete(nodeId);});
-  },[notify,updateImportCard]);
+  },[notify,placeNote,updateImportCard]);
   const cancelVideoImportAction=useCallback((id:string)=>{
     if(videoActions.current.has(id)||readOnlyRef.current)return;
     const target=workspaceRef.current?.boards.find(item=>item.nodes.some(node=>node.id===id));const node=target?.nodes.find(item=>item.id===id);const task=node?.data.videoImport;

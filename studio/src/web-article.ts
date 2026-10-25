@@ -30,8 +30,22 @@ export function extractWebArticle(html: string, url: string): WebArticle | null 
     const article = new Readability(document as unknown as Document).parse();
     if (!article?.content || (article.length ?? 0) < MEANINGFUL_ARTICLE) return null;
     const turndown = new TurndownService();
-    turndown.remove(node => ['IMG', 'PICTURE', 'SVG', 'VIDEO', 'IFRAME', 'SCRIPT', 'STYLE'].includes(node.nodeName));
-    const body = turndown.turndown(article.content).replace(/!\[[^\]]*]\([^)]*\)/g, '').replace(/\u0000/g, '').trim().slice(0, MAX_BODY);
+    turndown.remove(node => ['SVG', 'VIDEO', 'IFRAME', 'SCRIPT', 'STYLE'].includes(node.nodeName));
+    turndown.addRule('article-image', {
+      filter: 'img',
+      replacement: (_content, node) => {
+        const element = node as unknown as Element;
+        const raw = element.getAttribute('src') || '';
+        const alt = (element.getAttribute('alt') || '').replace(/[\[\]]/g, '').replace(/\u0000/g, '').trim();
+        let src = '';
+        try {
+          const resolved = new URL(raw, url);
+          if (resolved.protocol === 'http:' || resolved.protocol === 'https:') src = resolved.href;
+        } catch { src = ''; }
+        return src ? `\n\n![${alt}](${src})\n\n` : '';
+      },
+    });
+    const body = turndown.turndown(article.content).replace(/\u0000/g, '').trim().slice(0, MAX_BODY);
     if (!body) return null;
     let host = '';
     try { host = new URL(url).hostname.replace(/^www\./, ''); } catch { host = ''; }

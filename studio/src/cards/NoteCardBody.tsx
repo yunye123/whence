@@ -1,7 +1,8 @@
-import type { CSSProperties, RefObject } from 'react';
+import { type CSSProperties, RefObject } from 'react';
 import { BookOpen, Check, PencilLine } from 'lucide-react';
 import { useStationeryLines } from './QuoteCardBody';
 import { joinLines } from './card-utils';
+import { pictureSource } from '../pictures';
 import type { CardBodyProps, CardLod } from './types';
 
 interface NoteCardBodyProps extends CardBodyProps {
@@ -14,6 +15,16 @@ interface NoteCardBodyProps extends CardBodyProps {
 }
 
 const PLACEHOLDER = '一个想法、一句想留住的话……';
+
+function NotePictures({ title, pictures }: { title: string; pictures: string[] }) {
+  return (
+    <div className="field-card__note-pictures">
+      {pictures.map((src, index) => (
+        <img key={`${src}:${index}`} src={src} alt={`${title}，第 ${index + 1} 张，共 ${pictures.length} 张`} draggable={false} />
+      ))}
+    </div>
+  );
+}
 
 /**
  * Note card (PLAN §2.4): opaque WenKai paper, an optional title, no crease. The preview is a drag
@@ -31,7 +42,11 @@ export function NoteCardBody(props: NoteCardBodyProps) {
   const style = !noteEditing && lines !== undefined && (!shownTranslation || translationLines !== undefined)
     ? { '--text-natural-block': `${Math.max(1, lines) * 22 + (shownTranslation && translationLines ? translationLines * 22 + 6 : 0)}px` } as CSSProperties
     : undefined;
+  const pictures = (data.pictures || []).map(url => pictureSource(url, board.getMediaUrl)).filter((url): url is string => !!url);
   return (
+    <>
+    {pictures.length > 0 && lod === 'simple' && <p className="field-card__note-picture-count">{pictures.length} 张图片</p>}
+    {pictures.length > 0 && lod !== 'simple' && <NotePictures title={data.title || '笔记'} pictures={pictures} />}
     <div className={`field-card__note-content${noteEditing ? ' nodrag nowheel' : ' card-drag-content'}`} data-text-planned={style ? '' : undefined} style={style}>
       {noteEditing ? (
         <textarea
@@ -63,6 +78,7 @@ export function NoteCardBody(props: NoteCardBodyProps) {
         </div>
       )}
     </div>
+    </>
   );
 }
 

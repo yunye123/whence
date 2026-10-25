@@ -23,6 +23,8 @@ export interface CardData extends Record<string, unknown> {
   sourceDescription?: string;
   /** When a source card (video, image, link, text material) was collected into its board, ISO UTC (INSP-21). */
   collectedAt?: string;
+  /** Pictures that belong to this one note or link, in reading order. Shown with the card. */
+  pictures?: string[];
   /** Simplified Chinese for an English note, excerpt, draft, link body, or video description. The source text stays put. */
   translation?: string;
   demo?: boolean;

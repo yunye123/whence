@@ -20,7 +20,7 @@ test('release 1 defaults to Markdown, restores per board, ignores invalid/unavai
   assert.equal(special.__proto__, 'script');
   assert.equal(parseFormatMemory(formatMemoryValue(memory, 'new', 'package')).one, 'script');
   assert.equal(parseFormatMemory(formatMemoryValue(memory, 'new', 'package')).new, 'package');
-  assert.equal(EXPORT_FORMATS.length, 5);
+  assert.equal(EXPORT_FORMATS.length, 6);
   assert.ok(!EXPORT_FORMATS.some(format => String(format.id) === 'cover'));
 });
 

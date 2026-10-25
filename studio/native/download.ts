@@ -1,5 +1,5 @@
 import { createWriteStream, existsSync } from 'node:fs';
-import { mkdir, readFile, readdir, rm, stat } from 'node:fs/promises';
+import { mkdir, readFile, readdir, rename, rm, stat } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { lookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
@@ -20,7 +20,17 @@ export type XVideoSource = Source & {
   postTextFetchedAt?: string;
 };
 export interface VideoInput { url: string; originalText: string; key: string; platform: string; xVideoIndex?: number }
-export interface PublicVideo { mediaUrl: string; title?: string; author?: string; contentId?: string; referer?: string; durationSeconds?: number }
+export interface PublicVideo {
+  mediaUrl: string;
+  audioUrl?: string;
+  images?: { url: string }[];
+  title?: string;
+  author?: string;
+  description?: string;
+  contentId?: string;
+  referer?: string;
+  durationSeconds?: number;
+}
 export interface DownloadOptions extends MediaOptions {
   resolvePublicVideo?: (input: VideoInput, options: MediaOptions) => Promise<PublicVideo>;
   resolveXPost?: (input: string, options: MediaOptions) => Promise<XPost>;
@@ -117,7 +127,7 @@ export function selectXVideo(post: XPost, input: VideoInput): XMedia {
   return selected;
 }
 
-async function openPublicUrl(value: string, options: MediaOptions, redirects = 0, referer?: string): Promise<IncomingMessage> {
+async function openPublicUrl(value: string, options: MediaOptions, redirects = 0, referer?: string, accept = 'video/*,application/octet-stream;q=0.9,*/*;q=0.5', kind: '视频' | '图片' = '视频'): Promise<IncomingMessage> {
   if (options.signal?.aborted) throw abortError();
   if (redirects > 5) throw new Error('视频链接重定向次数过多，请重新复制分享链接。');
   const url = validatePublicUrl(value);
@@ -126,7 +136,7 @@ async function openPublicUrl(value: string, options: MediaOptions, redirects = 0
   const selected = addresses.find(item => item.family === 4) || addresses[0];
   const response = await new Promise<IncomingMessage>((resolve, reject) => {
     const request = (url.protocol === 'https:' ? httpsRequest : httpRequest)(url, {
-      signal: options.signal, headers: { 'User-Agent': 'Mozilla/5.0 FIELD/0.1', Accept: 'video/*,application/octet-stream;q=0.9,*/*;q=0.5', ...(referer ? { Referer: referer } : {}) },
+      signal: options.signal, headers: { 'User-Agent': 'Mozilla/5.0 FIELD/0.1', Accept: accept, ...(referer ? { Referer: referer } : {}) },
       // Pin the validated address; do not resolve the host again in the socket connection.
       lookup: ((_host: string, lookupOptions: { all?: boolean }, callback: (...args: unknown[]) => void) => lookupOptions.all ? callback(null, [selected]) : callback(null, selected.address, selected.family)) as never,
     }, resolve);
@@ -135,20 +145,20 @@ async function openPublicUrl(value: string, options: MediaOptions, redirects = 0
   });
   if ([301, 302, 303, 307, 308].includes(response.statusCode || 0) && response.headers.location) {
     const next = new URL(response.headers.location, url).href; response.destroy();
-    return openPublicUrl(next, options, redirects + 1, referer);
+    return openPublicUrl(next, options, redirects + 1, referer, accept, kind);
   }
-  if (!response.statusCode || response.statusCode < 200 || response.statusCode >= 300) { response.destroy(); throw new Error(`视频服务器返回 ${response.statusCode || '未知错误'}，链接可能已过期。`); }
+  if (!response.statusCode || response.statusCode < 200 || response.statusCode >= 300) { response.destroy(); throw new Error(`${kind}服务器返回 ${response.statusCode || '未知错误'}，链接可能已过期。`); }
   return response;
 }
 
-async function downloadDirect(url: string, tmp: string, options: MediaOptions, referer?: string, xMedia = false) {
+async function downloadDirect(url: string, tmp: string, options: MediaOptions, referer?: string, xMedia = false, stem = 'source') {
   const xResponse = xMedia ? await (await import('./x-public-request')).openXPublicResponse(url, { purpose: 'video', signal: options.signal }) : undefined;
   const response = xResponse ? Readable.from(xResponse.body) : await openPublicUrl(url, options, 0, referer ? validatePublicUrl(referer).href : undefined);
   const size = xResponse ? xResponse.contentLength || 0 : Number((response as IncomingMessage).headers['content-length'] || 0);
   try {
     if (size > MAX_BYTES) { response.destroy(); throw new Error('单条视频超过 2 GB，当前无法自动导入。'); }
     const extension = new URL(url).pathname.match(directExtension)?.[0].toLowerCase() || '.mp4';
-    const filePath = path.join(tmp, `source${extension}`);
+    const filePath = path.join(tmp, `${stem}${extension}`);
     let bytes = 0, lastNotification = 0;
     const meter = new Transform({ transform(chunk, _encoding, callback) {
       bytes += chunk.length;
@@ -163,6 +173,45 @@ async function downloadDirect(url: string, tmp: string, options: MediaOptions, r
     await pipeline(response, meter, createWriteStream(filePath, { flags: 'wx' }), { signal: options.signal });
     return filePath;
   } finally { xResponse?.dispose(); }
+}
+
+const IMAGE_BYTES = 40 * 1024 * 1024;
+
+function imageExtension(url: string, contentType: string, head: Buffer): string | undefined {
+  if (head.length >= 12 && head.toString('ascii', 0, 4) === 'RIFF' && head.toString('ascii', 8, 12) === 'WEBP') return '.webp';
+  if (head.length >= 8 && head[0] === 0x89 && head[1] === 0x50 && head[2] === 0x4e && head[3] === 0x47) return '.png';
+  if (head.length >= 3 && head[0] === 0xff && head[1] === 0xd8) return '.jpg';
+  if (head.length >= 6 && (head.toString('ascii', 0, 6) === 'GIF87a' || head.toString('ascii', 0, 6) === 'GIF89a')) return '.gif';
+  if (/webp/i.test(contentType)) return '.webp';
+  if (/png/i.test(contentType)) return '.png';
+  if (/jpe?g/i.test(contentType)) return '.jpg';
+  const fromPath = new URL(url).pathname.match(/\.(png|jpe?g|webp|gif)$/i)?.[0].toLowerCase();
+  return fromPath === '.jpeg' ? '.jpg' : fromPath;
+}
+
+async function downloadPublicImage(url: string, tmp: string, options: MediaOptions, referer: string | undefined, index: number) {
+  const response = await openPublicUrl(url, options, 0, referer ? validatePublicUrl(referer).href : undefined, 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8', '图片');
+  const contentType = String(response.headers['content-type'] || '');
+  if (/text\/html|application\/json/i.test(contentType)) { response.destroy(); throw new Error('图片地址没有返回图片，链接可能已过期。'); }
+  const partial = path.join(tmp, `.image-${index}.part`);
+  let bytes = 0;
+  const meter = new Transform({ transform(chunk, _encoding, callback) {
+    bytes += chunk.length;
+    if (bytes > IMAGE_BYTES) return callback(new Error('单张图片过大，无法导入。'));
+    callback(null, chunk);
+  } });
+  try {
+    await pipeline(response, meter, createWriteStream(partial, { flags: 'wx' }), { signal: options.signal });
+    const head = (await readFile(partial)).subarray(0, 16);
+    const extension = imageExtension(url, contentType, head);
+    if (!extension) throw new Error('图片地址没有返回图片，链接可能已过期。');
+    const filePath = path.join(tmp, `image-${String(index + 1).padStart(2, '0')}${extension}`);
+    await rename(partial, filePath);
+    return filePath;
+  } catch (error) {
+    await rm(partial, { force: true });
+    throw error;
+  }
 }
 
 export function downloadErrorMessage(error: unknown, platform: string): string {
@@ -186,7 +235,7 @@ export function infoDescription(info: unknown): string | undefined {
   return text || undefined;
 }
 
-export async function downloadVideo(input: string, projectDir: string, options: DownloadOptions = {}): Promise<{ filePath: string; source: Partial<XVideoSource>; description?: string }> {
+export async function downloadVideo(input: string, projectDir: string, options: DownloadOptions = {}): Promise<{ filePath: string; source: Partial<XVideoSource>; description?: string; imageFiles?: string[] }> {
   const normalized = normalizeVideoInput(input);
   if (options.signal?.aborted) throw abortError();
   const tmp = path.join(path.resolve(projectDir), 'cache', 'downloads', randomUUID());
@@ -200,6 +249,7 @@ export async function downloadVideo(input: string, projectDir: string, options: 
     options.onProgress?.(2, `正在解析${normalized.platform}视频链接`);
     let filePath = '';
     let description: string | undefined;
+    let imageFiles: string[] | undefined;
     if (normalized.platform === '视频直链') {
       filePath = await downloadDirect(normalized.url, tmp, timedOptions);
       const title = new URL(normalized.url).pathname.split('/').pop() || '视频';
@@ -223,23 +273,47 @@ export async function downloadVideo(input: string, projectDir: string, options: 
         },
       }); } catch (error) {
         if (signal.aborted || !options.resolvePublicVideo || !['抖音', '小红书'].includes(normalized.platform)) throw error;
-        options.onProgress?.(5, `正在通过${normalized.platform}公开网页获取视频`);
+        options.onProgress?.(5, `正在通过${normalized.platform}公开网页获取`);
         const publicVideo = await options.resolvePublicVideo(normalized, timedOptions);
-        // The browser returns a normally playable public CDN URL; no cookies are exported.
-        filePath = await downloadDirect(publicVideo.mediaUrl, tmp, timedOptions, publicVideo.referer);
         if (publicVideo.title) source.title = publicVideo.title;
         if (publicVideo.author) source.author = publicVideo.author;
         if (publicVideo.contentId) source.contentId = publicVideo.contentId;
+        if (publicVideo.description) description = publicVideo.description;
+        if (publicVideo.images?.length && !publicVideo.mediaUrl) {
+          imageFiles = [];
+          for (let index = 0; index < publicVideo.images.length; index++) {
+            options.onProgress?.(5 + 80 * index / publicVideo.images.length, `正在下载图片（${index + 1}/${publicVideo.images.length}）`);
+            imageFiles.push(await downloadPublicImage(publicVideo.images[index].url, tmp, timedOptions, publicVideo.referer, index));
+          }
+          filePath = imageFiles[0];
+        } else {
+          if (!publicVideo.mediaUrl) throw new Error('公开页没有返回可下载的视频或图片。');
+          // The browser returns a normally playable public CDN URL; no cookies are exported.
+          filePath = await downloadDirect(publicVideo.mediaUrl, tmp, timedOptions, publicVideo.referer);
+          if (publicVideo.audioUrl) {
+            const audioPath = await downloadDirect(publicVideo.audioUrl, tmp, timedOptions, publicVideo.referer, false, 'audio');
+            const merged = path.join(tmp, 'merged.mp4');
+            await runProcess(tools.ffmpeg, ['-hide_banner', '-loglevel', 'error', '-y', '-i', filePath, '-i', audioPath, '-map', '0:v:0', '-map', '1:a:0', '-c', 'copy', merged], timedOptions);
+            filePath = merged;
+          }
+        }
       }
-      const infoFile = (await readdir(tmp)).find(name => name.endsWith('.info.json'));
-      if (infoFile) {
-        const info = JSON.parse(await readFile(path.join(tmp, infoFile), 'utf8'));
-        source.title = typeof info.title === 'string' ? info.title : source.title;
-        source.author = typeof info.uploader === 'string' ? info.uploader : typeof info.creator === 'string' ? info.creator : '';
-        source.contentId = typeof info.id === 'string' ? info.id : undefined;
-        description = infoDescription(info);
-        // Keep the user's original URL including share credentials; the ID is the stable provenance.
+      if (!imageFiles) {
+        const infoFile = (await readdir(tmp)).find(name => name.endsWith('.info.json'));
+        if (infoFile) {
+          const info = JSON.parse(await readFile(path.join(tmp, infoFile), 'utf8'));
+          source.title = typeof info.title === 'string' ? info.title : source.title;
+          source.author = typeof info.uploader === 'string' ? info.uploader : typeof info.creator === 'string' ? info.creator : '';
+          source.contentId = typeof info.id === 'string' ? info.id : undefined;
+          description = infoDescription(info);
+          // Keep the user's original URL including share credentials; the ID is the stable provenance.
+        }
       }
+    }
+    if (imageFiles?.length) {
+      source.status = 'resolved';
+      options.onProgress?.(95, '图片已下载，正在加入画布');
+      return { filePath, imageFiles, source, ...(description ? { description } : {}) };
     }
     if (!filePath || !path.resolve(filePath).startsWith(path.resolve(tmp) + path.sep) || !existsSync(filePath) || !(await stat(filePath)).size) throw new Error('链接没有返回可用的视频画面。');
     const metadata = JSON.parse(await runProcess(tools.ffprobe, ['-v', 'error', '-show_streams', '-show_format', '-of', 'json', filePath], timedOptions));

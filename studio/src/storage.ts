@@ -62,6 +62,7 @@ function resource(value: unknown, context: string, portable: boolean): string {
   // Built-in example media ships with the app (both modes): the old scene SVGs and the example samples (EXAMPLE_CONTENT §8.1).
   if (/^\/assets\/scene-(?:morning|architecture|landscape)\.svg$/.test(url) || SAMPLE_ASSET_PATTERN.test(url)) return url;
   if (!portable && /^(?:media|field-media):\/\/[^\s<>"'\u0000-\u001f]+$/.test(url)) return url;
+  if (/^field-picture:[^\s:]+:[1-9]\d*$/.test(url)) return url;
   fail(`${context}使用了不允许的 URL 协议。只支持 HTTP、HTTPS 和内置示例素材。`);
 }
 function unique(values: string[], context: string) { if (new Set(values).size !== values.length) fail(`${context}有重复 ID。`); }
@@ -73,7 +74,7 @@ function validateNode(value: unknown, portable: boolean): BoardNode {
   const position = object(node.position, '卡片位置');
   keys(position, ['x', 'y'], '卡片位置');
   const raw = object(node.data, '卡片内容');
-  keys(raw, ['kind', 'title', 'body', 'translation', 'tone', 'mediaId', 'poster', 'url', 'duration', 'transcript', 'transcriptRevision', 'citation', 'tags', 'draftVersions', 'demo', 'videoImport', ...NATIVE_STRINGS, ...SOURCE_STRINGS, 'sourceUrl', 'collectedAt', 'nativeHasAudio', 'nativeSegmentIds', 'nativeWordIds', 'nativeRanges', 'nativeCapture'], '卡片内容');
+  keys(raw, ['kind', 'title', 'body', 'translation', 'tone', 'mediaId', 'poster', 'url', 'duration', 'transcript', 'transcriptRevision', 'citation', 'tags', 'draftVersions', 'demo', 'videoImport', 'pictures', ...NATIVE_STRINGS, ...SOURCE_STRINGS, 'sourceUrl', 'collectedAt', 'nativeHasAudio', 'nativeSegmentIds', 'nativeWordIds', 'nativeRanges', 'nativeCapture'], '卡片内容');
   if (portable && Object.keys(raw).some(key => key.startsWith('native'))) fail('画布包包含设备专属路径，无法安全导入。请从原设备重新导出。');
   if (!TYPES.includes(raw.kind as CardKind)) fail('卡片内容类型不受支持。');
   const data: CardData = { kind: raw.kind as CardKind, title: string(raw.title, '卡片标题', 500), body: string(raw.body, '卡片正文', 300_000) };
@@ -85,6 +86,12 @@ function validateNode(value: unknown, portable: boolean): BoardNode {
   if (raw.mediaId !== undefined) data.mediaId = id(raw.mediaId, '媒体 ID');
   if (raw.poster !== undefined && raw.poster !== '') data.poster = typeof raw.poster === 'string' && rasterPoster(raw.poster) ? raw.poster : resource(raw.poster, '预览图片', portable);
   if (raw.url !== undefined && raw.url !== '') data.url = resource(raw.url, '来源链接', portable);
+  if (raw.pictures !== undefined) {
+    if (raw.kind !== 'note' && raw.kind !== 'link') fail('一组图片只放在笔记或链接卡片上。');
+    const pictures = array(raw.pictures, '笔记图片', 10_000).map(item => resource(item, '笔记图片', portable));
+    if (new Set(pictures).size !== pictures.length) fail('笔记图片有重复。');
+    if (pictures.length) data.pictures = pictures;
+  }
   if (raw.duration !== undefined) data.duration = number(raw.duration, '视频时长', 0, 604_800);
   if (raw.demo !== undefined) { if (typeof raw.demo !== 'boolean') fail('示例标记格式不正确。'); data.demo = raw.demo; }
   if (raw.videoImport !== undefined) {
@@ -429,15 +436,31 @@ function decode(value: string): Uint8Array<ArrayBuffer> {
   for (let index = 0; index < binary.length; index++) output[index] = binary.charCodeAt(index);
   return output;
 }
+export function pictureMediaId(value: string): string | undefined {
+  return /^field-picture:([^\s:]+):[1-9]\d*$/.exec(value)?.[1];
+}
+export function cardMediaIds(data: CardData): string[] {
+  return [...new Set(referencedMediaIds(data))];
+}
+function referencedMediaIds(data: CardData): string[] {
+  const ids: string[] = [];
+  if (data.mediaId) ids.push(data.mediaId);
+  for (const picture of data.pictures || []) { const id = pictureMediaId(picture); if (id) ids.push(id); }
+  for (const match of data.body.matchAll(/field-picture:([^\s:)]+):([1-9]\d*)/g)) ids.push(match[1]);
+  return ids;
+}
+function rewritePictureRefs(value: string, mediaIds: Map<string, string>): string {
+  return value.replace(/field-picture:([^\s:)]+):([1-9]\d*)/g, (all, id: string, ordinal: string) => mediaIds.has(id) ? `field-picture:${mediaIds.get(id)}:${ordinal}` : all);
+}
 export async function exportBoard(board: Board): Promise<Blob> {
   const clean = validateBoard(board);
   delete clean.storage;
   delete clean.groupId;
-  const references = new Set(clean.nodes.flatMap(node => node.data.mediaId ? [node.data.mediaId] : []));
+  const references = new Set(clean.nodes.flatMap(node => referencedMediaIds(node.data)));
   const media: PackedMedia[] = [];
   for (const node of clean.nodes) {
     const data = node.data;
-    if ((/^(media|field-media):/.test(data.url??'') || data.poster?.startsWith('media:')) && !data.mediaId) fail(`“${data.title}”引用的是本机上的原文件，便携画布文件无法携带。请使用“另存完整画布目录”建立含素材的独立副本。`);
+    if (data.pictures?.some(item => /^(media|field-media):/.test(item)) || ((/^(media|field-media):/.test(data.url??'') || data.poster?.startsWith('media:')) && !data.mediaId)) fail(`“${data.title}”引用的是本机上的原文件，便携画布文件无法携带。请使用“另存完整画布目录”建立含素材的独立副本。`);
     if (/^(media|field-media):/.test(data.url??'')) delete data.url;
     if (data.poster?.startsWith('media:')) delete data.poster;
     for (const key of Object.keys(data)) if (key.startsWith('native')) delete data[key];
@@ -471,7 +494,7 @@ export async function importBoard(file: File): Promise<Board> {
   if (packed.format !== 'field-board' || ![1, 2].includes(packed.version as number)) fail('不支持的画布包格式或版本，请选择来处导出的 JSON 文件。');
   date(packed.exportedAt, '导出时间');
   const board = validateBoard(packed.board, true);
-  const references = new Set(board.nodes.flatMap(node => node.data.mediaId ? [node.data.mediaId] : []));
+  const references = new Set(board.nodes.flatMap(node => referencedMediaIds(node.data)));
   let totalBytes = 0;
   const media = array(packed.media, '媒体文件', STORAGE_LIMITS.nodes).map(item => {
     const entry = object(item, '媒体文件'); keys(entry, ['id', 'name', 'mime', 'createdAt', 'data'], '媒体文件');
@@ -496,6 +519,8 @@ export async function importBoard(file: File): Promise<Board> {
     // A removed source may survive as a citation snapshot; retain its original ID.
     if (node.data.citation) node.data.citation.nodeId = nodeIds.get(node.data.citation.nodeId) ?? node.data.citation.nodeId;
     if (node.data.mediaId) node.data.mediaId = mediaIds.get(node.data.mediaId)!;
+    node.data.body = rewritePictureRefs(node.data.body, mediaIds);
+    if (node.data.pictures) node.data.pictures = node.data.pictures.map(item => rewritePictureRefs(item, mediaIds));
     node.data.transcript?.forEach(line => { line.id = uid(); });
     node.data.draftVersions?.forEach(version => { version.id = uid(); version.body = remapSourceLinks(version.body, nodeIds); });
     if (node.data.videoImport) {

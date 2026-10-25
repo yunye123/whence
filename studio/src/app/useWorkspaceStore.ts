@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import type { Viewport } from '@xyflow/react';
 import type { Workspace } from '../model';
 import { loadWorkspace, saveWorkspace, mergeFolderMedia } from '../storage';
+import { foldNotePictures } from './import-merge';
 import { createExampleBoard } from '../templates';
 import type { SaveStatus } from './types';
 import { errorMessage } from './utils';
@@ -58,9 +59,13 @@ export function useWorkspaceStore({busyRef,pendingTranscriptEdits,initialRevealB
       const demo=createExampleBoard('video');
       const initial=value??{schema:1 as const,activeBoardId:demo.id,boards:[demo]};
       if(!value)initialRevealBoard.current=demo.id;
-      const needsSync=!value||initial.boards.some(item=>!!item.storage);
+      let ready=initial;
+      let folded=false;
+      const boards=initial.boards.map(board=>{try{const next=foldNotePictures(board);if(next){folded=true;return next;}}catch{/* Keep a board that cannot take the pictures yet. */}return board;});
+      if(folded)ready={...initial,boards};
+      const needsSync=!value||ready.boards.some(item=>!!item.storage)||folded;
       if(needsSync){saveVersion.current++;contentVersion.current=saveVersion.current;}
-      workspaceRef.current=initial;setWorkspace(initial);setSaveStatus(readOnlyRef.current&&writerLockResolved.current?'readonly':needsSync?'saving':'saved');
+      workspaceRef.current=ready;setWorkspace(ready);setSaveStatus(readOnlyRef.current&&writerLockResolved.current?'readonly':needsSync?'saving':'saved');
     }).catch(error=>{if(active){setLoadError(errorMessage(error));setSaveStatus('error');}});
     return()=>{active=false;};
   },[persist]);

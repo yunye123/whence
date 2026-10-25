@@ -23,7 +23,7 @@ test('export dialog: titled “导出”; options read as what you get; folder e
   const options = getBy(html, { className: 'export-options' });
   assert.equal(attr(options, 'role'), 'radiogroup');
   const radios = queryAll(options, { role: 'radio' });
-  assert.equal(radios.length, 5);
+  assert.equal(radios.length, 6);
   assert.ok(radios.every(radio => radio.tag === 'button'), 'K6 HTML buttons remain');
   const names = radios.map(button => textContent(button));
   assert.ok(names[0].startsWith('分镜脚本'));
@@ -33,6 +33,11 @@ test('export dialog: titled “导出”; options read as what you get; folder e
   const folder = getByRole(options, 'radio', '另存完整画布目录');
   assert.ok(isDisabled(folder));
   assert.ok(mentions(folder, '需要桌面版'));
+  const agent = getByRole(options, 'radio', '本地地址');
+  assert.ok(isDisabled(agent));
+  assert.ok(mentions(agent, '需要桌面版'));
+  const ready = inModal('export', createElement(ExportDialog, { board, busy: false, directoryAvailable: true, agentAvailable: true, onExportPackage: noop, onExportDirectory: noop, onExportMarkdown: noop }));
+  assert.equal(isDisabled(getByRole(ready, 'radio', '本地地址')), false);
   const empty = inModal('export', createElement(ExportDialog, { board: createBoard('blank'), busy: false, directoryAvailable: true, onExportPackage: noop, onExportDirectory: noop, onExportMarkdown: noop }));
   assert.ok(isDisabled(getByRole(empty, 'radio', /^灵感板/)), 'no images: moodboard export explains instead of opening');
   assert.ok(isDisabled(getByRole(empty, 'radio', '分镜脚本')));

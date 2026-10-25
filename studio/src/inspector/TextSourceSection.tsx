@@ -353,6 +353,7 @@ export default function TextSourceSection({
       onRevealQuote={revealQuote}
       revealsOnCanvas={!!board.revealCard}
       onCommand={onCommand}
+      getMediaUrl={board.getMediaUrl}
       bodyRef={bodyRef}
       quoteLabel={quoteTitle}
       rangeOrigin={sourceReveal && !sourceReveal.quoteNodeId && sourceReveal.quoteText ? 'search' : undefined}

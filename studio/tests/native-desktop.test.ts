@@ -37,6 +37,7 @@ import transcribe as t
 print(json.dumps({
   "marks": [t.chinese_marks(x) for x in ["视频,", "对吧?", "好!", "第一步:", "1,000", "10:30", "照片﹑", "打﹐", "VDA Large,"]],
   "echo": [t.echoes_prompt(x) for x in [t.PUNCTUATION_PROMPT, "以下是一段普通话口语。", " 使用简体中文", "标点", "一张照片，一段现成的视频", "大家好，今天聊聊口语"]],
+  "hallucination": [t.known_hallucination(x) for x in ["请不吝点赞 订阅 转发 打赏支持明镜与点点栏目", "请不吝点赞 订阅 转发 打赏支持明镜与点点栏目请不吝点赞 订阅 转发 打赏支持明镜与点点栏目", "今天拍条vlog聊聊李白", t.PUNCTUATION_PROMPT]],
   "prompt": t.PUNCTUATION_PROMPT,
 }, ensure_ascii=False))
 `;
@@ -45,6 +46,7 @@ print(json.dumps({
   const result = JSON.parse(run.stdout);
   assert.deepEqual(result.marks, ['视频，', '对吧？', '好！', '第一步：', '1,000', '10:30', '照片，', '打，', 'VDA Large，'], 'a mark after a Western word inside Chinese speech is a Chinese mark too');
   assert.deepEqual(result.echo, [true, true, true, false, false, false], 'only text that is (a part of) the prompt is dropped');
+  assert.deepEqual(result.hallucination, [true, true, false, false], 'the fixed non-speech line is recognized, including when it repeats');
   assert.match(result.prompt, /[，。、]/, 'the prompt itself carries full Chinese punctuation');
 });
 

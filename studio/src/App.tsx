@@ -18,6 +18,7 @@ import { errorMessage } from './app/utils';
 import { pendingImport, sharedLinks, isXUrl } from './app/video-links';
 import { canvasAriaLabels } from './app/canvas-config';
 import { exportBoardPackage, exportBoardDirectory, exportBoardDraft } from './app/export-actions';
+import { useAgentBoardSync } from './app/useAgentBoardSync';
 import { nodeSelector, focusCanvasStart } from './app/studio-dom';
 // Presentational shell and dialogs (state stays here, passed in as props).
 import { LoadErrorScreen, LoadingScreen } from './shell/RecoveryScreens';
@@ -205,6 +206,7 @@ function Studio() {
 
   // --- The canvas's own events, the window's keys and focus, search ---
   useVideoTaskRecovery({video:videoTasks,workspace,workspaceRef,readOnlyRef,readOnly,notify});
+  useAgentBoardSync({workspaceRef,readOnlyRef,setNext,notify});
   const {onNodesChange,onEdgesChange,onSelectionChange,connectCards,onConnect,onConnectEnd,onNodeDragStart,onNodeDragStop,onCanvasKey,onCanvasDrop}=useCanvasHandlers({boardRef,workspaceRef,readOnlyRef,modal,contextMenu,inspectedId:focusedId,selectedIds,effectiveTool,measurements,flow,changeBoard,pushHistory,notify,openCard,addQuote,importFiles,setSelectedIds,setSelectedEdgeIds,setMeasurements,smartSnap,setSnapGuides,movingCardIds,snapBypass,captionRulesRef});
   usePaneMarquee({enabled:effectiveTool==='select'&&!!board,flow,flowStore});
   useDialogFocus({modal,modalHost});
@@ -543,6 +545,7 @@ function Studio() {
                   board={board}
                   busy={!!busy}
                   directoryAvailable={!!window.fieldBoardStorage}
+                  agentAvailable={!!window.fieldAgentBoard}
                   currentDraftId={writingDraft?.id}
                   lastModifiedDraftId={lastModifiedDraftId}
                   onBusyChange={setBusy}

@@ -9,6 +9,8 @@ punctuation unless the decoder sees punctuated text first, so when the speech is
 - writes Western marks between Chinese words as Chinese ones (, ? ! ; : -> ，？！；：), except inside numbers.
 Every other parameter (word timestamps, VAD, beam size, GPU fallbacks, output shape) is the legacy one. The prompt is
 never part of the result: a segment that only repeats it (Whisper may echo its prompt over noise or music) is dropped.
+On some clips the same prompt makes Whisper write the fixed non-speech line "请不吝点赞…明镜与点点栏目"
+instead of the soundtrack. That pass is thrown away and the clip is transcribed again without the prompt.
 """
 import argparse
 import gc
@@ -57,6 +59,53 @@ def echoes_prompt(text):
     return len(value) >= 4 and value in PROMPT_PLAIN
 
 
+def known_hallucination(text):
+    """Whisper's fixed Chinese non-speech line, including the same line repeated in one segment."""
+    value = plain(text)
+    return "明镜与点点" in value or "请不吝点赞" in value
+
+
+def decode(pipeline, audio, batch, language, prompt, apply_marks, offset):
+    options = {"append_punctuations": APPEND_PUNCTUATIONS} if apply_marks else {}
+    if prompt:
+        options["initial_prompt"] = prompt
+    iterator, info = pipeline.transcribe(
+        audio, batch_size=batch, language=language, word_timestamps=True, vad_filter=True, beam_size=5, **options)
+    segments = []
+    dropped = 0
+    saw_hallucination = False
+    for i, segment in enumerate(iterator):
+        if known_hallucination(segment.text):
+            saw_hallucination = True
+            dropped += 1
+            continue
+        if prompt and echoes_prompt(segment.text):
+            dropped += 1
+            continue
+        words = [{"id": f"s{i}-w{j}", "text": chinese_marks(w.word) if apply_marks else w.word,
+                  "startMs": round(w.start * 1000) + offset,
+                  "endMs": round(w.end * 1000) + offset,
+                  "probability": w.probability}
+                 for j, w in enumerate(segment.words or [])]
+        text = segment.text
+        if apply_marks:
+            # Whisper's words spell the segment text exactly; rebuilding the text from the converted words
+            # keeps the two identical, which the reading-line split relies on.
+            joined = "".join(w.word for w in segment.words or [])
+            text = "".join(w["text"] for w in words) if words and joined == segment.text else chinese_marks(text)
+        # Whisper may attach punctuation to zero-duration units. Do not invent
+        # word timing: keep the full source sentence as the selectable fallback.
+        if any(w["startMs"] < 0 or w["endMs"] <= w["startMs"] for w in words):
+            words = []
+        segments.append({"id": f"s{i}", "text": text,
+                         "startMs": round(segment.start * 1000) + offset,
+                         "endMs": round(segment.end * 1000) + offset,
+                         "words": words})
+        emit({"type": "progress", "progress": min(0.98, segment.end / max(info.duration, 1)),
+              "message": f"已转写到 {segment.end:.1f} 秒"})
+    return segments, info, dropped, saw_hallucination
+
+
 def run(args):
     from faster_whisper import BatchedInferencePipeline, WhisperModel
     from faster_whisper.audio import decode_audio
@@ -87,43 +136,24 @@ def run(args):
                 timings["detectLanguage"] = round(time.monotonic() - step, 3)
                 if language in PROMPT_LANGUAGES:
                     prompt = PUNCTUATION_PROMPT
-            options = {"initial_prompt": prompt, "append_punctuations": APPEND_PUNCTUATIONS} if prompt else {}
+            apply_marks = bool(prompt)
             step = time.monotonic()
-            iterator, info = pipeline.transcribe(audio, batch_size=batch, language=language if prompt else None,
-                word_timestamps=True, vad_filter=True, beam_size=5, **options)
-            segments = []
-            dropped = 0
-            offset = args.offset_ms
-            for i, segment in enumerate(iterator):
-                if prompt and echoes_prompt(segment.text):
-                    dropped += 1
-                    continue
-                words = [{"id": f"s{i}-w{j}", "text": chinese_marks(w.word) if prompt else w.word,
-                          "startMs": round(w.start * 1000) + offset,
-                          "endMs": round(w.end * 1000) + offset,
-                          "probability": w.probability}
-                         for j, w in enumerate(segment.words or [])]
-                text = segment.text
-                if prompt:
-                    # Whisper's words spell the segment text exactly; rebuilding the text from the converted words
-                    # keeps the two identical, which the reading-line split relies on.
-                    joined = "".join(w.word for w in segment.words or [])
-                    text = "".join(w["text"] for w in words) if words and joined == segment.text else chinese_marks(text)
-                # Whisper may attach punctuation to zero-duration units. Do not invent
-                # word timing: keep the full source sentence as the selectable fallback.
-                if any(w["startMs"] < 0 or w["endMs"] <= w["startMs"] for w in words):
-                    words = []
-                segments.append({"id": f"s{i}", "text": text,
-                                 "startMs": round(segment.start * 1000) + offset,
-                                 "endMs": round(segment.end * 1000) + offset,
-                                 "words": words})
-                emit({"type": "progress", "progress": min(0.98, segment.end / max(info.duration, 1)),
-                      "message": f"已转写到 {segment.end:.1f} 秒（{device}）"})
+            segments, info, dropped, saw_hallucination = decode(
+                pipeline, audio, batch, language if prompt else None, prompt, apply_marks, args.offset_ms)
+            retried = False
+            if prompt and saw_hallucination:
+                emit({"type": "progress", "progress": 0.05,
+                      "message": "标点提示让这段口播写成了固定错句，正在不带提示重转"})
+                segments, info, dropped_again, _again = decode(
+                    pipeline, audio, batch, language, None, apply_marks, args.offset_ms)
+                dropped += dropped_again
+                retried = True
+                prompt = None
             timings["transcribe"] = round(time.monotonic() - step, 3)
             emit({"type": "result", "engine": "faster-whisper/" + os.path.basename(os.path.normpath(args.model)),
                   "device": device, "elapsedSeconds": round(time.monotonic() - started, 3),
                   "language": info.language, "punctuationPrompt": bool(prompt), "droppedPromptEchoes": dropped,
-                  "timings": timings, "segments": segments})
+                  "retriedWithoutPrompt": retried, "timings": timings, "segments": segments})
             return
         except Exception as error:
             last_error = error

@@ -30,6 +30,9 @@
   .export-dialog__filename { display: grid; gap: 6px; border-top: 1px solid var(--rule-paper); padding-top: 16px; }
   .export-dialog__filename span { font: 400 12px/18px var(--font-ui); color: var(--fg-3); }
   .export-dialog__filename strong { font: 500 14px/22px var(--font-ui); }
+  .export-dialog__address { display: grid; gap: 6px; border-top: 1px solid var(--rule-paper); padding-top: 16px; }
+  .export-dialog__address span { font: 400 12px/18px var(--font-ui); color: var(--fg-3); }
+  .export-dialog__address a, .export-dialog__address strong { font: 500 13px/20px var(--font-ui); color: var(--fg-1); overflow-wrap: anywhere; }
   .export-dialog__settings { min-width: 0; min-height: 0; overflow: auto; padding: 2px; }
   .export-dialog__details h3, .export-dialog__drafts legend { font: 600 12px/18px var(--font-ui); color: var(--fg-2); margin-bottom: 8px; }
   .export-dialog__details p { font: 400 14px/22px var(--font-ui); color: var(--fg-2); margin: 0 0 14px; }

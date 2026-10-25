@@ -149,11 +149,13 @@ export async function importVideoLink(input: VideoImportInput, options: VideoImp
         options.onProgress?.({ stage: task.status, progress: task.progress, message: task.message, jobId: task.id, attempt: task.attempt });
         if (task.card) {
           const signature = JSON.stringify([task.card.nativeProjectId, task.card.nativeAssetId, task.card.url, task.card.mediaId, task.card.poster, task.card.nativeMediaWarning]);
-          if (lastMediaSignature !== signature) { lastMediaSignature = signature; options.onMediaReady?.(task.card); }
+          if (lastMediaSignature !== signature && task.card.kind !== 'note') { lastMediaSignature = signature; options.onMediaReady?.(task.card); }
         }
       } catch (error) { finish(new Error(`处理视频导入状态失败：${message(error)}`)); return; }
       if (settled || abortRequested) return;
       if (task.status === 'completed') {
+        try { options.onComplete?.(task); }
+        catch (error) { finish(new Error(`处理图文导入结果失败：${message(error)}`)); return; }
         if (!task.card) finish(new Error('视频导入已结束，但桌面服务没有返回媒体卡片。'));
         else finish(undefined, task.card);
       } else if (task.status === 'cancelled') finish(abortError(task.error || task.message || undefined));

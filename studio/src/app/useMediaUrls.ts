@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Board } from '../model';
-import { getMedia } from '../storage';
+import { cardMediaIds, getMedia } from '../storage';
 import { followsPictureRatio, imageRatioKey, knownImageRatio, rememberImageRatio } from '../card-placement';
 import { isLocalPictureSource, readImageSizeAt } from './local-media';
 import type { ToastOptions } from '../shell/Toasts';
@@ -16,7 +16,7 @@ export function useMediaUrls({board,notify}:{board:Board|null;notify:(message:st
   const [mediaRetryVersion,setMediaRetryVersion]=useState(0);
   const mediaUrlsRef=useRef<Record<string,string>>({});
   const mediaLoads=useRef(new Map<string,ReturnType<typeof getMedia>>());
-  const mediaKey=useMemo(()=>JSON.stringify([...new Set(board?.nodes.map(node=>node.data.mediaId).filter((id):id is string=>!!id)??[])].sort()),[board?.id,board?.nodes]);
+  const mediaKey=useMemo(()=>JSON.stringify([...new Set(board?.nodes.flatMap(node=>cardMediaIds(node.data))??[])].sort()),[board?.id,board?.nodes]);
   useEffect(()=>{
     const ids=JSON.parse(mediaKey) as string[];
     let active=true;

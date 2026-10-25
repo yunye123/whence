@@ -41,8 +41,8 @@ test('X batch preserves literal text, authorship, media order and precise video 
   const original = createBoard('writing'), before = structuredClone(original), input = result(), media = mediaStore();
   const prepared = await prepareXImport(input, original, { position, ...media, originalText: `分享文案\r\n${url}?s=20` });
   assert.deepEqual(original, before);
-  assert.equal(prepared.nodes.length, 5);
-  assert.deepEqual(prepared.nodes.map(node => node.data.kind), ['link', 'image', 'video', 'image', 'video']);
+  assert.equal(prepared.nodes.length, 3);
+  assert.deepEqual(prepared.nodes.map(node => node.data.kind), ['link', 'video', 'video']);
   const source = prepared.nodes[0];
   assert.equal(source.data.body, input.post.text);
   assert.equal(source.data.sourceOriginalText, input.post.text);
@@ -50,15 +50,15 @@ test('X batch preserves literal text, authorship, media order and precise video 
   assert.equal(source.data.sourceTitle, input.post.title);
   assert.equal(source.data.sourceAuthor, '作者名字 (@creator)');
   assert.match(String(source.data.sourceStatus), /第三方 FxTwitter.*正文完整.*图片已保存 2\/2.*原帖发布时间.*获取时间/);
-  assert.equal(prepared.board.edges.length, 4);
+  assert.equal(prepared.board.edges.length, 2);
   assert.ok(prepared.board.edges.every(edge => edge.source === source.id));
   assert.deepEqual(prepared.board.edges.map(edge => edge.target), prepared.nodes.slice(1).map(node => node.id));
   assert.deepEqual(prepared.mediaIds, ['new-media-1', 'new-media-2']);
-  for (const node of prepared.nodes.filter(node => node.data.kind === 'image')) {
-    assert.equal(node.data.url, undefined); assert.ok(media.records.has(node.data.mediaId!));
-    assert.deepEqual(new Uint8Array(await media.records.get(node.data.mediaId!)!.blob.arrayBuffer()), png);
+  assert.deepEqual(source.data.pictures, ['field-picture:new-media-1:1', 'field-picture:new-media-2:2']);
+  for (const id of prepared.mediaIds) {
+    assert.ok(media.records.has(id));
+    assert.deepEqual(new Uint8Array(await media.records.get(id)!.blob.arrayBuffer()), png);
   }
-  assert.equal(prepared.nodes[1].data.body, imageA.altText);
   const videos = prepared.nodes.filter(node => node.data.kind === 'video');
   assert.deepEqual(videos.map(node => node.data.sourceUrl), [`${url}/video/1`, `${url}/video/2`]);
   assert.deepEqual(prepared.videoNodeIds, videos.map(node => node.id));
@@ -80,7 +80,7 @@ test('same status aliases identify one source and complete repeated imports crea
   first.board.nodes[0].data.body = '我已编辑过的正文'; first.board.nodes[0].data.title = '我改过的标题';
   const before = structuredClone(first.board);
   const duplicate = getXImportDuplicate(first.board, 'https://twitter.com/another/status/2104200939095904322/video/2?s=20');
-  assert.equal(duplicate.sourceNodeId, first.sourceNodeId); assert.equal(duplicate.nodeIds.length, 5);
+  assert.equal(duplicate.sourceNodeId, first.sourceNodeId); assert.equal(duplicate.nodeIds.length, 3);
   assert.deepEqual(duplicate.imageNumbers, [1, 2]); assert.deepEqual(duplicate.videoNumbers, [1, 2]);
   const repeated = await prepareXImport(input, first.board, { position, ...media });
   assert.equal(repeated.board, first.board); assert.equal(repeated.duplicate, true);
@@ -114,18 +114,18 @@ test('partial image failures are explicit and a repeated import fills only missi
   const media = mediaStore(), input = result([imageA, imageB, videoA]);
   input.images[1] = { source: imageB, name: '不可用.png', error: '图片服务器连接超时' };
   const first = await prepareXImport(input, createBoard('blank'), { position, ...media });
-  assert.equal(first.nodes.length, 3); assert.equal(media.records.size, 1);
+  assert.equal(first.nodes.length, 2); assert.equal(media.records.size, 1);
   assert.match(first.warnings.join('\n'), /图片 2 未保存.*连接超时.*补齐/);
   assert.match(String(first.nodes[0].data.sourceStatus), /图片已保存 1\/2.*缺失图片/);
   first.board.nodes[0].data.body = '已修改正文';
   const second = await prepareXImport(result([imageA, imageB, videoA]), first.board, { position, ...media });
-  assert.equal(second.nodes.length, 1); assert.equal(second.nodes[0].data.kind, 'image');
-  assert.equal(second.nodes[0].data.sourceUrl, `${url}/photo/2`);
+  assert.equal(second.nodes.length, 0);
+  assert.deepEqual(second.board.nodes[0].data.pictures?.map(item => item.split(':').at(-1)), ['1', '2']);
   assert.equal(second.board.nodes[0].data.body, '已修改正文');
   assert.equal(second.board.nodes[0].data.sourceOriginalText, input.post.text);
   assert.match(String(second.board.nodes[0].data.sourceStatus), /图片已保存 2\/2/);
   assert.equal(second.videoNodeIds.length, 0); assert.equal(media.records.size, 2);
-  assert.equal(second.board.edges.length, 3);
+  assert.equal(second.board.edges.length, 1);
 });
 
 test('a recovered complete body creates one linked version while preserving preview edits and existing quotes', async () => {
@@ -142,7 +142,7 @@ test('a recovered complete body creates one linked version while preserving prev
   assert.equal(second.board.nodes[0].data.sourceStatus, oldStatus);
   assert.deepEqual(second.board.nodes.find(node => node.id === oldQuote.id), oldQuote);
   assert.notEqual(second.sourceNodeId, first.sourceNodeId);
-  assert.deepEqual(second.nodes.map(node => node.data.kind), ['link', 'image']);
+  assert.deepEqual(second.nodes.map(node => node.data.kind), ['link']);
   const fullSource = second.nodes[0];
   assert.equal(fullSource.data.body, complete.post.text); assert.equal(fullSource.data.sourceOriginalText, complete.post.text);
   assert.match(String(fullSource.data.sourceStatus), /正文完整/);
@@ -160,7 +160,8 @@ test('different captured complete text is preserved and generic user notes no lo
   const media = mediaStore(), first = await prepareXImport(result([imageA]), createBoard('blank'), { position, ...media });
   const changed = result([imageA, imageB]); changed.post.text = '后来变更的完整正文';
   const second = await prepareXImport(changed, first.board, { position, ...media });
-  assert.equal(second.sourceNodeId, first.sourceNodeId); assert.equal(second.nodes.length, 1);
+  assert.equal(second.sourceNodeId, first.sourceNodeId); assert.equal(second.nodes.length, 0);
+  assert.equal(second.mediaIds.length, 1);
   assert.equal(second.board.nodes[0].data.sourceOriginalText, first.board.nodes[0].data.sourceOriginalText);
   assert.match(second.warnings.join('\n'), /现有原帖卡不同.*保留.*仅补充/);
   const generic = createNode('link'); generic.data.url = url; generic.data.body = '我的网页阅读笔记';
@@ -222,7 +223,7 @@ test('sourceOnly repairs a multi-media post without creating or saving any new v
   assert.equal(repeated.duplicate, true); assert.equal(repeated.board, sourceOnly.board);
   const media = mediaStore();
   const normal = await prepareXImport(input, sourceOnly.board, { position, ...media });
-  assert.deepEqual(normal.nodes.map(node => node.data.kind), ['image', 'image', 'video']);
+  assert.deepEqual(normal.nodes.map(node => node.data.kind), ['video']);
   assert.equal(normal.videoNodeIds.length, 1); assert.equal(normal.mediaIds.length, 2);
 });
 
@@ -329,10 +330,11 @@ test('repair association capacity and cancelled or failed new-image saves preser
 test('article media reference the actual publishing post and keep local ordinals plus CDN provenance', async () => {
   const media = mediaStore(), article = result(); article.post.contentKind = 'article';
   const prepared = await prepareXImport(article, createBoard('blank'), { position, ...media });
-  const images = prepared.nodes.filter(node => node.data.kind === 'image'), videos = prepared.nodes.filter(node => node.data.kind === 'video');
-  assert.ok([...images, ...videos].every(node => node.data.sourceUrl === url));
-  assert.equal(images[0].data.sourceStatus, `文章图片 1；原图：${imageA.url}`);
-  assert.equal(images[1].data.sourceStatus, `文章图片 2；原图：${imageB.url}`);
+  const videos = prepared.nodes.filter(node => node.data.kind === 'video');
+  const source = prepared.board.nodes.find(node => node.id === prepared.sourceNodeId)!;
+  assert.equal(prepared.nodes.some(node => node.data.kind === 'image'), false);
+  assert.deepEqual(source.data.pictures, [`field-picture:${prepared.mediaIds[0]}:1`, `field-picture:${prepared.mediaIds[1]}:2`]);
+  assert.ok(videos.every(node => node.data.sourceUrl === url));
   assert.equal(videos[0].data.sourceStatus, `文章视频 1；视频源：${videoA.url}`);
   assert.equal(videos[1].data.sourceStatus, `文章视频 2；视频源：${gif.url}`);
   assert.deepEqual(videos.map(node => node.data.videoImport!.url), [`${url}/video/1`, `${url}/video/2`]);
@@ -345,8 +347,7 @@ test('article media reference the actual publishing post and keep local ordinals
   const retaggedRepeat = await prepareXImport(article, retagged, { position, ...media });
   assert.deepEqual(retaggedRepeat.nodes, []); assert.deepEqual(retaggedRepeat.mediaIds, []);
   const invalid = structuredClone(prepared.board);
-  invalid.nodes.find(node => node.id === images[0].id)!.data.tags = ['图片'];
-  invalid.nodes.find(node => node.id === images[1].id)!.data.sourceStatus = `文章图片 02；原图：${imageB.url}`;
+  invalid.nodes.find(node => node.data.kind === 'link')!.data.pictures = [`field-picture:${prepared.mediaIds[0]}:1`, '不是图片引用'];
   invalid.nodes.find(node => node.id === videos[0].id)!.data.tags = ['视频'];
   invalid.nodes.find(node => node.id === videos[1].id)!.data.sourceUrl = 'https://twitter.com/creator/status/2104200939095904322';
   assert.deepEqual(getXImportDuplicate(invalid, url).imageNumbers, [1]);
@@ -397,7 +398,7 @@ test('complete-version capacity includes its version edge and failed saves prese
   const save = async (blob: Blob, name?: string) => { writes++; return media.saveMedia(blob, name); };
   const nodeFull = { ...first.board, nodes: [...first.board.nodes, ...Array.from({ length: STORAGE_LIMITS.nodes - first.board.nodes.length }, () => createNode('note'))] };
   await assert.rejects(prepareXImport(complete, nodeFull, { position, ...media, saveMedia: save }), /500 张卡片/);
-  const edgeFull = { ...first.board, edges: Array.from({ length: STORAGE_LIMITS.edges - 1 }, (_, i) => ({ id: `edge-version-${i}`, source: first.sourceNodeId, target: first.nodes[1].id })) };
+  const edgeFull = { ...first.board, edges: Array.from({ length: STORAGE_LIMITS.edges }, (_, i) => ({ id: `edge-version-${i}`, source: first.sourceNodeId, target: first.nodes[0].id })) };
   await assert.rejects(prepareXImport(complete, edgeFull, { position, ...media, saveMedia: save }), /1500 条连线/);
   assert.equal(writes, 0);
   await assert.rejects(prepareXImport(complete, first.board, { position, ...media, saveMedia: async () => { throw new Error('新版本图片保存失败'); } }), /新版本图片保存失败/);
@@ -434,10 +435,12 @@ test('aborts before or after an image write roll back without leaving cards or m
 
 test('failed final board validation rolls back new assets and never deletes colliding existing IDs', async () => {
   const media = mediaStore(), board = createBoard('blank');
-  await assert.rejects(prepareXImport(result([imageA]), board, { position, ...media, saveMedia: async (blob, name) => { const record = await media.saveMedia(blob, name); media.records.delete(record.id); record.id = 'invalid\0id'; media.records.set(record.id, record); return record; } }), /媒体 ID/);
+  await assert.rejects(prepareXImport(result([imageA]), board, { position, ...media, saveMedia: async (blob, name) => { const record = await media.saveMedia(blob, name); media.records.delete(record.id); record.id = 'invalid\0id'; media.records.set(record.id, record); return record; } }), /笔记图片|媒体 ID/);
   assert.deepEqual(media.removed, ['invalid\0id']); assert.equal(media.records.size, 0);
   const old = createNode('image'); old.data.mediaId = 'existing'; board.nodes = [old];
   await assert.rejects(prepareXImport(result([imageA]), board, { position, ...media, saveMedia: async (blob, name) => ({ id: 'existing', name: name!, mime: blob.type, blob, createdAt: '2026-10-04T00:00:00.000Z' }) }), /重复媒体 ID/);
+  const kept = createNode('link'); kept.data.url = url; kept.data.pictures = ['field-picture:kept-picture:2']; board.nodes = [kept];
+  await assert.rejects(prepareXImport(result([imageA]), board, { position, ...media, saveMedia: async (blob, name) => ({ id: 'kept-picture', name: name!, mime: blob.type, blob, createdAt: '2026-10-04T00:00:00.000Z' }) }), /重复媒体 ID/);
   assert.deepEqual(media.removed, ['invalid\0id']);
 });
 
@@ -494,22 +497,21 @@ test('long article excerpts keep exact anchors and the real portable package res
     assert.equal(packageData.media.length, 1); assert.equal(packageData.board.nodes[0].data.body, input.post.text);
     const restored = await importBoard(new File([packed], 'X长文.field.json'));
     const restoredSource = restored.nodes.find(node => node.data.kind === 'link')!;
-    const restoredImage = restored.nodes.find(node => node.data.kind === 'image')!;
     const restoredVideo = restored.nodes.find(node => node.data.kind === 'video')!;
     const restoredQuote = restored.nodes.find(node => node.data.kind === 'quote')!;
-    assert.notEqual(restoredSource.id, prepared.sourceNodeId); assert.notEqual(restoredImage.data.mediaId, prepared.mediaIds[0]);
+    const restoredPicture = restoredSource.data.pictures?.[0]?.match(/^field-picture:([^:]+):1$/)?.[1];
+    assert.notEqual(restoredSource.id, prepared.sourceNodeId); assert.notEqual(restoredPicture, prepared.mediaIds[0]);
     assert.equal(restoredSource.data.body, input.post.text); assert.equal(restoredSource.data.sourceOriginalText, input.post.text);
     assert.equal(restoredSource.data.sourceUrl, url); assert.equal(restoredSource.data.sourceAuthor, '作者名字 (@creator)');
     assert.match(String(restoredSource.data.sourceStatus), /正文完整/);
-    assert.deepEqual(new Uint8Array(await (await getMedia(restoredImage.data.mediaId!))!.blob.arrayBuffer()), png);
+    assert.deepEqual(new Uint8Array(await (await getMedia(restoredPicture!))!.blob.arrayBuffer()), png);
     assert.equal(restoredQuote.data.citation!.nodeId, restoredSource.id);
     assert.equal(restoredQuote.data.citation!.text, '末段🙂 <原样>'); assert.equal(restoredQuote.data.citation!.textAnchor!.from, from);
     assert.equal(restoredVideo.data.videoImport!.status, 'interrupted'); assert.equal(restoredVideo.data.sourceUrl, url);
     assert.equal(restoredVideo.data.sourceStatus, `文章视频 1；视频源：${videoA.url}`);
-    assert.equal(restoredImage.data.sourceUrl, url); assert.equal(restoredImage.data.sourceStatus, `文章图片 1；原图：${imageA.url}`);
     assert.notEqual(restoredVideo.data.videoImport!.attemptId, prepared.nodes.find(node => node.data.kind === 'video')!.data.videoImport!.attemptId);
     assert.equal(parseDraftReferences(restored.nodes.find(node => node.data.kind === 'draft')!.data.body)[0].sourceNodeId, restoredSource.id);
-    assert.equal(restored.edges.filter(edge => edge.source === restoredSource.id).length, 3);
+    assert.equal(restored.edges.filter(edge => edge.source === restoredSource.id).length, 2);
     assert.doesNotThrow(() => validateBoard(restored));
   } finally { db.restore(); }
 });

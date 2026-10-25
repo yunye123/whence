@@ -13,6 +13,10 @@
   .field-card--note.field-card--blue { --card-tone: var(--note-tone-blue); }
   /* The header stays in the DOM even without a visible title. */
   .field-card--note:not(.field-card--article) .field-card__header { position: static; height: auto; padding: 0; }
+  .field-card__note-pictures { flex: none; display: grid; gap: 6px; margin: 12px var(--card-pad-x) 0; }
+  .field-card__note-pictures img, .field-card__figure, .md-figure { width: 100%; height: auto; object-fit: contain; border-radius: 8px; background: color-mix(in srgb, var(--fg-1) 6%, transparent); }
+  .field-card__figure, .md-figure { display: block; margin: 8px 0; }
+  .field-card__note-picture-count { flex: none; margin: 8px var(--card-pad-x) 0; color: var(--fg-2); font: 12px/16px inherit; }
   .field-card--note:not(.field-card--article)[data-has-title] .field-card__header { padding: 14px calc(var(--card-pad-x) + 52px) 0 var(--card-pad-x); }
   .field-card--note:not(.field-card--article) .field-card__header h3:not(.sr-only) {
     font: var(--type-card-note-title);

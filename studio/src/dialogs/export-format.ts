@@ -1,7 +1,7 @@
 import type { BoardNode } from '../model';
 
 /** Release 2 adds cover here; release 1 deliberately has no visible cover option. */
-export type ExportFormat = 'script' | 'markdown' | 'moodboard' | 'package' | 'directory';
+export type ExportFormat = 'script' | 'markdown' | 'moodboard' | 'package' | 'directory' | 'agent';
 export const EXPORT_FORMAT_KEY = 'field.export-format.v1';
 export const EXPORT_FORMATS: readonly { id: ExportFormat; title: string; label: string; detail: string }[] = [
   { id: 'script', title: '分镜脚本', label: 'PDF', detail: '画面缩略图、时间码、旁白与来源，可直接打印交付。' },
@@ -9,6 +9,7 @@ export const EXPORT_FORMATS: readonly { id: ExportFormat; title: string; label: 
   { id: 'moodboard', title: '灵感板', label: 'PNG · PDF', detail: '把一个分组里的图片按原比例排成一张图或一页 PDF。' },
   { id: 'package', title: '便携画布文件', label: '.field.json', detail: '布局、连线、原文、版本和较小的素材文件，可以重新导入继续编辑。' },
   { id: 'directory', title: '另存完整画布目录', label: '文件夹', detail: '独立副本，包含大视频和全部素材文件，日后直接打开。' },
+  { id: 'agent', title: '本地地址', label: '本地智能体', detail: '复制一个本机链接。智能体打开后能看到怎么读取这张画布；你要求修改时，也能看到怎么写回。不会另存一份画布。' },
 ];
 /** D4 suggested copy; waiting/empty/busy messages stay in one place. */
 export const EXPORT_COPY = {

@@ -4,7 +4,7 @@ import { extractWebArticle } from '../src/web-article';
 
 const sentence = '河水在夜里还是慢慢地走，岸上的灯一盏一盏地灭了，只有风穿过芦苇，把白天的话又送回来一次。';
 
-test('a long article becomes markdown without the navigation or the pictures', () => {
+test('a long article keeps its pictures in place and drops the navigation', () => {
   const article = Array.from({ length: 12 }, () => `<p>${sentence}</p>`).join('');
   const html = `<!doctype html><html><head><title>河岸笔记</title></head><body><nav>首页 分类 登录 关于我们</nav><article><h1>河岸笔记</h1>${article}<img src="/photo.jpg" alt="河岸的照片"></article></body></html>`;
   const parsed = extractWebArticle(html, 'https://example.com/shore');
@@ -12,7 +12,8 @@ test('a long article becomes markdown without the navigation or the pictures', (
   assert.equal(parsed.title, '河岸笔记');
   assert.match(parsed.body, /河水在夜里/);
   assert.doesNotMatch(parsed.body, /首页 分类/);
-  assert.doesNotMatch(parsed.body, /photo\.jpg|河岸的照片|!\[/);
+  assert.match(parsed.body, /!\[河岸的照片\]\(https:\/\/example.com\/photo\.jpg\)/);
+  assert.ok(parsed.body.indexOf('河水在夜里') < parsed.body.indexOf('photo.jpg'));
 });
 
 test('a page with no article is not a body', () => {

@@ -3,6 +3,7 @@ import { createRequire } from 'node:module';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import net from 'node:net';
+import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -75,10 +76,48 @@ try {
   const { createServer, preview } = await import(pathToFileURL(vitePath).href);
   const token = randomUUID();
   const installHealth = vite => {
+    let agentPort = 0;
     vite.middlewares.use('/__field_launcher__/health', (_request, response) => {
       response.setHeader('Content-Type', 'application/json');
       response.setHeader('Cache-Control', 'no-store');
       response.end(JSON.stringify({ product: 'field-studio-next', token, pid: process.pid, mode: productionRoot ? 'production' : 'development', frontend: productionRoot ?? studioRoot }));
+    });
+    vite.middlewares.use('/__field_launcher__/agent-port', (request, response) => {
+      if (request.method !== 'POST' || request.headers['x-field-launch-token'] !== token) { response.statusCode = 404; response.end(); return; }
+      const chunks = [];
+      let size = 0;
+      request.on('data', chunk => {
+        size += chunk.length;
+        if (size > 200) { response.statusCode = 400; response.end(); request.destroy(); return; }
+        chunks.push(chunk);
+      });
+      request.on('end', () => {
+        try {
+          const next = Number(JSON.parse(Buffer.concat(chunks).toString('utf8')).port);
+          if (!Number.isInteger(next) || next < 1024 || next > 65535) throw new Error('port');
+          agentPort = next;
+          response.statusCode = 204;
+          response.end();
+        } catch { response.statusCode = 400; response.end(); }
+      });
+    });
+    vite.middlewares.use('/agent/boards', (request, response) => {
+      if (request.method !== 'GET' && request.method !== 'PUT') { response.statusCode = 405; response.setHeader('Allow', 'GET, PUT'); response.end('只接受读取和写入。'); return; }
+      if (!agentPort) { response.statusCode = 503; response.setHeader('Content-Type', 'text/plain; charset=utf-8'); response.end('来处窗口还没准备好。请先打开来处，再读取这个链接。'); return; }
+      const headers = { host: `127.0.0.1:${agentPort}` };
+      if (request.headers['content-type']) headers['content-type'] = request.headers['content-type'];
+      if (request.headers['content-length']) headers['content-length'] = request.headers['content-length'];
+      const proxy = http.request({ hostname: '127.0.0.1', port: agentPort, method: request.method, path: request.originalUrl && request.originalUrl.startsWith('/agent/boards') ? request.originalUrl : `/agent/boards${request.url && request.url.startsWith('/') ? request.url : `/${request.url || ''}`}`, headers }, upstream => {
+        response.writeHead(upstream.statusCode || 502, upstream.headers);
+        upstream.pipe(response);
+      });
+      proxy.on('error', () => {
+        if (response.headersSent) { response.end(); return; }
+        response.statusCode = 503;
+        response.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        response.end('来处窗口还没准备好。请先打开来处，再读取这个链接。');
+      });
+      request.pipe(proxy);
     });
   };
   if (productionRoot) {
@@ -106,7 +145,7 @@ try {
     const executable = createRequire(import.meta.url)('electron');
     await fs.access(executable).catch(() => { throw new Error('现有 Electron 运行时缺失，请恢复项目 node_modules/electron。'); });
     await fs.mkdir(userData, { recursive: true });
-    const env = { ...process.env, CANVAS_DEV_URL: url, CANVAS_USER_DATA: userData };
+    const env = { ...process.env, CANVAS_DEV_URL: url, CANVAS_USER_DATA: userData, CANVAS_LAUNCH_TOKEN: token };
     delete env.ELECTRON_RUN_AS_NODE;
     if (args.includes('--headless')) env.CANVAS_HEADLESS = '1'; else delete env.CANVAS_HEADLESS;
     // The helper stays hidden; the requested desktop app must have a visible window.

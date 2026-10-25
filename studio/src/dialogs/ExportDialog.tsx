@@ -1,11 +1,13 @@
 import { useCallback, useContext, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
-import { FileText, FolderOpen, LoaderCircle } from 'lucide-react';
+import { FileText, FolderOpen, Link2, LoaderCircle } from 'lucide-react';
 import type { Board } from '../model';
 import { BoardContext } from '../board-context';
 import { DraftIcon, ImageIcon } from '../icons/field-icons';
 import { draftStage } from '../cards/card-utils';
 import { draftCharacterCount } from '../source-location';
 import { exportBoardScript } from '../app/export-actions';
+import { errorMessage } from '../app/utils';
+import { agentBoardLink } from '../agent-board';
 import { useModalControls } from '../shell/ModalShell';
 import MoodboardExport from './MoodboardExport';
 import { moodGroups } from './moodboard';
@@ -16,6 +18,8 @@ export interface ExportDialogProps {
   board: Board;
   busy: boolean;
   directoryAvailable: boolean;
+  /** Desktop builds answer this link from the open canvas. */
+  agentAvailable?: boolean;
   onExportPackage: () => void;
   onExportDirectory: () => void;
   onExportMarkdown: () => void;
@@ -36,17 +40,17 @@ function PackageIcon() {
     <rect x="3.5" y="4.5" width="17" height="15" rx="2"/><rect x="6.5" y="7.5" width="5" height="4" rx=".5"/><rect x="13" y="7.5" width="4.5" height="9" rx=".5"/><path d="M6.5 14.5h5"/>
   </svg>;
 }
-const formatIcon = (format: ExportFormat, size = 22) => format === 'script' ? <FileText size={size} aria-hidden="true"/> : format === 'markdown' ? <DraftIcon size={size}/> : format === 'moodboard' ? <ImageIcon size={size}/> : format === 'directory' ? <FolderOpen size={size} aria-hidden="true"/> : <PackageIcon/>;
+const formatIcon = (format: ExportFormat, size = 22) => format === 'script' ? <FileText size={size} aria-hidden="true"/> : format === 'markdown' ? <DraftIcon size={size}/> : format === 'moodboard' ? <ImageIcon size={size}/> : format === 'directory' ? <FolderOpen size={size} aria-hidden="true"/> : format === 'agent' ? <Link2 size={size} aria-hidden="true"/> : <PackageIcon/>;
 function readMemory() { try { return parseFormatMemory(sessionStorage.getItem(EXPORT_FORMAT_KEY)); } catch { return {}; } }
 
 /** Release 1 shell. Selection only changes the view; the shared footer performs every export. */
-export default function ExportDialog({ board, busy, directoryAvailable, onExportPackage, onExportDirectory, onExportMarkdown, initialView = 'list', initialGroupId, onNotify, currentDraftId, lastModifiedDraftId, onBusyChange, onExportComplete }: ExportDialogProps) {
+export default function ExportDialog({ board, busy, directoryAvailable, agentAvailable = false, onExportPackage, onExportDirectory, onExportMarkdown, initialView = 'list', initialGroupId, onNotify, currentDraftId, lastModifiedDraftId, onBusyChange, onExportComplete }: ExportDialogProps) {
   const actions = useContext(BoardContext), modal = useModalControls();
   const measure = useCanvasMeasurements();
   const groups = useMemo(() => moodGroups(board, actions?.getMediaUrl, measure()), [board, actions, measure]);
   const imageCount = groups.find(group => group.id === 'all')?.items.length ?? 0;
   const drafts = board.nodes.filter(node => node.data.kind === 'draft');
-  const reason = (id: ExportFormat) => id === 'directory' && !directoryAvailable ? EXPORT_COPY.desktop : id === 'moodboard' && !imageCount ? EXPORT_COPY.noImages : id === 'script' && !drafts.length ? EXPORT_COPY.noDraft : '';
+  const reason = (id: ExportFormat) => id === 'directory' && !directoryAvailable ? EXPORT_COPY.desktop : id === 'agent' && !agentAvailable ? EXPORT_COPY.desktop : id === 'moodboard' && !imageCount ? EXPORT_COPY.noImages : id === 'script' && !drafts.length ? EXPORT_COPY.noDraft : '';
   const available = EXPORT_FORMATS.filter(format => !reason(format.id)).map(format => format.id);
   const [selection, setSelection] = useState(() => ({ boardId: board.id, format: defaultExportFormat(board.id, readMemory(), available, initialView) }));
   const format = selection.boardId === board.id && available.includes(selection.format) ? selection.format : defaultExportFormat(board.id, readMemory(), available, initialView);
@@ -84,7 +88,7 @@ export default function ExportDialog({ board, busy, directoryAvailable, onExport
     </button>)}
   </div>;
 
-  const frame = ({ preview, controls, summary, message, canExport = true, onExport, waiting = false }: { preview: ReactNode; controls: ReactNode; summary: ReactNode; message?: ReactNode; canExport?: boolean; onExport: () => void; waiting?: boolean }) => <>
+  const frame = ({ preview, controls, summary, message, canExport = true, onExport, waiting = false, exportLabel = '导出' }: { preview: ReactNode; controls: ReactNode; summary: ReactNode; message?: ReactNode; canExport?: boolean; onExport: () => void; waiting?: boolean; exportLabel?: string }) => <>
     <header className="modal-header"><h2 id="modal-title" className="modal-title">导出</h2><p className="modal-subtitle">「{board.title || '未命名画布'}」共 {board.nodes.filter(node => node.data.kind !== 'frame').length.toLocaleString('en-US')} 张卡片</p></header>
     <div className="modal-body export-dialog__body" aria-busy={blocked}>
       {options}<section className="export-dialog__stage" aria-label={format === 'moodboard' ? '灵感板预览' : '导出说明'}>{preview}</section>
@@ -92,7 +96,7 @@ export default function ExportDialog({ board, busy, directoryAvailable, onExport
     </div>
     <footer className="modal-footer export-dialog__footer"><div className="export-dialog__summary">{summary}{message}{format !== 'moodboard' && notice && <span role="status">{notice}</span>}{internalBusy && <span role="status">{internalBusy}</span>}</div>
       <button type="button" className="btn btn--line" disabled={blocked} onClick={() => modal?.close()}>取消</button>
-      <button type="button" className="btn btn--primary" disabled={blocked || !canExport || waiting} onClick={onExport}>{blocked && <LoaderCircle className="spin" size={15} aria-hidden="true"/>}{blocked ? EXPORT_COPY.busy : '导出'}</button>
+      <button type="button" className="btn btn--primary" disabled={blocked || !canExport || waiting} onClick={onExport}>{blocked && <LoaderCircle className="spin" size={15} aria-hidden="true"/>}{blocked ? EXPORT_COPY.busy : exportLabel}</button>
     </footer>
   </>;
 
@@ -100,11 +104,23 @@ export default function ExportDialog({ board, busy, directoryAvailable, onExport
     renderLayout={parts => frame({ preview: parts.preview, controls: parts.options, summary: parts.summary, message: parts.message, canExport: parts.canExport, waiting: parts.waiting, onExport: () => void parts.exportBoard() })}/>;
 
   const filename = exportFilename(format === 'script' ? draft?.data.title ?? '' : board.title, format);
+  let agentLink = '';
+  let agentLinkError = '';
+  if (format === 'agent') {
+    try { agentLink = agentBoardLink(window.location.origin, board.id); }
+    catch (error) { agentLinkError = errorMessage(error); }
+  }
   const explanation = <article className="export-dialog__explanation">
     <span className="export-dialog__format-icon">{formatIcon(format, 32)}</span><h3>{active.title}</h3><p className="export-dialog__no-preview">{EXPORT_COPY.noPreview}</p><p>{active.detail}</p>
-    <div className="export-dialog__filename"><span>文件名</span><strong>{filename}</strong></div>
+    {format === 'agent' ? <div className="export-dialog__address"><span>本地地址</span>{agentLink ? <strong>{agentLink}</strong> : <strong>{agentLinkError || '本地地址需要来处桌面版。'}</strong>}</div> : <div className="export-dialog__filename"><span>文件名</span><strong>{filename}</strong></div>}
   </article>;
+  const copyAgentLink = async () => {
+    if (!agentLink) return;
+    try { await navigator.clipboard.writeText(agentLink); notify('本地地址已复制'); }
+    catch { notify(agentLink); }
+  };
   const controls = format === 'script' ? <fieldset className="export-dialog__drafts" disabled={blocked}><legend>选择文稿</legend>{drafts.map(node => <label className="export-dialog__draft" key={node.id}><input type="radio" name={ids + '-draft'} checked={draft?.id === node.id} onChange={() => setDraftChoice({ boardId: board.id, id: node.id })}/><span><strong>{node.data.title || '未命名文稿'}</strong><small>{draftStage(node.data.draftVersions?.length ?? 0)} · {draftCharacterCount(node.data.body).toLocaleString('en-US')} 字</small></span></label>)}</fieldset>
+    : format === 'agent' ? <div className="export-dialog__details"><h3>智能体怎么用</h3><p>打开链接就能看到这张画布现在的内容，以及该怎么读取。</p><p>只有你要求修改时，它才按链接里的方法写回。</p><button type="button" className="btn btn--line" disabled={blocked || !agentLink} onClick={() => void copyAgentLink()}>复制链接</button></div>
     : <div className="export-dialog__details"><h3>包含内容</h3><p>{active.detail}</p><p className="export-dialog__format-label">{active.label}</p></div>;
   const exportSelected = async () => {
     if (blocked || pending.current || reason(format)) return;
@@ -114,7 +130,8 @@ export default function ExportDialog({ board, busy, directoryAvailable, onExport
       else if (format === 'markdown') onExportMarkdown();
       else if (format === 'package') onExportPackage();
       else if (format === 'directory') onExportDirectory();
+      else if (format === 'agent') await copyAgentLink();
     } finally { pending.current = false; }
   };
-  return frame({ preview: explanation, controls, summary: <span>{active.label}{format === 'script' ? ' · A4 横向' : ''}</span>, canExport: !reason(format), onExport: () => void exportSelected() });
+  return frame({ preview: explanation, controls, summary: <span>{active.label}{format === 'script' ? ' · A4 横向' : ''}</span>, canExport: format === 'agent' ? !!agentLink : !reason(format), exportLabel: format === 'agent' ? '复制链接' : '导出', onExport: () => void exportSelected() });
 }

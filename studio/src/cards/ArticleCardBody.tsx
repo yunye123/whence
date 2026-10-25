@@ -5,6 +5,7 @@ import { approxCharacters, articleCharacters, isLatinText, lengthMarks, webLink 
 import { CardHandle } from './CardShell';
 import { withBreaks } from './Words';
 import { canMeasureText, measureTextLines, textPieces } from './text-measure';
+import { imageMarkdown, pictureSource } from '../pictures';
 import { sourcePreviewParagraphs, type SourcePreviewParagraph } from '../source-location';
 import type { CardBodyProps, ExcerptMark } from './types';
 
@@ -37,7 +38,7 @@ function markedText(paragraph: SourcePreviewParagraph, marks: readonly TextMark[
 }
 
 /** Shared folder source face. Numbering and exact slices are the same lightweight API as reading. */
-export function FolderSourcePreview({ data, marks, connectable, previewWidth, previewHeight }: FolderSourceProps) {
+export function FolderSourcePreview({ data, board, marks, connectable, previewWidth, previewHeight }: FolderSourceProps) {
   const normalized = useMemo(() => data.body.replace(/\r\n?/g, '\n'), [data.body]);
   const paragraphs = useMemo(() => sourcePreviewParagraphs(normalized), [normalized]);
   const valid = useMemo(() => validTextMarks(marks, normalized.length), [marks, normalized.length]);
@@ -62,8 +63,9 @@ export function FolderSourcePreview({ data, marks, connectable, previewWidth, pr
     return () => document.fonts.removeEventListener('loadingdone', loaded);
   }, []);
   const canPlan = planWidth !== undefined && Number.isFinite(planWidth) && planWidth > 0 && canMeasureText();
+  const figureOf = (paragraph: SourcePreviewParagraph) => imageMarkdown(paragraph.text);
   const selected = useMemo(() => {
-    const candidates = paragraphs.filter(p => p.number === 1 || valid.some(mark => intersects(p, mark)));
+    const candidates = paragraphs.filter(p => !imageMarkdown(p.text) && (p.number === 1 || valid.some(mark => intersects(p, mark))));
     if (!canPlan) return candidates.slice(0, 6).map(paragraph => ({ paragraph, lineLimit: undefined })); // SSR defers line planning.
     const width = Math.max(1, planWidth! - 8 - (narrow ? 28 + 12 : 34 + 14));
     // These are the folder's authored CSS insets and fixed line heights. Measure
@@ -99,14 +101,29 @@ export function FolderSourcePreview({ data, marks, connectable, previewWidth, pr
     return accepted;
   }, [paragraphs, valid, canPlan, planWidth, planHeight, narrow, total, fontVersion, data.title, data.kind, data.url, data.poster]);
   const spans = lengthMarks(normalized.length, valid);
+  const chosen = new Map(selected.map(item => [item.paragraph.from, item.lineLimit]));
+  const rows = paragraphs.filter(paragraph => figureOf(paragraph) || chosen.has(paragraph.from) || /!\[[^\]]*\]\([^)\s]+\)/.test(paragraph.text));
+  const inlineSources = new Set(paragraphs.flatMap(paragraph => [...paragraph.text.matchAll(/!\[[^\]\n]*\]\(([^)\s]+)\)/g)].map(match => match[1])));
+  const extraPictures = (data.pictures || []).filter(url => !!url && !inlineSources.has(url)).map(url => pictureSource(url, board.getMediaUrl)).filter((url): url is string => !!url);
   let previousNumber = 0;
   return (
     <div className="field-card__article card-drag-content" data-folder-narrow={narrow ? '' : undefined}>
       <div className="field-card__folder-tab" data-folder-tab={data.kind === 'link' ? 'link' : 'article'}>
         {data.kind === 'link' ? '网页' : <>文字资料 <span>{data.tags?.includes('Markdown') ? 'Markdown' : data.tags?.includes('纯文本') ? 'TXT' : ''}</span></>}
       </div>
-      <div className="field-card__folder-paragraphs" data-plan-ready={canPlan ? '' : undefined}>
-        {selected.map(({ paragraph, lineLimit }) => {
+      <div className="field-card__folder-paragraphs" data-plan-ready={canPlan ? '' : undefined} data-has-figures={/!\[[^\]]*\]\([^)\s]+\)/.test(normalized) || extraPictures.length ? '' : undefined}>
+        {rows.map(paragraph => {
+          const figure = figureOf(paragraph);
+          if (figure) {
+            const src = pictureSource(figure.src, board.getMediaUrl);
+            return src ? <img key={paragraph.from} className="field-card__figure" src={src} alt={figure.alt} draggable={false} /> : null;
+          }
+          const lineLimit = chosen.get(paragraph.from);
+          const embedded = [...paragraph.text.matchAll(/!\[([^\]\n]*)\]\(([^)\s]+)\)/g)].flatMap((match, index) => {
+            const src = pictureSource(match[2], board.getMediaUrl);
+            return src ? [<img key={`${paragraph.from}-img-${index}`} className="field-card__figure" src={src} alt={match[1]} draggable={false} />] : [];
+          });
+          if (!chosen.has(paragraph.from)) return <Fragment key={paragraph.from}>{embedded}</Fragment>;
           const gapFrom = previousNumber + 1;
           const gapTo = paragraph.number - 1;
           if (paragraph.number) previousNumber = paragraph.number;
@@ -117,8 +134,10 @@ export function FolderSourcePreview({ data, marks, connectable, previewWidth, pr
               data-source-from={paragraph.from} data-source-to={paragraph.to} data-source-heading={paragraph.heading ? '' : undefined}
               style={lineLimit ? { '--folder-lines': lineLimit } as CSSProperties : undefined}
               data-has-excerpt={excerpt ? '' : undefined}>{markedText(paragraph, valid, narrow)}</p>
+            {embedded}
           </Fragment>;
         })}
+        {extraPictures.map((src, index) => <img key={`extra-${index}`} className="field-card__figure" src={src} alt="" draggable={false} />)}
         {total > previousNumber && <FolderGap from={previousNumber + 1} to={total} />}
       </div>
       {/* Retain the original rail/handle contract, without drawing a second length rail on the paper. */}

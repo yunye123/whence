@@ -9,6 +9,7 @@ import { ProjectStore } from './store';
 import { exportDocument, exportProject, restoreProject } from './export';
 import { detectTools, importMedia, transcribeMedia, captureFrame, resolveLink } from './media';
 import { followAppearance, savedAppearance, windowGround } from '../studio/native/window-appearance';
+import { registerAgentPort, startAgentBoardServer } from '../studio/native/agent-board-server';
 import * as canvasDesktop from '../studio/native/canvas-desktop';
 import type { Asset, CanvasItem, Content, Job, ProjectState, Source } from '../shared/types';
 
@@ -285,6 +286,33 @@ async function requestFlush() {
   });
 }
 
+const agentReplies = new Map<string, (status: number, body: string) => void>();
+let closeAgentBoard: () => Promise<void> = async () => {};
+function listenForAgentReplies() {
+  ipcMain.on('field-agent-board:reply', (event, requestId: unknown, status: unknown, body: unknown) => {
+    if (!window || event.sender !== window.webContents || typeof requestId !== 'string' || typeof status !== 'number' || typeof body !== 'string') return;
+    const done = agentReplies.get(requestId);
+    if (!done) return;
+    agentReplies.delete(requestId);
+    done(status, body);
+  });
+}
+async function openAgentLink() {
+  listenForAgentReplies();
+  const server = await startAgentBoardServer((boardId, method, body) => new Promise(resolve => {
+    if (!window || window.isDestroyed()) { resolve({ status: 503, body: '{"error":"来处窗口还没准备好。"}' }); return; }
+    const requestId = uuid();
+    const timer = setTimeout(() => { agentReplies.delete(requestId); resolve({ status: 503, body: '{"error":"来处还没有打开这张画布。"}' }); }, 5000);
+    agentReplies.set(requestId, (status, text) => { clearTimeout(timer); resolve({ status, body: text }); });
+    window.webContents.send('field-agent-board:request', requestId, boardId, method, body);
+  }));
+  closeAgentBoard = server.close;
+  const token = process.env.CANVAS_LAUNCH_TOKEN;
+  const page = process.env.CANVAS_DEV_URL;
+  if (token && page) await registerAgentPort(page, token, server.port);
+}
+function shutDownDesktop() { return closeAgentBoard().catch(() => {}).finally(() => canvasDesktop.close().finally(() => app.quit())); }
+
 if (process.env.CANVAS_USER_DATA) app.setPath('userData', path.resolve(process.env.CANVAS_USER_DATA));
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
@@ -308,6 +336,7 @@ else {
     window.webContents.on('will-navigate', (event, url) => { if (url !== window.webContents.getURL()) event.preventDefault(); });
     try { const last = JSON.parse(await fs.readFile(path.join(app.getPath('userData'), 'last-project.json'), 'utf8')); if (!process.env.CANVAS_TEST) store = ProjectStore.open(last.directory); } catch { /* Welcome screen remains available. */ }
     registerIpc();
+    try { await openAgentLink(); } catch (error) { console.error(`本地地址没有接上：${errorText(error)}`); }
     window.on('close', event => {
       if (closing) return; event.preventDefault();
       void (async () => {
@@ -323,6 +352,6 @@ else {
     const dev = process.env.CANVAS_DEV_URL;
     if (dev && /^http:\/\/127\.0\.0\.1:\d+\/?$/.test(dev)) await window.loadURL(dev);
     else await window.loadFile(path.join(studioRoot, 'dist', 'index.html'));
-  }).catch(error => { console.error(error); dialog.showErrorBox('画布启动失败', errorText(error)); void canvasDesktop.close().finally(() => app.quit()); });
-  app.on('window-all-closed', () => { void canvasDesktop.close().finally(() => app.quit()); });
+  }).catch(error => { console.error(error); dialog.showErrorBox('画布启动失败', errorText(error)); void shutDownDesktop(); });
+  app.on('window-all-closed', () => { void shutDownDesktop(); });
 }

@@ -27,6 +27,8 @@ export interface VideoImportTask {
   updatedAt: string;
   error?: string;
   card?: Partial<CardData>;
+  /** Further pictures from one image note. The first card stays on the original node. */
+  companions?: { id: string; data: Partial<CardData> }[];
   assetId?: string;
   sourceId?: string;
   reused?: boolean;
@@ -43,6 +45,7 @@ export interface VideoImportOptions {
   signal?: AbortSignal;
   onProgress?: (event: VideoImportProgress) => void;
   onMediaReady?: (patch: Partial<CardData>) => void;
+  onComplete?: (task: VideoImportTask) => void;
 }
 export interface FieldVideoImportsAPI {
   submit(input: VideoImportInput): Promise<VideoImportTask>;
@@ -79,6 +82,10 @@ export interface FieldTranslateAPI {
 export interface FieldWebPageAPI {
   fetch(url: string): Promise<{ title: string; body: string } | null>;
 }
-declare global { interface Window { fieldVideoImports?: FieldVideoImportsAPI; fieldBoardStorage?: FieldBoardStorageAPI; fieldLocalFiles?: FieldLocalFilesAPI; fieldFileExport?: FieldFileExportAPI; fieldXImports?: FieldXImportsAPI; fieldPdf?: FieldPdfAPI; fieldTranslate?: FieldTranslateAPI; fieldWebPage?: FieldWebPageAPI } }
+export interface FieldAgentBoardRequest { boardId: string; method: 'GET' | 'PUT'; body: string }
+export interface FieldAgentBoardAPI {
+  onRequest(callback: (request: FieldAgentBoardRequest) => Promise<{ status: number; body: string }> | { status: number; body: string }): () => void;
+}
+declare global { interface Window { fieldVideoImports?: FieldVideoImportsAPI; fieldBoardStorage?: FieldBoardStorageAPI; fieldLocalFiles?: FieldLocalFilesAPI; fieldFileExport?: FieldFileExportAPI; fieldXImports?: FieldXImportsAPI; fieldPdf?: FieldPdfAPI; fieldTranslate?: FieldTranslateAPI; fieldWebPage?: FieldWebPageAPI; fieldAgentBoard?: FieldAgentBoardAPI } }
 
 export const VIDEO_IMPORT_TERMINAL: ReadonlySet<VideoImportStage> = new Set(['completed', 'failed', 'cancelled', 'interrupted']);

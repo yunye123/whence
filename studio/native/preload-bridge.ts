@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { FieldTranslateAPI, FieldVideoImportsAPI, FieldBoardStorageAPI, FieldFileExportAPI, FieldPdfAPI, FieldWebPageAPI, FieldXImportsAPI, VideoImportTask } from './contracts';
+import type { FieldAgentBoardAPI, FieldTranslateAPI, FieldVideoImportsAPI, FieldBoardStorageAPI, FieldFileExportAPI, FieldPdfAPI, FieldWebPageAPI, FieldXImportsAPI, VideoImportTask } from './contracts';
 
 export function exposeVideoImports(): void {
   const request = (channel: string, ...args: unknown[]) => ipcRenderer.invoke(channel, ...args).catch(error => {
@@ -35,6 +35,19 @@ export function exposeVideoImports(): void {
   contextBridge.exposeInMainWorld('fieldTranslate', translate);
   const webPage: FieldWebPageAPI = { fetch: url => request('studio:fetch-web-page', url) as ReturnType<FieldWebPageAPI['fetch']> };
   contextBridge.exposeInMainWorld('fieldWebPage', webPage);
+  const agentBoard: FieldAgentBoardAPI = {
+    onRequest(callback) {
+      const listener = (_event: unknown, requestId: unknown, boardId: unknown, method: unknown, body: unknown) => {
+        Promise.resolve(callback({ boardId: String(boardId), method: method === 'PUT' ? 'PUT' : 'GET', body: typeof body === 'string' ? body : '' })).then(
+          result => ipcRenderer.send('field-agent-board:reply', requestId, result.status, result.body),
+          error => ipcRenderer.send('field-agent-board:reply', requestId, 500, JSON.stringify({ error: error instanceof Error ? error.message : '没有读成。' })),
+        );
+      };
+      ipcRenderer.on('field-agent-board:request', listener);
+      return () => ipcRenderer.removeListener('field-agent-board:request', listener);
+    },
+  };
+  contextBridge.exposeInMainWorld('fieldAgentBoard', agentBoard);
 }
 
 /**

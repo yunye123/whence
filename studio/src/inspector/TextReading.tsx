@@ -4,6 +4,7 @@ import { Copy, PenLine, Plus } from 'lucide-react';
 import { ThreadIcon } from '../icons/field-icons';
 import type { TextRange } from './shared';
 import { keepEditorFocus } from './shared';
+import { imageMarkdown, pictureSource } from '../pictures';
 import { blockAt, isBlockPart } from './reading-markdown';
 import type { InlineRun, ListBlock, ReadingBlock, ReadingDocument, ReadingPart } from './reading-markdown';
 import { rangeForOffsets, readingSelection } from './reading-selection';
@@ -96,7 +97,7 @@ function partRuns(part: ReadingPart): InlineRun[] {
 
 const headingTag = (level: number) => (level <= 1 ? 'h2' : level === 2 ? 'h3' : level === 3 ? 'h4' : 'h5');
 
-function renderBlock(text: string, block: ReadingBlock, located: TextRange | null, traces: ReadingTrace[], hiddenHeading: number | null, shift = 0, markLabel?: string): ReactNode {
+function renderBlock(text: string, block: ReadingBlock, located: TextRange | null, traces: ReadingTrace[], hiddenHeading: number | null, shift = 0, markLabel?: string, getMediaUrl?: (id?: string) => string | undefined): ReactNode {
   const key = `b${block.from}`;
   const local = traces.filter(trace => trace.from < block.to && trace.to > block.from);
   const pieces = (runs: InlineRun[]) => renderPieces(text, decorate(runs, located, local), key, markLabel);
@@ -109,13 +110,25 @@ function renderBlock(text: string, block: ReadingBlock, located: TextRange | nul
       const Tag = headingTag(level);
       return <Tag key={key} {...common} className={`md-block md-heading md-heading--${Math.min(4, level)}${block.from === hiddenHeading ? ' is-duplicate-title' : ''}`} data-heading={block.from}>{pieces(block.runs)}</Tag>;
     }
-    case 'paragraph':
+    case 'paragraph': {
+      const raw = text.slice(block.from, block.to);
+      const images = [...raw.matchAll(/!\[([^\]\n]*)\]\(([^)\s]+)\)/g)].flatMap((match, index) => {
+        const src = pictureSource(match[2], getMediaUrl);
+        return src ? [<img key={`${key}-img-${index}`} className="md-figure" src={src} alt={match[1]} />] : [];
+      });
+      if (imageMarkdown(raw)) {
+        return <p key={key} {...common} className="md-block md-p" {...{ [PARA_ATTR]: block.para }}>
+          <span className="md-mark" aria-hidden="true">{raw}</span>
+          {images}
+        </p>;
+      }
       return <p
         key={key} {...common}
         className={['md-block md-p', block.prose && 'is-prose', block.sectionTitle && 'md-section-title', block.leadHeading && 'has-lead-heading', block.from === hiddenHeading && 'is-duplicate-title'].filter(Boolean).join(' ')}
         {...{ [PARA_ATTR]: block.para }}
         {...(block.sectionTitle || block.leadHeading ? { 'data-heading': block.from } : {})}
-      >{pieces(block.runs)}</p>;
+      >{pieces(block.runs)}{images}</p>;
+    }
     case 'quote':
       return <blockquote key={key} {...common} className="md-block md-quote" {...{ [PARA_ATTR]: block.para }}>{pieces(block.runs)}</blockquote>;
     case 'code':
@@ -167,7 +180,7 @@ function crossesBlocks(document: ReadingDocument, range: TextRange): boolean {
   return item(range.from) !== item(range.to - 1);
 }
 
-function renderDocument(document: ReadingDocument, located: TextRange | null, traces: ReadingTrace[], hiddenHeading: number | null, markLabel?: string): ReactNode[] {
+function renderDocument(document: ReadingDocument, located: TextRange | null, traces: ReadingTrace[], hiddenHeading: number | null, markLabel?: string, getMediaUrl?: (id?: string) => string | undefined): ReactNode[] {
   const { text, parts } = document;
   const flat = located && crossesBlocks(document, located)
     ? { from: blockAt(document, located.from)!.from, to: blockAt(document, located.to - 1)!.to }
@@ -186,7 +199,7 @@ function renderDocument(document: ReadingDocument, located: TextRange | null, tr
     }
     out.push(part.kind === 'gap'
       ? <span key={`g${part.from}`} className="md-mark md-gap" aria-hidden="true">{text.slice(part.from, part.to)}</span>
-      : renderBlock(text, part, located, traces, hiddenHeading, shift, markLabel));
+      : renderBlock(text, part, located, traces, hiddenHeading, shift, markLabel, getMediaUrl));
   }
   return out;
 }
@@ -198,6 +211,7 @@ interface ReadingBodyProps {
   /** Accessible name of the located range's mark: “摘录原文” (K4), “搜索结果” after a search. */
   markLabel?: string;
   traces: ReadingTrace[];
+  getMediaUrl?: (id?: string) => string | undefined;
   onMouseUp: () => void;
   onKeyUp: (event: ReactKeyboardEvent<HTMLDivElement>) => void;
   onKeyDown: (event: ReactKeyboardEvent<HTMLDivElement>) => void;
@@ -205,7 +219,7 @@ interface ReadingBodyProps {
 }
 
 /** The article itself. Memoized: selection, margin notes and the toolbar never re-render the text. */
-const ReadingBody = memo(forwardRef<HTMLDivElement, ReadingBodyProps>(function ReadingBody({ document, hiddenHeading, located, markLabel, traces, onMouseUp, onKeyUp, onKeyDown, onPointerDown }, ref) {
+const ReadingBody = memo(forwardRef<HTMLDivElement, ReadingBodyProps>(function ReadingBody({ document, hiddenHeading, located, markLabel, traces, getMediaUrl, onMouseUp, onKeyUp, onKeyDown, onPointerDown }, ref) {
   return <div
     ref={ref}
     className="inspector-reading-body"
@@ -216,8 +230,8 @@ const ReadingBody = memo(forwardRef<HTMLDivElement, ReadingBodyProps>(function R
     onKeyUp={onKeyUp}
     onKeyDown={onKeyDown}
     onPointerDown={onPointerDown}
-  >{renderDocument(document, located, traces, hiddenHeading, markLabel)}</div>;
-}), (previous, next) => previous.document === next.document && previous.traces === next.traces && previous.hiddenHeading === next.hiddenHeading
+  >{renderDocument(document, located, traces, hiddenHeading, markLabel, getMediaUrl)}</div>;
+}), (previous, next) => previous.document === next.document && previous.traces === next.traces && previous.hiddenHeading === next.hiddenHeading && previous.getMediaUrl === next.getMediaUrl
   && previous.located?.from === next.located?.from && previous.located?.to === next.located?.to && previous.markLabel === next.markLabel
   && previous.onMouseUp === next.onMouseUp && previous.onKeyUp === next.onKeyUp && previous.onKeyDown === next.onKeyDown);
 
@@ -276,11 +290,12 @@ export interface TextReadingProps {
   quoteLabel?: (quoteId: string) => string;
   /** What the located range is (CORE-05): an excerpt's original (default, “摘录原文”) or a search hit (“搜索结果”). */
   rangeOrigin?: 'search';
+  getMediaUrl?: (id?: string) => string | undefined;
 }
 
 const NO_TRACES: ReadingTrace[] = [];
 
-export default function TextReading({ document, hiddenHeading = null, revealsOnCanvas = false, range, traces = NO_TRACES, selection = null, readOnly = false, onSelection, onExcerpt, onRevealQuote, onCommand, bodyRef: externalBodyRef, quoteLabel, rangeOrigin }: TextReadingProps) {
+export default function TextReading({ document, hiddenHeading = null, revealsOnCanvas = false, range, traces = NO_TRACES, selection = null, readOnly = false, onSelection, onExcerpt, onRevealQuote, onCommand, bodyRef: externalBodyRef, quoteLabel, rangeOrigin, getMediaUrl }: TextReadingProps) {
   const surfaceRef = useRef<HTMLDivElement>(null);
   const ownBodyRef = useRef<HTMLDivElement>(null);
   const bodyRef = externalBodyRef ?? ownBodyRef;
@@ -499,6 +514,7 @@ export default function TextReading({ document, hiddenHeading = null, revealsOnC
       located={range}
       markLabel={rangeOrigin === 'search' ? '搜索结果' : undefined}
       traces={traces}
+      getMediaUrl={getMediaUrl}
       onMouseUp={onMouseUp}
       onKeyUp={onKeyUp}
       onKeyDown={onKeyDown}

@@ -5,7 +5,6 @@ import { normalizeXLink, type XImportRequest, type XImportResult, type XLink, ty
 const MAX_JSON = 3 * 1024 ** 2;
 export const X_IMAGE_MAX_BYTES = 16 * 1024 ** 2;
 export const X_IMAGES_MAX_BYTES = 64 * 1024 ** 2;
-export const X_IMAGES_MAX_COUNT = 20;
 const abortError = () => Object.assign(new Error('X 导入已取消。'), { name: 'AbortError' });
 type JsonObject = Record<string, unknown>;
 const object = (value: unknown): JsonObject => value && typeof value === 'object' && !Array.isArray(value) ? value as JsonObject : {};
@@ -89,7 +88,11 @@ function articleText(article: JsonObject, media: XMedia[], warnings: string[]): 
         for (const item of array(data.mediaItems).map(object)) {
           const rawMedia = articleMedia.get(text(item.mediaId));
           const parsed = rawMedia ? parseMedia(rawMedia, warnings) : undefined;
-          if (parsed) { media.push(parsed); links.push(`[${parsed.altText || (parsed.kind === 'image' ? '文章图片' : '文章视频')} 来源](${parsed.url})`); }
+          if (parsed) {
+            media.push(parsed);
+            const alt = (parsed.altText || (parsed.kind === 'image' ? '文章图片' : '文章视频')).replace(/[\[\]]/g, '');
+            links.push(parsed.kind === 'image' ? `![${alt}](${parsed.url})` : `[${alt} 来源](${parsed.url})`);
+          }
           else { complete = false; warn(warnings, '文章中有一项媒体未取得公开来源，请在原文查看。'); }
         }
         if (links.length) replacement = links.join('\n');
@@ -134,7 +137,14 @@ export function parseFxTwitterResponse(payload: unknown, link: XLink | string): 
     const result = articleText(article, media, warnings);
     body = result.text;
     if (!result.complete) completeness = 'partial';
-    if (Object.keys(object(article.cover_media)).length) { const cover = parseMedia(article.cover_media, warnings); if (cover) media.unshift({ ...cover, altText: cover.altText || `文章封面：${text(article.title)}` }); }
+    if (Object.keys(object(article.cover_media)).length) {
+      const cover = parseMedia(article.cover_media, warnings);
+      if (cover) {
+        const titled = { ...cover, altText: cover.altText || `文章封面：${text(article.title)}` };
+        media.unshift(titled);
+        if (titled.kind === 'image') body = `![${titled.altText.replace(/[\[\]]/g, '')}](${titled.url})\n\n${body}`;
+      }
+    }
   } else if (status.truncated === true || (status.is_note_tweet === true && body.length <= 280 && /(?:…|\.\.\.)\s*$/.test(body))) {
     completeness = 'partial'; warn(warnings, '内容服务可能只返回了长推文的前一部分，请打开原文核对或稍后重试。');
   }
@@ -223,7 +233,6 @@ export class XImportService {
         const image: XImportResult['images'][number] = { source, name: `X-${post.id}-${index + 1}` };
         try {
           if (controller.signal.aborted) throw abortError();
-          if (index >= X_IMAGES_MAX_COUNT) throw new Error('单条 X 内容最多导入 20 张图片，已保留这张图片的来源。');
           if (totalBytes >= X_IMAGES_MAX_BYTES) throw new Error('本条 X 图片合计超过 64 MB，已保留这张图片的来源。');
           const maxBytes = Math.min(X_IMAGE_MAX_BYTES, X_IMAGES_MAX_BYTES - totalBytes);
           const result = await (this.options.fetchImage || ((url, max, signal) => fetchXResource(url, 'image', max, { signal })))(source.url, maxBytes, controller.signal);
