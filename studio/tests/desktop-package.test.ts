@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 const studioRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = path.dirname(studioRoot);
 
-function readText(file) {
+function readText(file: string) {
   return fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
 }
 
