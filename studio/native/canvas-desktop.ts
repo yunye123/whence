@@ -1,6 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { BrowserWindow, clipboard, dialog, net, session, shell } from 'electron';
+import { BrowserWindow, clipboard, dialog, net, safeStorage, session, shell } from 'electron';
 import type { ProjectStore } from '../../electron/store';
 import type { BoardNode } from '../src/model';
 import { BoardStorage } from './board-storage';
@@ -12,6 +12,7 @@ import { renderHtmlToPdf } from './pdf-render';
 import { VideoImportService } from './video-import-service';
 import { XImportService } from './x-import';
 import { translateEnglish, translationSettingsFromEnv } from '../src/english-translation';
+import { clearTranslationSettings, describeTranslationSettings, readStoredTranslationSettings, resolveTranslationSettings, writeTranslationSettings, type TranslationCipher, type TranslationSettingsResponse } from './translation-settings';
 import { extractWebArticle } from '../src/web-article';
 import { fetchWebPage } from './web-page';
 
@@ -31,6 +32,7 @@ type IpcHandle = (name: string, handler: (...args: any[]) => unknown) => void;
 let videoImports: VideoImportService | undefined;
 let boardStorage: BoardStorage | undefined;
 let xImports: XImportService | undefined;
+let userDataDirectory = '';
 let legacyProject: () => ProjectStore | null = () => null;
 let currentWindow: () => BrowserWindow | undefined = () => undefined;
 
@@ -65,7 +67,30 @@ async function materialFromProject(node: BoardNode): Promise<{ path: string; nam
   return { path: file, name: asset.name, mime: MATERIAL_MIME[extension] || (asset.kind === 'video' ? 'video/mp4' : 'image/png') };
 }
 
+function translationCipher(): TranslationCipher {
+  return {
+    available() { try { return safeStorage.isEncryptionAvailable(); } catch { return false; } },
+    encrypt(value) { return safeStorage.encryptString(value); },
+    decrypt(value) { return safeStorage.decryptString(Buffer.from(value)); },
+  };
+}
+
+function translationStatus() {
+  const env = translationSettingsFromEnv(process.env);
+  const stored = readStoredTranslationSettings(userDataDirectory, translationCipher());
+  return describeTranslationSettings(stored, !!env.apiKey);
+}
+
+function translationClientOptions() {
+  return resolveTranslationSettings(readStoredTranslationSettings(userDataDirectory, translationCipher()), translationSettingsFromEnv(process.env));
+}
+
+function withCurrentStatus(result: TranslationSettingsResponse): TranslationSettingsResponse {
+  return result.ok ? { ok: true, status: translationStatus() } : result;
+}
+
 export async function open(options: CanvasDesktopOptions): Promise<void> {
+  userDataDirectory = options.userData;
   legacyProject = options.legacyProject;
   currentWindow = options.window;
   xImports = new XImportService();
@@ -110,7 +135,10 @@ export function rejectManagedLibrary(directory: string): void {
 
 export function register(handle: IpcHandle, selectDirectory: (title: string) => Promise<string | undefined>): void {
   const { video, boards, x } = services();
-  handle('translate-english', input => translateEnglish(input, translationSettingsFromEnv(process.env)));
+  handle('translate-english', input => translateEnglish(input, translationClientOptions()));
+  handle('translation-settings-read', () => translationStatus());
+  handle('translation-settings-save', (input: unknown) => withCurrentStatus(writeTranslationSettings(userDataDirectory, translationCipher(), input)));
+  handle('translation-settings-clear', () => clearTranslationSettings(userDataDirectory, translationCipher(), !!translationSettingsFromEnv(process.env).apiKey));
   handle('fetch-web-page', async (input: unknown) => {
     if (typeof input !== 'string' || !input.trim()) return null;
     const page = await fetchWebPage(input);

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, CircleHelp, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CircleHelp, KeyRound, Search } from 'lucide-react';
+import { requestTranslationSettings } from '../app/translation-settings-open';
 import type { Board, Workspace } from '../model';
 import BoardLibrary from '../BoardLibrary';
 import ThemeControl from '../ThemeControl';
@@ -98,6 +99,9 @@ export default function Sidebar({ open, workspace, board, readOnly, busy, select
             <Search size={16} strokeWidth={1.75} />
           </button>
           <span className="sidebar-rail__fill" />
+          <button type="button" className="icon-btn" aria-label="翻译密钥" title="翻译密钥" onClick={() => requestTranslationSettings()}>
+            <KeyRound size={16} strokeWidth={1.75} />
+          </button>
           <button type="button" className="icon-btn" aria-label="使用指南" title="使用指南 (?)" onClick={() => onHelp()}>
             <CircleHelp size={16} strokeWidth={1.75} />
           </button>
@@ -123,6 +127,9 @@ export default function Sidebar({ open, workspace, board, readOnly, busy, select
         <MaterialsLibrary key={board.id} board={board} selectedIds={selectedIds} facet={facet} onFacet={onFacet} onRevealCard={onRevealCard} onOpenCard={onOpenCard} />
         <div className="sidebar-bottom">
           <ThemeControl />
+          <button type="button" className="icon-btn" aria-label="翻译密钥" title="翻译密钥" onClick={() => requestTranslationSettings()}>
+            <KeyRound size={16} strokeWidth={1.75} />
+          </button>
           <button type="button" className="icon-btn" aria-label="使用指南" title="使用指南 (?)" onClick={() => onHelp()}>
             <CircleHelp size={16} strokeWidth={1.75} />
           </button>

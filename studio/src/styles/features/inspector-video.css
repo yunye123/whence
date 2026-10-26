@@ -562,6 +562,21 @@
   .watch-follow { display: inline-flex; align-items: center; gap: var(--space-4); flex: none; font: var(--type-meta); color: var(--fg-2); white-space: nowrap; }
   .watch-follow__label { cursor: pointer; user-select: none; }
   .watch-tr-head:not(:has(.watch-search)) .watch-follow { margin-left: auto; }
+  /* 译好以后多一项「原文 / 中文稿」。窄栏放不下时换到下一行，不挤掉查找。 */
+  .watch-tr-head:has(.watch-script) {
+    height: auto;
+    min-height: 52px;
+    flex-wrap: wrap;
+    row-gap: var(--space-3);
+    padding-block: var(--space-3);
+  }
+  .watch-tr-head .watch-script .seg__item {
+    height: 22px;
+    padding: 0 8px;
+    font: var(--fw-semibold) var(--fs-xs)/22px var(--font-ui);
+  }
+  .watch-tr-head:has(.watch-script) .watch-search { flex-basis: 120px; min-width: 72px; }
+  .watch-tr-head:has(.watch-script) .watch-search:focus-within { flex-basis: 168px; }
 
   /* 字幕与转写工具：摘要按钮坐在头部右端，展开的内容在头部下方占位（不盖住任何句子） */
   .inspector--video .inspector-transcript-tools { margin: 0; padding: 0; border: 0; }

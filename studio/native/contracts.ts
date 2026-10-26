@@ -3,6 +3,7 @@ import type { Board, BoardNode, CardData } from '../src/model';
 import type { DirectoryChoice, StoredMedia, BoardOpenResult, BoardOpenedResult } from './board-storage';
 import type { XImportResult, XImportRequest } from '../shared/x-import';
 import type { EnglishTranslationRequest, EnglishTranslationResult } from '../src/english-translation';
+import type { TranslationSettingsResponse, TranslationSettingsStatus } from './translation-settings';
 
 export type VideoImportStage = 'queued' | 'downloading' | 'processing' | 'media-ready' | 'transcribing' | 'completed' | 'failed' | 'cancelled' | 'interrupted';
 export interface VideoImportInput {
@@ -79,6 +80,12 @@ export interface FieldXImportsAPI {
 export interface FieldTranslateAPI {
   translate(input: EnglishTranslationRequest): Promise<EnglishTranslationResult>;
 }
+/** Desktop translation key. `read` and the save result never include the key. */
+export interface FieldTranslationSettingsAPI {
+  read(): Promise<TranslationSettingsStatus>;
+  save(input: { apiKey: string; baseUrl: string; model: string }): Promise<TranslationSettingsResponse>;
+  clear(): Promise<TranslationSettingsResponse>;
+}
 export interface FieldWebPageAPI {
   fetch(url: string): Promise<{ title: string; body: string } | null>;
 }
@@ -86,6 +93,6 @@ export interface FieldAgentBoardRequest { boardId: string; method: 'GET' | 'PUT'
 export interface FieldAgentBoardAPI {
   onRequest(callback: (request: FieldAgentBoardRequest) => Promise<{ status: number; body: string }> | { status: number; body: string }): () => void;
 }
-declare global { interface Window { fieldVideoImports?: FieldVideoImportsAPI; fieldBoardStorage?: FieldBoardStorageAPI; fieldLocalFiles?: FieldLocalFilesAPI; fieldFileExport?: FieldFileExportAPI; fieldXImports?: FieldXImportsAPI; fieldPdf?: FieldPdfAPI; fieldTranslate?: FieldTranslateAPI; fieldWebPage?: FieldWebPageAPI; fieldAgentBoard?: FieldAgentBoardAPI } }
+declare global { interface Window { fieldVideoImports?: FieldVideoImportsAPI; fieldBoardStorage?: FieldBoardStorageAPI; fieldLocalFiles?: FieldLocalFilesAPI; fieldFileExport?: FieldFileExportAPI; fieldXImports?: FieldXImportsAPI; fieldPdf?: FieldPdfAPI; fieldTranslate?: FieldTranslateAPI; fieldTranslationSettings?: FieldTranslationSettingsAPI; fieldWebPage?: FieldWebPageAPI; fieldAgentBoard?: FieldAgentBoardAPI } }
 
 export const VIDEO_IMPORT_TERMINAL: ReadonlySet<VideoImportStage> = new Set(['completed', 'failed', 'cancelled', 'interrupted']);

@@ -56,6 +56,17 @@ test('excerpt uses current corrected text and initial revision fallback; selecti
   assert.equal(batch.board.nodes.length-before.nodes.length,2);assert.equal(batch.board.edges.length-before.edges.length,2);
 });
 
+test('an excerpt prefers a saved Chinese line and keeps a line that has none',()=>{
+  const {board,source,lines}=fixture();
+  lines[0].translation='  第一句  ';
+  lines[1].translation='   ';
+  const batch=createQuoteBatch(board,source.id,[lines[0],lines[1]],{limits:STORAGE_LIMITS});
+  assert.equal(batch.quotes.length,1);
+  assert.equal(batch.quotes[0].data.citation?.text,`第一句\n${lines[1].text}`);
+  const spoken=createQuoteBatch(board,source.id,[lines[0]],{limits:STORAGE_LIMITS,script:'source'});
+  assert.equal(spoken.quotes[0].data.citation?.text,lines[0].text);
+});
+
 test('node and edge limits reject a whole batch without partial insertion',()=>{
   const {board,source,lines}=fixture();const before=structuredClone(board);
   assert.throws(()=>createQuoteBatch(board,source.id,[lines[0],lines[2]],{limits:{nodes:2,edges:1500}}),/2 张卡片/);

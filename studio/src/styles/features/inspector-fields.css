@@ -123,7 +123,7 @@
     white-space: pre-wrap;
     overflow-wrap: anywhere;
   }
-  .inspector-translation__actions { display: flex; align-items: center; gap: var(--space-4); }
+  .inspector-translation__actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-4); }
   .inspector-translation__hint, .inspector-translation__status { margin: 0; color: var(--fg-3); font: var(--type-meta); }
 
   /* A pinned draft stays on the right. The left column sits against it, and hides while writing is full screen. */

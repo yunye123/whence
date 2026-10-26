@@ -42,7 +42,7 @@ import { keyOf } from './components/shortcut-keys';
 import { GroupIcon } from './icons/field-icons';
 import ModalShell from './shell/ModalShell';
 import HiddenFileInputs from './shell/HiddenFileInputs';
-import { Welcome, ImportDialog, VideoImportsDialog, ExportDialog, HelpDialog, NewBoardDialog, SearchDialog, OutlineView, DirectoryRecoveryDialog, useIdlePreload, useDraftEditorWarmup } from './app/lazy-chunks';
+import { Welcome, ImportDialog, VideoImportsDialog, ExportDialog, HelpDialog, NewBoardDialog, SearchDialog, OutlineView, DirectoryRecoveryDialog, TranslationSettingsDialog, useIdlePreload, useDraftEditorWarmup } from './app/lazy-chunks';
 import { useWorkspaceStore } from './app/useWorkspaceStore';
 import { useBoardHistory } from './app/useBoardHistory';
 import { useMediaUrls } from './app/useMediaUrls';
@@ -60,6 +60,7 @@ import { useTrayCommands } from './app/useTrayCommands';
 import { useCardExtras } from './app/useCardExtras';
 import { useSnapGuides, useCanvasHandlers, usePaneMarquee } from './app/useCanvasInteraction';
 import { bindFreshTranslation } from './app/fresh-translation';
+import { bindTranslationSettingsOpener } from './app/translation-settings-open';
 import { useKeyboardModality, useSpacePan, useGlobalShortcuts } from './app/useGlobalKeys';
 import { useDialogFocus, useCoverLayer } from './app/useFocusLayers';
 import { useSearchNavigation } from './app/useSearchNavigation';
@@ -151,6 +152,7 @@ function Studio() {
     return true;
   },[setNext]);
   bindFreshTranslation(()=>workspaceRef.current,writeCardQuiet,message=>notify(message,{key:'fresh-translate'}));
+  bindTranslationSettingsOpener(()=>setModal('translation'));
   useEffect(()=>{const observer=new MutationObserver(()=>setResolvedTheme(document.documentElement.dataset.theme==='dark'?'dark':'light'));observer.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});return()=>observer.disconnect();},[]);
 
   // --- Media, undo history, playback, background video tasks ---
@@ -559,6 +561,7 @@ function Studio() {
                 />
               )}
               {modal==='help'&&<HelpDialog/>}
+              {modal==='translation'&&<TranslationSettingsDialog/>}
               </Suspense>
             </ModalShell>
             </div>

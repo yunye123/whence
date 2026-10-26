@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type Dispatch, type RefObject
 import { flushSync } from 'react-dom';
 import { applyEdgeChanges, addEdge, useStoreApi, type Node, type NodeChange, type EdgeChange, type Connection, type OnConnectEnd, type OnSelectionChangeParams, type ReactFlowInstance } from '@xyflow/react';
 import type { Board, BoardNode, CardData, TranscriptLine, Workspace } from '../model';
+import type { TranscriptScript } from '../transcript-tools';
 import { uid } from '../model';
 import { STORAGE_LIMITS } from '../storage';
 import { frameContainsCard } from '../card-placement';
@@ -53,7 +54,7 @@ export function useCanvasHandlers({boardRef,workspaceRef,readOnlyRef,modal,conte
   pushHistory:(old:Board,key?:string)=>void;
   notify:(message:string,options?:ToastOptions)=>void;
   openCard:(id:string)=>void;
-  addQuote:(nodeId:string,lines:TranscriptLine[],position?:{x:number;y:number})=>boolean;
+  addQuote:(nodeId:string,lines:TranscriptLine[],position?:{x:number;y:number},script?:TranscriptScript)=>boolean;
   importFiles:(files:File[],point?:{x:number;y:number})=>Promise<void>;
   setSelectedIds:Dispatch<SetStateAction<string[]>>;
   setSelectedEdgeIds:Dispatch<SetStateAction<string[]>>;
@@ -149,7 +150,7 @@ export function useCanvasHandlers({boardRef,workspaceRef,readOnlyRef,modal,conte
   },[changeBoard,contextMenu,effectiveTool,inspectedId,measurements,modal,openCard,selectedIds]);
   const onCanvasDrop=useCallback((e:React.DragEvent<HTMLDivElement>)=>{
     e.preventDefault();const point=flow.screenToFlowPosition({x:e.clientX,y:e.clientY});const payload=e.dataTransfer.getData('application/x-field-quote');
-    if(payload){try{const selection=JSON.parse(payload) as {nodeId:string;lineIds:string[]};const source=boardRef.current?.nodes.find(n=>n.id===selection.nodeId);if(!source||!Array.isArray(selection.lineIds))return;const lines=source.data.transcript?.filter(l=>selection.lineIds.includes(l.id))??[];addQuote(source.id,lines,point);}catch{notify('摘录拖放未完成，请重新选择原句。');}return;}
+    if(payload){try{const selection=JSON.parse(payload) as {nodeId:string;lineIds:string[];script?:string};const source=boardRef.current?.nodes.find(n=>n.id===selection.nodeId);if(!source||!Array.isArray(selection.lineIds))return;const lines=source.data.transcript?.filter(l=>selection.lineIds.includes(l.id))??[];const script:TranscriptScript=selection.script==='source'?'source':'translation';addQuote(source.id,lines,point,script);}catch{notify('摘录拖放未完成，请重新选择原句。');}return;}
     void importFiles(Array.from(e.dataTransfer.files),point);
   },[addQuote,flow,importFiles,notify]);
   return {onNodesChange,onEdgesChange,onSelectionChange,connectCards,onConnect,onConnectEnd,onNodeDragStart,onNodeDragStop,onCanvasKey,onCanvasDrop};

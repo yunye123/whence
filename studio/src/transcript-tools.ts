@@ -1,5 +1,20 @@
 import { uid, type CardData, type TranscriptLine } from './model';
 
+/** Which wording a reader or an excerpt uses. */
+export type TranscriptScript = 'source' | 'translation';
+
+/**
+ * The sentence to show or excerpt. A Chinese line falls back to the spoken sentence when that line has no
+ * translation, so a gap does not drop it.
+ */
+export function transcriptSentence(line: TranscriptLine, script: TranscriptScript = 'source'): string {
+  if (script === 'translation') {
+    const translated = line.translation?.trim();
+    if (translated) return translated;
+  }
+  return line.text;
+}
+
 /** Missing versions in schema 1 refer to the text before its first manual edit. */
 export const INITIAL_TRANSCRIPT_REVISION = 'initial';
 export const MAX_TRANSCRIPT_TEXT_LENGTH = 20_000;

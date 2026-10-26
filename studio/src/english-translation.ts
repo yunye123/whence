@@ -563,13 +563,22 @@ export function normalizeTranslatedSegmentBatch(parsed: unknown, sourceSegments:
 function chatCompletionsUrl(baseUrl: string): string {
   let url: URL;
   try { url = new URL(baseUrl); }
-  catch { throw new TranslationFailure('翻译接口地址不正确。请检查 CANVAS_TRANSLATE_BASE_URL。', 'BAD_URL'); }
-  if (url.username || url.password) throw new TranslationFailure('请把密钥放在 CANVAS_TRANSLATE_API_KEY，不要写进地址。', 'BAD_URL');
+  catch { throw new TranslationFailure('翻译接口地址不正确。请检查接口地址。', 'BAD_URL'); }
+  if (url.username || url.password) throw new TranslationFailure('请把密钥填在「翻译密钥」里，不要写进地址。', 'BAD_URL');
   if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new TranslationFailure('翻译接口只支持 HTTP 或 HTTPS。', 'BAD_URL');
   const path = url.pathname.replace(/\/+$/, '');
   if (!path.endsWith('/chat/completions')) url.pathname = `${path}/chat/completions`;
   url.hash = '';
   return url.toString();
+}
+
+/** Empty means “use the default”. A key stuffed into the address is rejected. */
+export function translationBaseUrlError(baseUrl: string): string {
+  const trimmed = baseUrl.trim();
+  if (!trimmed) return '';
+  if (trimmed.length > 300) return '翻译接口地址过长。';
+  try { chatCompletionsUrl(trimmed); return ''; }
+  catch (error) { return error instanceof TranslationFailure ? error.message : '翻译接口地址不正确。请检查接口地址。'; }
 }
 
 function usesDeepSeek(endpoint: string, model: string): boolean {
@@ -750,7 +759,7 @@ function rejoin(segments: readonly TranslationSegment[], pieces: readonly Piece[
 export async function translateEnglish(input: unknown, options: TranslationClientOptions): Promise<EnglishTranslationResult> {
   const request = readRequest(input);
   if ('ok' in request) return request;
-  if (!options.apiKey.trim()) return failed(request.segments, '未配置翻译接口密钥。请在启动前设置环境变量 CANVAS_TRANSLATE_API_KEY。');
+  if (!options.apiKey.trim()) return failed(request.segments, '未配置翻译接口密钥。请在侧栏打开「翻译密钥」填写。');
   const model = options.model.trim() || DEFAULT_MODEL;
   const baseUrl = options.baseUrl.trim() || DEFAULT_BASE_URL;
   let endpoint = '';

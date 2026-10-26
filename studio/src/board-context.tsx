@@ -3,6 +3,7 @@ import type { BoardEdge, BoardNode, CardData, TranscriptLine } from './model';
 import type { TraceOrigin } from './canvas/trace';
 import type { VideoPlaybackSnapshot, VideoPlayerSurface } from './video-playback';
 import type { DraftReturnInfo, DraftRestoreRequest, DraftSourceRequest, TripWriteMode } from './draft-navigation';
+import type { TranscriptScript } from './transcript-tools';
 export interface BoardActions {
   updateCard(id: string, patch: Partial<CardData>): boolean;
   openCard(id: string): void;
@@ -11,7 +12,7 @@ export interface BoardActions {
   xPostError?(id: string): string | undefined;
   deleteCard(id: string): void;
   duplicateCard(id: string): void;
-  addQuote(nodeId: string, lines: TranscriptLine[], position?: { x: number; y: number }): boolean;
+  addQuote(nodeId: string, lines: TranscriptLine[], position?: { x: number; y: number }, script?: TranscriptScript): boolean;
   addTextQuote(nodeId: string, range: { from: number; to: number; bodySnapshot?: string }): boolean;
   /** Return to a source; with a canvas in view the trace (§6.17) plays first. `origin` names the draft/footnote it started from. */
   focusSource(nodeId: string, time?: number, keepDraftReturn?: boolean, quoteNodeId?: string, origin?: TraceOrigin): void;
@@ -48,7 +49,7 @@ export interface BoardActions {
   /** Pan the canvas so this card is in the visible area and select it; the inspector stays as it is. */
   revealCard?(id: string): void;
   /** Excerpt like addQuote, then open the new quote with “我的理解” focused (watching workbench §6.18.2). */
-  addQuoteAndAnnotate?(nodeId: string, lines: TranscriptLine[]): boolean;
+  addQuoteAndAnnotate?(nodeId: string, lines: TranscriptLine[], script?: TranscriptScript): boolean;
   /** The board's connections, read-only (the writing margin pins notes connected to the draft, §6.18.4). */
   edges?: BoardEdge[];
   /** Save state for the focus-writing status band (the top bar is covered there). */

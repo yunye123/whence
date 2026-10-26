@@ -66,9 +66,13 @@ test('English-to-Chinese is one IPC on the desktop shell', () => {
   const bridge = fs.readFileSync(path.join(root, 'native/preload-bridge.ts'), 'utf8');
   assert.match(main, /canvasDesktop\.register\(handle, selectDirectory\)/);
   assert.match(desktop, /from '\.\.\/src\/english-translation'/);
-  assert.match(desktop, /handle\('translate-english', input => translateEnglish\(input, translationSettingsFromEnv\(process\.env\)\)\)/);
+  assert.match(desktop, /handle\('translate-english', input => translateEnglish\(input, translationClientOptions\(\)\)\)/);
   assert.equal((desktop.match(/translateEnglish/g) ?? []).length, 2);
+  assert.match(desktop, /handle\('translation-settings-save'/);
+  assert.match(desktop, /safeStorage/);
   assert.match(bridge, /studio:translate-english/);
+  assert.match(bridge, /fieldTranslationSettings/);
+  assert.match(bridge, /studio:translation-settings-save/);
   assert.match(desktop, /handle\('fetch-web-page'/);
   assert.match(bridge, /studio:fetch-web-page/);
 });

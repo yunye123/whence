@@ -220,7 +220,7 @@ test('a missing key does not call the network, and only Simplified Chinese is ac
     fetch: async () => { called = true; throw new Error('called'); },
   });
   assert.equal(called, false);
-  assert.match(missing.error, /CANVAS_TRANSLATE_API_KEY/);
+  assert.match(missing.error, /翻译密钥/);
   const rejected = await translateEnglish({ ...sample, targetLanguage: 'en' as 'zh' }, {
     apiKey: KEY, baseUrl: 'https://user:pass@example.test', model: 'unit-model',
     fetch: async () => { called = true; throw new Error('called'); },
@@ -378,7 +378,19 @@ test('an English excerpt offers 译成中文, and a Chinese excerpt does not', (
   const english = render('The river keeps its own time.');
   assert.match(english, /译成中文/);
   assert.match(english, /需在桌面版配置密钥/);
+  assert.equal(english.includes('翻译密钥'), false);
   assert.equal(render('当时的原文').includes('译成中文'), false);
+  const host = globalThis as { window?: Window };
+  const previous = host.window;
+  host.window = { fieldTranslate: { translate: async () => ({ ok: false, segments: [], error: '' }) } } as unknown as Window;
+  try {
+    const desktop = render('The river keeps its own time.');
+    assert.match(desktop, /翻译密钥/);
+    assert.equal(desktop.includes('需在桌面版配置密钥'), false);
+  } finally {
+    if (previous === undefined) delete host.window;
+    else host.window = previous;
+  }
 });
 
 test('a fresh paste translates the new English only, and a video note does not wipe the description', () => {

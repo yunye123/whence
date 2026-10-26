@@ -7,6 +7,7 @@ import NewBoardDialog, { BOARD_TEMPLATES } from '../src/dialogs/NewBoardDialog';
 import ImportDialog, { type ImportDialogProps } from '../src/dialogs/ImportDialog';
 
 import HelpDialog from '../src/dialogs/HelpDialog';
+import TranslationSettingsDialog from '../src/dialogs/TranslationSettingsDialog';
 import VideoImportsDialog, { importRowTitle } from '../src/dialogs/VideoImportsDialog';
 
 import { createBoard } from '../src/templates';
@@ -72,6 +73,18 @@ test('import dialog: files, links and board files are separate; unavailable link
   const browserVideo = inModal('import', createElement(ImportDialog, importProps({ mode: 'video', value: 'https://www.douyin.com/video/1' })));
   getByRole(browserVideo, 'button', '改存为网页资料');
   assert.ok(mentions(browserVideo, '自动下载与逐字稿需要来处桌面版'));
+});
+
+test('translation settings dialog asks for a key and does not print one', () => {
+  const html = inModal('translation', createElement(TranslationSettingsDialog));
+  getBy(html, { attrs: { id: 'modal-title' }, text: '翻译密钥' });
+  const field = getByLabel(html, '接口密钥');
+  assert.equal(attr(field, 'type'), 'password');
+  assert.equal(field.attrs.value ?? '', '');
+  getByLabel(html, '接口地址');
+  getByRole(html, 'button', '保存');
+  assert.ok(mentions(html, '不会写入画布'));
+  assert.equal(html.includes('sk-'), false);
 });
 
 test('help dialog groups shortcuts by 收集 / 整理 / 写作 / 交付 and lists ? and Esc', () => {

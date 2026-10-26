@@ -129,6 +129,27 @@ function renderPanel(selected: string[], readOnly = false) {
   })));
 }
 
+test('a translated transcript opens on the Chinese script, and an untranslated line stays', () => {
+  const translated: TranscriptLine[] = [
+    { id: 'a', start: 0, end: 1, text: 'The street keeps one lamp.', translation: '这条街还留着一盏灯。' },
+    { id: 'b', start: 2, end: 3, text: '未译的一句。' },
+  ];
+  const html = renderToStaticMarkup(createElement(BoardContext.Provider, { value: actions([video]) }, createElement(TranscriptPanel, {
+    nodeId: 'film-zh', data: { ...video.data, transcript: translated }, transcript: translated, query: '', setQuery: noop,
+    selectedLines: new Set<string>(), setSelectedLines: noop, lastSelected: null, setLastSelected: noop, currentTime: 0, setCurrentTime: noop,
+    videoUrl: 'blob:film', mediaError: false, transcriptBusy: false, transcriptProcessing: false, canRetryImport: false,
+    exporting: false, setExporting: noop, runNativeTranscribe: async () => {}, onImportSubtitles: noop, setReplaceAction: noop,
+    setEditingLine: noop, onNotify: noop,
+  })));
+  const wording = getBy(html, { role: 'group', name: '逐字稿稿面' });
+  assert.equal(attr(getByRole(wording, 'button', '中文稿'), 'aria-pressed'), 'true');
+  assert.equal(attr(getByRole(wording, 'button', '原文'), 'aria-pressed'), 'false');
+  const texts = queryAll(getByRole(html, 'group', '视频字幕'), { className: 'watch-line__text' }).map(textContent);
+  assert.deepEqual(texts, ['这条街还留着一盏灯。', '未译的一句。']);
+  assert.equal(queryAll(html, { className: 'watch-line__translation' }).length, 0);
+  assert.equal(queryAll(renderPanel([]), { role: 'button', name: '中文稿' }).length, 0);
+});
+
 test('the selection gets one inline row right under it; its excerpt button stays a drag source (K1)', () => {
   assert.equal(queryAll(renderPanel([]), { role: 'group', name: undefined, attrs: { 'aria-label': '所选句子' } }).length, 0);
   const html = renderPanel(['b', 'c']);

@@ -112,15 +112,17 @@ Once configured, submit a link through “导入 → 视频链接” (Import →
 
 ## Optional: translate English into Chinese
 
-English in notes, excerpts, drafts, and video transcripts can be translated into Simplified Chinese in the desktop app. The source stays where it is. The translation is stored on the same card or the same transcript line. Opening the app in a browser does not offer this.
+English in notes, excerpts, drafts, and video transcripts can be translated into Simplified Chinese in the desktop app. The source stays where it is. The translation is stored on the same card or the same transcript line. Opening the app in a browser does not offer this. After a transcript is translated, it can switch between the original and the Chinese script, and it opens on the Chinese script. Excerpts placed on the canvas prefer the Chinese line; a line without a translation keeps its original sentence.
 
-The desktop app calls an external API only after an API key is configured. 来处 has no built-in account and does not write the key into the canvas or the source tree. Set the variables before launching the desktop app, and restart after changing them:
+Open “翻译密钥” at the bottom of the sidebar, enter the API key, and save. The key is encrypted with the operating system and kept in this computer’s 来处 profile. It is not written into a canvas or an export. Saving does not require a restart. Leave the address and model empty to use the defaults below.
+
+The environment variables still work when nothing has been saved in the app. A key saved in the app takes priority.
 
 | Variable | Purpose |
 | --- | --- |
-| `CANVAS_TRANSLATE_API_KEY` | Required. The API key. |
-| `CANVAS_TRANSLATE_BASE_URL` | Optional. Defaults to `https://api.deepseek.com`. A full URL that already ends in `/chat/completions` is also accepted. Do not put the key in the URL. |
-| `CANVAS_TRANSLATE_MODEL` | Optional. Defaults to `deepseek-v4-flash`. |
+| `CANVAS_TRANSLATE_API_KEY` | Used when no key has been saved in the app. |
+| `CANVAS_TRANSLATE_BASE_URL` | Optional. Defaults to `https://api.deepseek.com`. A full URL that already ends in `/chat/completions` is also accepted, and the same value can be entered under “翻译密钥”. Do not put the key in the URL. |
+| `CANVAS_TRANSLATE_MODEL` | Optional. Defaults to `deepseek-v4-flash`. It can also be entered under “翻译密钥”. |
 
 The values below are placeholders. Do not commit a real key:
 
@@ -156,7 +158,7 @@ English content shows “译成中文”. A partial translation offers “继续
 | `npm start` fails | Confirm that `npm run build` succeeded, then inspect the terminal error. |
 | The canvas is read-only | Check whether another browser tab has the same workspace open. Starting the desktop app again returns to the existing window. |
 | Downloads or transcription fail | Check the Python environment, tool paths, model availability, and the task card's error message. |
-| English translation fails | Check that `CANVAS_TRANSLATE_API_KEY` was set before the desktop app started, and that the base URL, model, and the reason shown in the interface are right. Do not send the key to anyone. |
+| English translation fails | Check that a key is saved under “翻译密钥”, or that the environment variable was set before launch, and that the base URL, model, and the reason shown in the interface are right. Do not send the key to anyone. |
 | Portable export exceeds its limit | Use “另存完整画布目录” in the desktop app and confirm that the media is still readable. |
 
 When reporting a problem, include the version, operating system, steps, expected result, and actual error. Remove personal paths, private content, and credentials from screenshots and logs.

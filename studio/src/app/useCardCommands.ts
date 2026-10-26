@@ -2,6 +2,7 @@ import { useCallback, useState, type Dispatch, type RefObject, type SetStateActi
 import type { Board, BoardNode, CardData, CardKind, TranscriptLine, Workspace } from '../model';
 import { STORAGE_LIMITS } from '../storage';
 import { createNode, createQuoteBatch, duplicateNode } from '../board-utils';
+import type { TranscriptScript } from '../transcript-tools';
 import { citationLocationLabel, paragraphIndexAt } from '../source-location';
 import { createTextQuoteBatch } from '../text-sources';
 import { avoidCaptionObstacles, captionPlacementBounds, placeAtPointer, placeCards, placeInView } from '../card-placement';
@@ -130,11 +131,11 @@ export function useCardCommands({boardRef,workspaceRef,readOnlyRef,measurements,
     const placed=new Map(quotes.map(node=>[node.id,node]));
     return {...batch,quotes,board:{...batch.board,nodes:batch.board.nodes.map(node=>placed.get(node.id)??node)}};
   };
-  const addQuote=useCallback((nodeId:string,lines:TranscriptLine[],position?:{x:number;y:number})=>{
+  const addQuote=useCallback((nodeId:string,lines:TranscriptLine[],position?:{x:number;y:number},script:TranscriptScript='translation')=>{
     let quotes:BoardNode[]=[];let boardId='';
     try{
       const changed=changeBoard(current=>{
-        const batch=placeQuotes(current,createQuoteBatch(current,nodeId,lines,{position,measurements,limits:STORAGE_LIMITS}));
+        const batch=placeQuotes(current,createQuoteBatch(current,nodeId,lines,{position,measurements,limits:STORAGE_LIMITS,script}));
         quotes=batch.quotes;boardId=current.id;return batch.board;
       });
       if(!changed||!quotes.length)return false;
@@ -158,10 +159,10 @@ export function useCardCommands({boardRef,workspaceRef,readOnlyRef,measurements,
     }catch(error){notify(errorMessage(error));return false;}
   },[changeBoard,fieldTrace,markFresh,measurements,notify,notifyExcerpt]);
   /** “摘录并写理解” (§6.18.2): excerpt like addQuote, then open the first new quote with “我的理解” focused. */
-  const addQuoteAndAnnotate=useCallback((nodeId:string,lines:TranscriptLine[])=>{
+  const addQuoteAndAnnotate=useCallback((nodeId:string,lines:TranscriptLine[],script:TranscriptScript='translation')=>{
     let quotes:BoardNode[]=[];let boardId='';
     try{
-      const changed=changeBoard(current=>{const batch=placeQuotes(current,createQuoteBatch(current,nodeId,lines,{measurements,limits:STORAGE_LIMITS}));quotes=batch.quotes;boardId=current.id;return batch.board;});
+      const changed=changeBoard(current=>{const batch=placeQuotes(current,createQuoteBatch(current,nodeId,lines,{measurements,limits:STORAGE_LIMITS,script}));quotes=batch.quotes;boardId=current.id;return batch.board;});
       if(!changed||!quotes.length)return false;
       const ids=quotes.map(quote=>quote.id);const first=ids[0];
       notifyExcerpt(boardId,quotes);fieldTrace.tie(ids);markFresh(ids);

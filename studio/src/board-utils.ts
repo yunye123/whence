@@ -1,6 +1,6 @@
 import { timecode, uid, type Board, type BoardNode, type CardKind, type TranscriptLine } from './model';
 import { paragraphIndexAt, quoteDisplayTitle } from './source-location';
-import { transcriptRevision } from './transcript-tools';
+import { transcriptRevision, transcriptSentence, type TranscriptScript } from './transcript-tools';
 
 /** External links only. Local media is resolved by the workspace, never opened as a link. */
 export function safeUrl(value: string): string | null {
@@ -142,6 +142,8 @@ interface QuoteBatchOptions {
   position?: { x: number; y: number };
   measurements?: CardMeasurements;
   limits: { nodes: number; edges: number };
+  /** `translation` (the default) uses a saved Chinese line; `source` keeps the spoken line. */
+  script?: TranscriptScript;
 }
 
 /**
@@ -185,7 +187,7 @@ export function createQuoteBatch(board: Board, nodeId: string, lines: Transcript
   const quotes: BoardNode[] = [];
   const gap = 28;
   for (const [index, run] of runs.entries()) {
-    const text = run.map(line => line.text).join('\n');
+    const text = run.map(line => transcriptSentence(line, options.script ?? 'translation')).join('\n');
     if (text.length > 100_000) throw new Error('单张摘录超过 100,000 字符，请缩小选择范围。');
     const width = 290, height = estimateQuoteHeight(text);
     let point = { ...base };

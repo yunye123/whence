@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseSubtitles } from '../src/board-utils';
 import type { CardData } from '../src/model';
-import { editTranscriptLine, INITIAL_TRANSCRIPT_REVISION, mergeAutomaticTranscript, replaceTranscript, restoreTranscriptLine, transcriptRevision, transcriptToSrt, transcriptToText } from '../src/transcript-tools';
+import { editTranscriptLine, INITIAL_TRANSCRIPT_REVISION, mergeAutomaticTranscript, replaceTranscript, restoreTranscriptLine, transcriptRevision, transcriptSentence, transcriptToSrt, transcriptToText } from '../src/transcript-tools';
 
 function fixture(): CardData {
   return { kind: 'video', title: '参考视频', body: '', transcript: [
@@ -10,6 +10,14 @@ function fixture(): CardData {
     { id: 'second', start: 3.25, end: 5, text: '第二句' },
   ], citation: { nodeId: 'source', title: '旧摘录', text: '已摘录文字', transcriptRevision: 'initial' } };
 }
+
+test('a Chinese sentence falls back to the spoken line when that line has no translation', () => {
+  const line = { id: 'a', start: 0, end: 1, text: 'Hello there.' };
+  assert.equal(transcriptSentence(line, 'translation'), 'Hello there.');
+  assert.equal(transcriptSentence({ ...line, translation: '  你好。  ' }, 'translation'), '你好。');
+  assert.equal(transcriptSentence({ ...line, translation: '   ' }, 'translation'), 'Hello there.');
+  assert.equal(transcriptSentence({ ...line, translation: '你好。' }, 'source'), 'Hello there.');
+});
 
 test('manual editing preserves timing, identity, the first original text and citation snapshots', () => {
   const data = fixture(), before = structuredClone(data);

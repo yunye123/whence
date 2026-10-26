@@ -4,6 +4,7 @@ import {
   type SurfaceTranslation, type TranslationSurface, type TranslationUpdate,
 } from '../english-translation';
 import type { CardData } from '../model';
+import { requestTranslationSettings } from '../app/translation-settings-open';
 
 /**
  * The one control that asks the desktop process to translate English into Chinese.
@@ -31,25 +32,26 @@ export function EnglishTranslation({
   const missing = job.segments.filter(segment => !job.translatedIds.includes(segment.id));
   const sending = missing.length ? missing : job.segments;
   const action = running ? '正在翻译…' : missing.length === 0 ? '重新翻译' : missing.length < job.segments.length ? '继续翻译' : '译成中文';
-  const desktop = typeof window !== 'undefined' && !!window.fieldTranslate;
+  const bridge = globalThis.window?.fieldTranslate;
+  const desktop = !!bridge;
   const disabled = readOnly || suspended || running;
   const title = readOnly ? '此窗口只读'
     : suspended ? '请等当前任务结束后再翻译'
       : desktop ? '把这段英语译成简体中文，原文保留'
-        : '翻译需要来处桌面版，并在启动前设置 CANVAS_TRANSLATE_API_KEY';
+        : '翻译需要来处桌面版';
 
   const run = async () => {
     if (disabled) return;
-    const bridge = typeof window === 'undefined' ? undefined : window.fieldTranslate;
-    if (!bridge) {
-      setStatus('翻译需要来处桌面版。请设置环境变量 CANVAS_TRANSLATE_API_KEY 后重新启动。');
+    const current = globalThis.window?.fieldTranslate;
+    if (!current) {
+      setStatus('翻译需要来处桌面版。');
       return;
     }
     const sent = sending.map(segment => ({ ...segment }));
     setRunning(true);
     setStatus(sent.length > 1 ? `正在翻译 ${sent.length} 段…` : '正在翻译…');
     try {
-      const result = await bridge.translate({
+      const result = await current.translate({
         segments: sent,
         contentType: job.contentType,
         contextTitle: job.contextTitle,
@@ -73,6 +75,7 @@ export function EnglishTranslation({
     </details>}
     <div className="inspector-translation__actions">
       <button type="button" className="btn btn--sm btn--line" disabled={disabled} title={title} aria-busy={running || undefined} onClick={() => void run()}>{action}</button>
+      {desktop && <button type="button" className="btn btn--sm btn--line" onClick={() => requestTranslationSettings()}>翻译密钥</button>}
       {!desktop && <span className="inspector-translation__hint">需在桌面版配置密钥</span>}
     </div>
     {status && <p className="inspector-translation__status" role="status">{status}</p>}

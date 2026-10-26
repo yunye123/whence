@@ -35,9 +35,9 @@ export function translateFreshCardNow(boardId: string, nodeId: string): void {
   if (!freshCards.delete(nodeId)) return;
   const data = cardOf(boardId, nodeId);
   if (!data || !collectFreshSegments(data).length) return;
-  const bridge = typeof window === 'undefined' ? undefined : window.fieldTranslate;
+  const bridge = globalThis.window?.fieldTranslate;
   if (!bridge) {
-    notifyFresh('翻译需要来处桌面版。请设置环境变量 CANVAS_TRANSLATE_API_KEY 后重新启动。');
+    notifyFresh('翻译需要来处桌面版。');
     return;
   }
   void translateFreshCard(() => cardOf(boardId, nodeId), request => bridge.translate(request)).then(result => {

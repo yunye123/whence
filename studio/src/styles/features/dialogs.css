@@ -258,6 +258,10 @@
   .x-import-panel__source { display: flex; align-items: flex-start; gap: var(--space-3); flex: 1; min-width: 0; margin-right: var(--space-4); color: var(--fg-3); }
   .x-import-panel__source svg { flex: none; margin-top: 2px; color: var(--fg-icon); }
   .modal .x-import-panel .x-import-panel__cancel, .modal .x-import-panel .x-import-panel__submit { flex: none; min-height: 0; font-size: var(--fs-ui); }
+  .translation-settings { display: grid; gap: var(--space-5); }
+  .translation-settings__secret { display: flex; align-items: center; gap: var(--space-3); }
+  .translation-settings__secret input { flex: 1 1 auto; width: auto; min-width: 0; }
+  .translation-settings__error { margin: 0; color: var(--status-danger-fg); font: var(--type-meta); }
   @media (max-width: 620px) {
     .nb-templates, .modal .template-grid.nb-templates { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .new-board-location.is-compact { grid-template-columns: minmax(0, 1fr); }

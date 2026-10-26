@@ -91,7 +91,7 @@ export function useDraftWriting({board,inspected,boardRef,readOnlyRef,measuremen
   },[changeBoard,markFresh,notify,returnToDraft,undoChange]);
   /** The watching page's transcript on a “补一个镜头” trip: excerpt the sentences, then give them to the line (or write them in after it). */
   const writeLinesToDraft=useCallback((nodeId:string,lines:TranscriptLine[],mode:TripWriteMode='shot')=>writeIntoTripLine(b=>{
-    const batch=createQuoteBatch(b,nodeId,lines,{measurements:measurementsRef.current,limits:STORAGE_LIMITS});
+    const batch=createQuoteBatch(b,nodeId,lines,{measurements:measurementsRef.current,limits:STORAGE_LIMITS,script:'source'});
     const quotes=avoidCaptionObstacles(batch.quotes,b.nodes,measurementsRef.current);
     const placed=new Map(quotes.map(node=>[node.id,node]));
     return {board:{...batch.board,nodes:batch.board.nodes.map(node=>placed.get(node.id)??node)},quotes,created:true};

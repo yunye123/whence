@@ -6,7 +6,7 @@ import { timecode } from '../model';
 import { useBoard } from '../board-context';
 import type { BoardActions } from '../board-context';
 import type { TripWriteMode } from '../draft-navigation';
-import { transcriptRevision, transcriptToSrt, transcriptToText } from '../transcript-tools';
+import { transcriptRevision, transcriptSentence, transcriptToSrt, transcriptToText, type TranscriptScript } from '../transcript-tools';
 import { saveExport } from '../file-export';
 import { timeRangeLabel } from '../source-location';
 import { closeDetailsOnEscape, InspectorSlot, isEditableTarget } from './shared';
@@ -83,6 +83,18 @@ export default function TranscriptPanel({
   const currentIndex = usePlayhead(nodeId, time => (live ? lineIndexAt(transcript, time) : -1), currentTime);
   const currentId = currentIndex >= 0 ? transcript[currentIndex]?.id : undefined;
   const correctedCount = useMemo(() => transcript.reduce((count, line) => count + (line.originalText !== undefined ? 1 : 0), 0), [transcript]);
+  const hasTranslation = useMemo(() => transcript.some(line => !!line.translation?.trim()), [transcript]);
+  const [scriptChoices, setScriptChoices] = useState<ReadonlyMap<string, TranscriptScript>>(() => new Map());
+  // Once a Chinese line exists, the column opens on it. A choice stays with this card for the session only.
+  const script: TranscriptScript = hasTranslation ? (scriptChoices.get(nodeId) ?? 'translation') : 'source';
+  const chooseScript = (next: TranscriptScript) => {
+    setScriptChoices(previous => {
+      if (previous.get(nodeId) === next) return previous;
+      const map = new Map(previous);
+      map.set(nodeId, next);
+      return map;
+    });
+  };
 
   // Shared with the timeline and the footer (they live outside this component).
   useLayoutEffect(() => { selections.set(nodeId, selectedLines); }, [nodeId, selectedLines]);
@@ -142,7 +154,7 @@ export default function TranscriptPanel({
     if (active instanceof HTMLElement && active.closest('.watch-selection')) {
       scrollerRef.current?.querySelector<HTMLElement>(`[data-line-id="${CSS.escape(lines.at(-1)!.id)}"] .watch-line__text`)?.focus({ preventScroll: true });
     }
-    const done = annotate && board.addQuoteAndAnnotate ? board.addQuoteAndAnnotate(nodeId, lines) : board.addQuote(nodeId, lines);
+    const done = annotate && board.addQuoteAndAnnotate ? board.addQuoteAndAnnotate(nodeId, lines, script) : board.addQuote(nodeId, lines, undefined, script);
     if (!done) return;
     setSelectedLines(new Set()); setLastSelected(null);
   };
@@ -426,7 +438,7 @@ export default function TranscriptPanel({
     onDragStart={event => {
       if (!selectedLines.size || board.readOnly) { event.preventDefault(); return; }
       event.dataTransfer.effectAllowed = 'copy';
-      event.dataTransfer.setData('application/x-field-quote', JSON.stringify({ nodeId, lineIds: [...selectedLines] }));
+      event.dataTransfer.setData('application/x-field-quote', JSON.stringify({ nodeId, lineIds: [...selectedLines], script }));
     }}
   /> : null;
 
@@ -446,6 +458,7 @@ export default function TranscriptPanel({
       editDisabled={transcriptBusy}
       editTitle={editTitle(line)}
       query={needle}
+      script={script}
       capacity={capacity}
       actions={actions}
       after={position === selectionAnchor ? selectionBar : null}
@@ -501,6 +514,7 @@ export default function TranscriptPanel({
     <header className="watch-tr-head">
       <h3>逐字稿</h3>
       <span className="watch-tr-head__count tabular">{transcript.length ? `${transcript.length} 句` : ''}</span>
+      {hasTranslation && <TranscriptScriptSwitch script={script} onChange={chooseScript} />}
       {transcript.length > 0 && <label className="inspector-search watch-search">
         <Search size={14} aria-hidden="true" />
         <input
@@ -629,9 +643,40 @@ interface RowActions {
   edit(id: string): void;
 }
 
+const SCRIPT_OPTIONS: { value: TranscriptScript; label: string }[] = [
+  { value: 'source', label: '原文' },
+  { value: 'translation', label: '中文稿' },
+];
+
+/** “原文 / 中文稿”: one Tab stop on the current wording; ← → switch it. Shown only after a translation exists. */
+function TranscriptScriptSwitch({ script, onChange }: { script: TranscriptScript; onChange: (script: TranscriptScript) => void }) {
+  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const index = SCRIPT_OPTIONS.findIndex(option => option.value === script);
+    const next = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? Math.min(SCRIPT_OPTIONS.length - 1, index + 1)
+      : event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? Math.max(0, index - 1)
+        : event.key === 'Home' ? 0 : event.key === 'End' ? SCRIPT_OPTIONS.length - 1 : -1;
+    if (next < 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    if (next !== index) onChange(SCRIPT_OPTIONS[next].value);
+    const group = event.currentTarget;
+    requestAnimationFrame(() => group.querySelectorAll<HTMLButtonElement>('button')[next]?.focus());
+  };
+  return <div className="seg watch-script" role="group" aria-label="逐字稿稿面" onKeyDown={onKeyDown}>
+    {SCRIPT_OPTIONS.map(option => <button
+      key={option.value}
+      type="button"
+      className="seg__item"
+      aria-pressed={script === option.value}
+      tabIndex={script === option.value ? 0 : -1}
+      onClick={() => { if (option.value !== script) onChange(option.value); }}
+    >{option.label}</button>)}
+  </div>;
+}
+
 /** One sentence. Re-renders only when its own state changes (memo; callbacks come from one stable object). */
 const TranscriptRow = memo(function TranscriptRow({
-  line, label, current, selected, used, usedStart, editing, canSeek, editDisabled, editTitle, query, capacity, actions, after,
+  line, label, current, selected, used, usedStart, editing, canSeek, editDisabled, editTitle, query, script, capacity, actions, after,
 }: {
   line: TranscriptLine;
   label: string;
@@ -644,13 +689,16 @@ const TranscriptRow = memo(function TranscriptRow({
   editDisabled: boolean;
   editTitle: string;
   query: string;
+  script: TranscriptScript;
   /** Line length of the text column in em (0 before it is measured); the “已摘录” flag takes about 3 em of it. */
   capacity: number;
   actions: RowActions;
   after: ReactNode;
 }) {
   const time = timecode(line.start);
-  const breaks = useMemo(() => runBreaks(transcriptRuns(line.text, capacity > 0 && usedStart ? capacity - 3.5 : capacity)), [line.text, capacity, usedStart]);
+  const sentence = transcriptSentence(line, script);
+  const gloss = script === 'source' && !!line.translation?.trim();
+  const breaks = useMemo(() => runBreaks(transcriptRuns(sentence, capacity > 0 && usedStart ? capacity - 3.5 : capacity)), [sentence, capacity, usedStart]);
   const corrected = line.originalText !== undefined;
   const state = [current && '正在播放', selected && '已选', used && '已摘录', corrected && '已校对'].filter(Boolean).join('，');
   const className = ['inspector-transcript-line', current && 'is-current', selected && 'is-selected', used && 'is-used', usedStart && 'is-used-start', corrected && 'is-corrected', editing && 'is-editing'].filter(Boolean).join(' ');
@@ -675,7 +723,7 @@ const TranscriptRow = memo(function TranscriptRow({
         onKeyDown={event => actions.key(line.id, event)}
         onKeyUp={event => { if (event.key === ' ') event.preventDefault(); }}
         onFocus={() => actions.focus(line.id)}
-      ><span className="watch-line__original">{sentenceNodes(line.text, query, breaks)}</span>{line.translation?.trim() && <span className="watch-line__translation" lang="zh-CN">{line.translation}</span>}</button>
+      ><span className="watch-line__original" lang={script === 'translation' && line.translation?.trim() ? 'zh-CN' : undefined}>{sentenceNodes(sentence, query, breaks)}</span>{gloss && <span className="watch-line__translation" lang="zh-CN">{line.translation}</span>}</button>
       <span className="watch-line__aside">
         {usedStart && <span className="watch-line__flag">已摘录</span>}
         <button
