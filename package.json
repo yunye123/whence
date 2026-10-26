@@ -11,7 +11,8 @@
     "build": "npm run build --prefix studio && node studio/scripts/build-native.mjs",
     "start": "node studio/scripts/launch.mjs --production-root studio/dist --native-entry studio/dist-native/main.cjs",
     "test": "npm test --prefix studio",
-    "test:e2e": "node studio/scripts/mvp-smoke.mjs"
+    "test:e2e": "node studio/scripts/mvp-smoke.mjs",
+    "package:win": "node studio/scripts/package-windows.mjs"
   },
   "dependencies": {
     "@codemirror/commands": "6.11.1",

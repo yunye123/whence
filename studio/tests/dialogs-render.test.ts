@@ -8,6 +8,7 @@ import ImportDialog, { type ImportDialogProps } from '../src/dialogs/ImportDialo
 
 import HelpDialog from '../src/dialogs/HelpDialog';
 import TranslationSettingsDialog from '../src/dialogs/TranslationSettingsDialog';
+import MediaToolsDialog from '../src/dialogs/MediaToolsDialog';
 import VideoImportsDialog, { importRowTitle } from '../src/dialogs/VideoImportsDialog';
 
 import { createBoard } from '../src/templates';
@@ -87,6 +88,19 @@ test('translation settings dialog asks for a key and does not print one', () => 
   assert.equal(html.includes('sk-'), false);
 });
 
+test('local tools dialog explains what is already in the app and asks for the four paths', () => {
+  const html = inModal('tools', createElement(MediaToolsDialog));
+  getBy(html, { attrs: { id: 'modal-title' }, text: '本机工具' });
+  for (const label of ['Python', 'FFmpeg', 'ffprobe', '语音模型']) getByLabel(html, label);
+  getByRole(html, 'button', '检查');
+  getByRole(html, 'button', '保存');
+  assert.ok(mentions(html, '已经在来处里'));
+  assert.ok(mentions(html, '翻译密钥'));
+  assert.ok(mentions(html, '识图已经备好'));
+  assert.ok(isDisabled(getByRole(html, 'button', '保存')));
+  assert.ok(mentions(html, '需要来处桌面版'));
+});
+
 test('help dialog groups shortcuts by 收集 / 整理 / 写作 / 交付 and lists ? and Esc', () => {
   const html = inModal('help', createElement(HelpDialog));
   for (const title of ['收集', '整理', '写作', '交付']) getBy(html, { tag: 'h3', text: title });
@@ -98,6 +112,8 @@ test('help dialog groups shortcuts by 收集 / 整理 / 写作 / 交付 and list
   getBy(html, { className: 'help-version', text: /^来处 whence/ });
   assert.ok(!textContent(html).includes('原野 FIELD'));
   assert.ok(mentions(html, /改名为“来处”.*照常可用/));
+  assert.ok(mentions(html, '本机工具'));
+  assert.ok(mentions(html, '安装并检查'));
 });
 
 test('video import tasks that did not finish stop saying “正在导入”', () => {

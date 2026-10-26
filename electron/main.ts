@@ -1,6 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain, nativeTheme, protocol, shell, clipboard } from 'electron';
 import fs from 'node:fs/promises';
-import { createReadStream } from 'node:fs';
+import { createReadStream, existsSync } from 'node:fs';
 import path from 'node:path';
 import { Readable } from 'node:stream';
 import { fileURLToPath } from 'node:url';
@@ -313,6 +313,11 @@ async function openAgentLink() {
 }
 function shutDownDesktop() { return closeAgentBoard().catch(() => {}).finally(() => canvasDesktop.close().finally(() => app.quit())); }
 
+const bundledRuntime = path.join(path.dirname(process.execPath), 'runtime');
+if (existsSync(path.join(bundledRuntime, 'installed.json'))) {
+  if (!process.env.CANVAS_RUNTIME?.trim()) process.env.CANVAS_RUNTIME = bundledRuntime;
+  if (!process.env.CANVAS_USER_DATA?.trim()) process.env.CANVAS_USER_DATA = path.join(path.dirname(process.execPath), 'profile');
+}
 if (process.env.CANVAS_USER_DATA) app.setPath('userData', path.resolve(process.env.CANVAS_USER_DATA));
 if (!app.requestSingleInstanceLock()) app.quit();
 else {

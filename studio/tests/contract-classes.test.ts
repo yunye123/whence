@@ -147,6 +147,7 @@ test('K4/K6: sidebar, library kinds, appearance select, welcome, empty and outli
   getBy(html, { role: 'group', name: '素材筛选' });
   assert.equal(getByLabel(html, '外观模式').tag, 'select');
   assert.equal(queryAll(html, { label: '翻译密钥' }).length, 2);
+  assert.equal(queryAll(html, { label: '本机工具' }).length, 2);
   const welcome = render(createElement(Welcome, { onOpenExample: noop, onNewBoard: noop }));
   locks(welcome, { tag: 'section', className: 'welcome' });
   for (const cls of ['template-card', 'new-board']) locks(welcome, { className: cls });

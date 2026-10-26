@@ -1,6 +1,8 @@
 import fs from 'node:fs/promises';
+import { homedir } from 'node:os';
 import path from 'node:path';
 import { BrowserWindow, clipboard, dialog, net, safeStorage, session, shell } from 'electron';
+import { detectTools, setSavedToolPaths, toolPaths } from '../../electron/media';
 import type { ProjectStore } from '../../electron/store';
 import type { BoardNode } from '../src/model';
 import { BoardStorage } from './board-storage';
@@ -13,6 +15,7 @@ import { VideoImportService } from './video-import-service';
 import { XImportService } from './x-import';
 import { translateEnglish, translationSettingsFromEnv } from '../src/english-translation';
 import { clearTranslationSettings, describeTranslationSettings, readStoredTranslationSettings, resolveTranslationSettings, writeTranslationSettings, type TranslationCipher, type TranslationSettingsResponse } from './translation-settings';
+import { clearMediaTools, parseMediaTools, readMediaTools, writeMediaTools, type MediaToolSettings, type MediaToolsResponse, type MediaToolsStatus } from './media-tools';
 import { extractWebArticle } from '../src/web-article';
 import { fetchWebPage } from './web-page';
 
@@ -89,8 +92,29 @@ function withCurrentStatus(result: TranslationSettingsResponse): TranslationSett
   return result.ok ? { ok: true, status: translationStatus() } : result;
 }
 
+function mediaToolsStatus(settings: MediaToolSettings = readMediaTools(userDataDirectory)): MediaToolsStatus {
+  const defaults = toolPaths(process.env, process.platform, homedir(), true);
+  return {
+    settings,
+    defaults,
+    fromEnvironment: {
+      python: !!process.env.CANVAS_PYTHON?.trim(),
+      ffmpeg: !!process.env.CANVAS_FFMPEG?.trim(),
+      ffprobe: !!process.env.CANVAS_FFPROBE?.trim(),
+      model: !!process.env.CANVAS_MODEL?.trim(),
+    },
+  };
+}
+
+function withMediaStatus(result: { ok: true; settings: MediaToolSettings } | { ok: false; error: string }): MediaToolsResponse {
+  if (!result.ok) return result;
+  setSavedToolPaths(result.settings);
+  return { ok: true, status: mediaToolsStatus(result.settings) };
+}
+
 export async function open(options: CanvasDesktopOptions): Promise<void> {
   userDataDirectory = options.userData;
+  setSavedToolPaths(readMediaTools(options.userData));
   legacyProject = options.legacyProject;
   currentWindow = options.window;
   xImports = new XImportService();
@@ -139,6 +163,23 @@ export function register(handle: IpcHandle, selectDirectory: (title: string) => 
   handle('translation-settings-read', () => translationStatus());
   handle('translation-settings-save', (input: unknown) => withCurrentStatus(writeTranslationSettings(userDataDirectory, translationCipher(), input)));
   handle('translation-settings-clear', () => clearTranslationSettings(userDataDirectory, translationCipher(), !!translationSettingsFromEnv(process.env).apiKey));
+  handle('media-tools-read', () => mediaToolsStatus());
+  handle('media-tools-save', (input: unknown) => withMediaStatus(writeMediaTools(userDataDirectory, input)));
+  handle('media-tools-clear', () => withMediaStatus(clearMediaTools(userDataDirectory)));
+  handle('media-tools-check', async (input: unknown) => {
+    const parsed = parseMediaTools(input);
+    if (!parsed.ok) return parsed;
+    const previous = readMediaTools(userDataDirectory);
+    setSavedToolPaths(parsed.settings);
+    try {
+      const tools = await detectTools();
+      return { ok: true as const, checks: tools.checks.map(check => ({ name: check.name, ok: check.ok, detail: (check.detail.split('\n')[0] ?? '').slice(0, 240) })) };
+    } catch (error) {
+      return { ok: false as const, error: error instanceof Error && error.message ? error.message : '没有检查成本机工具。' };
+    } finally {
+      setSavedToolPaths(previous);
+    }
+  });
   handle('fetch-web-page', async (input: unknown) => {
     if (typeof input !== 'string' || !input.trim()) return null;
     const page = await fetchWebPage(input);

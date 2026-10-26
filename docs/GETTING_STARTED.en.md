@@ -83,6 +83,10 @@ Open “导出” (Export) and choose an output for your purpose:
 
 Check the success message and open the exported file. For a canvas backup, reopen it and confirm that text and key media can be read. A filename alone does not establish that the backup is complete. Confirm you have a usable copy before clearing application or browser data.
 
+## Windows setup folder
+
+From the repository root, `npm run package:win` builds 来处 and places Python, FFmpeg, the speech model, and image-text recognition in `output/windows-setup/来处/`. Give away the whole folder. The recipient double-clicks 「安装并检查.cmd」. It checks the app, speech transcription, and image text, and adds a desktop shortcut when one is not already there. The translation key can be entered later in the sidebar. Canvases are stored in that folder’s `profile`.
+
 ## Optional: video downloads and local transcription
 
 Basic notes, writing, and canvas organization do not require Python. Video link downloads and automatic speech recognition need additional tools and use the desktop entry point.
@@ -95,7 +99,7 @@ Basic notes, writing, and canvas organization do not require Python. Video link 
 | FFmpeg and ffprobe | Process media and inspect its metadata. Both executables are required. |
 | A local Whisper model | Supplies the model files for transcription. These are not included in the source repository. |
 
-Python packages must be installed in the environment the application actually uses. The media tools currently accept the following environment variables. Set them before launching the app and restart after changing them:
+Python packages must be installed in the environment the application actually uses. Set the locations under “本机工具” in the sidebar. Saving takes effect immediately and does not require a restart. A blank field uses the environment variable below; if that is also unset, the computer’s default location is used. Set environment variables before launch:
 
 | Variable | What it points to |
 | --- | --- |
@@ -157,7 +161,7 @@ English content shows “译成中文”. A partial translation offers “继续
 | `npm ci` fails | Confirm the repository root, Node 24, and network access for dependency downloads. Keep the actual error output. |
 | `npm start` fails | Confirm that `npm run build` succeeded, then inspect the terminal error. |
 | The canvas is read-only | Check whether another browser tab has the same workspace open. Starting the desktop app again returns to the existing window. |
-| Downloads or transcription fail | Check the Python environment, tool paths, model availability, and the task card's error message. |
+| Downloads or transcription fail | Open “本机工具” in the sidebar, fill in Python, FFmpeg, ffprobe, and the speech-model directory, then choose “检查”. Also read the reason on the task card. |
 | English translation fails | Check that a key is saved under “翻译密钥”, or that the environment variable was set before launch, and that the base URL, model, and the reason shown in the interface are right. Do not send the key to anyone. |
 | Portable export exceeds its limit | Use “另存完整画布目录” in the desktop app and confirm that the media is still readable. |
 

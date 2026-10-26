@@ -16,10 +16,11 @@ const searchSurface=lazySurface(()=>import('../dialogs/SearchDialog'));
 const outlineSurface=lazySurface(()=>import('../shell/OutlineView'));
 const recoverySurface=lazySurface(()=>import('../DirectoryRecoveryDialog'));
 const translationSettingsSurface=lazySurface(()=>import('../dialogs/TranslationSettingsDialog'));
+const mediaToolsSurface=lazySurface(()=>import('../dialogs/MediaToolsDialog'));
 export const Welcome=welcomeSurface.Surface,ImportDialog=importSurface.Surface,VideoImportsDialog=videoImportsSurface.Surface,ExportDialog=exportSurface.Surface,HelpDialog=helpSurface.Surface;
-export const NewBoardDialog=newBoardSurface.Surface,SearchDialog=searchSurface.Surface,OutlineView=outlineSurface.Surface,DirectoryRecoveryDialog=recoverySurface.Surface,TranslationSettingsDialog=translationSettingsSurface.Surface;
+export const NewBoardDialog=newBoardSurface.Surface,SearchDialog=searchSurface.Surface,OutlineView=outlineSurface.Surface,DirectoryRecoveryDialog=recoverySurface.Surface,TranslationSettingsDialog=translationSettingsSurface.Surface,MediaToolsDialog=mediaToolsSurface.Surface;
 // The search palette's own module (WorkspaceSearch) is lazy inside SearchDialog: fetching it early saves the network wait.
-const preloadChunks=()=>Promise.all([welcomeSurface,importSurface,videoImportsSurface,exportSurface,helpSurface,newBoardSurface,searchSurface,outlineSurface,recoverySurface,translationSettingsSurface].map(surface=>surface.preload() as Promise<unknown>).concat(import('../WorkspaceSearch')));
+const preloadChunks=()=>Promise.all([welcomeSurface,importSurface,videoImportsSurface,exportSurface,helpSurface,newBoardSurface,searchSurface,outlineSurface,recoverySurface,translationSettingsSurface,mediaToolsSurface].map(surface=>surface.preload() as Promise<unknown>).concat(import('../WorkspaceSearch')));
 
 /** CORE-11: fetch the panel module while the browser is idle after the first screen, so opening a source never waits on it. */
 export function useIdlePreload(workspaceReady:boolean) {

@@ -11,6 +11,8 @@
 - 新增：桌面版导出可以复制一个本地链接。智能体打开链接就能看到怎么读取这张画布；使用者要求修改时，链接里也写着怎么把改动写回。读到的是来处里正在使用的画布，不会另存一份。来处要开着。图片和视频仍留在来处里。
 - 新增：桌面版可以把笔记、摘录、文稿和逐字稿里的英语译成简体中文。原文保留，译文写在同一张卡片或同一句字幕上。密钥在侧栏「翻译密钥」里填写，加密保存在这台电脑上；也可以在启动前设置 `CANVAS_TRANSLATE_API_KEY`，可选 `CANVAS_TRANSLATE_BASE_URL` 与 `CANVAS_TRANSLATE_MODEL`。应用里保存的密钥优先。请求的做法改编自 Zara Zhang 的 [youtube-digest](https://github.com/zarazhangrui/youtube-digest)（MIT）。
 - 新增：逐字稿译成中文后，可以在「原文」和「中文稿」之间切换，打开时停在中文稿。摘到画布时优先用中文；某一句还没有译文时仍用原文。
+- 新增：侧栏「本机工具」可以填写这台电脑上的 Python、FFmpeg、ffprobe 和语音模型位置，并能检查是否找得到。保存后立刻用于下载和转写。画布、笔记、文稿、摘录、本地图片和视频、导出不用再配置。翻译仍在「翻译密钥」里填写。
+- 新增：`npm run package:win` 做出 Windows 文件夹。对方双击「安装并检查」就会检查程序、语音转文字和识图。这些程序随文件夹带走，不用再逐项填写。翻译密钥可以以后再补。
 - 修复：链接卡工具栏的“打开网页”在桌面版点了没有反应。桌面版会拦截页面自行打开新窗口，现在改为通过系统浏览器打开，失败时给出提示。
 - 修复：内置示例画布里，文章卡与链接卡、视频卡与剧照互相压住的问题，现在卡片之间留有间距。
 - 修复：欢迎页启动时偶发的 `ResizeObserver loop completed with undelivered notifications` 报错；新增冷启动回归测试（需先构建并预览，不属于 `npm test`）。
@@ -23,6 +25,8 @@
 - Add: desktop export can copy a local link. Opening it tells an agent how to read the canvas, and how to write changes back when the user asks for them. The link reads the canvas open in Whence and does not save a second copy. Whence needs to be open. Images and videos stay in Whence.
 - Add: the desktop app can translate English in notes, excerpts, drafts, and transcripts into Simplified Chinese. The source stays in place, and the translation is stored on the same card or transcript line. Enter the key under “翻译密钥” in the sidebar; it is encrypted on this computer. `CANVAS_TRANSLATE_API_KEY` before launch still works, and `CANVAS_TRANSLATE_BASE_URL` and `CANVAS_TRANSLATE_MODEL` remain optional. A key saved in the app takes priority. The request behavior is adapted from Zara Zhang's [youtube-digest](https://github.com/zarazhangrui/youtube-digest) (MIT).
 - Add: after a transcript is translated, it can switch between the original and the Chinese script, and it opens on the Chinese script. Excerpts placed on the canvas prefer the Chinese line; a line without a translation keeps its original sentence.
+- Add: “本机工具” in the sidebar stores this computer’s Python, FFmpeg, ffprobe, and speech-model locations, and can check that they are found. Saving applies them to download and transcription immediately. The canvas, notes, drafts, excerpts, local images and videos, and export need no extra setup. Translation still uses “翻译密钥”.
+- Add: `npm run package:win` builds a Windows folder. Double-clicking 「安装并检查」 checks the app, speech transcription, and image text. Those programs travel with the folder. The translation key can be added later.
 - Fix: the "Open page" button on a link card did nothing in the desktop app, because the desktop shell blocks pages from opening windows themselves. It now opens in the system browser and shows a message if that fails.
 - Fix: in the built-in example boards, the article card overlapped the link card, and the video card overlapped its stills. The cards now keep a gap.
 - Fix: an occasional `ResizeObserver loop completed with undelivered notifications` error when the welcome screen starts. Added a cold-start regression test (it needs a build and preview first, so it is not part of `npm test`).

@@ -1,26 +1,61 @@
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
+import { homedir } from 'node:os';
 import path from 'node:path';
 
 const abortError = () => Object.assign(new Error('任务已取消'), { name: 'AbortError' });
+
+/** The OCR command for this computer. The installer runtime wins over a personal ocr.cmd. */
+export function ocrCommand(env: NodeJS.ProcessEnv = process.env, platform: NodeJS.Platform = process.platform, home: string = homedir()): string {
+  const chosen = env.CANVAS_OCR?.trim();
+  if (chosen) return chosen;
+  const runtime = env.CANVAS_RUNTIME?.trim();
+  if (runtime) {
+    const bundled = path.join(runtime, 'ocr', platform === 'win32' ? 'ocr.cmd' : 'ocr');
+    if (existsSync(bundled)) return bundled;
+  }
+  if (platform === 'win32') {
+    const personal = path.join(env.USERPROFILE || home, '.local', 'bin', 'ocr.cmd');
+    if (existsSync(personal)) return personal;
+    return '';
+  }
+  return 'ocr';
+}
+
+/** How to start OCR. The installer runtime is Python, so a folder path may contain spaces. */
+export function ocrLaunch(command: string, folder: string, env: NodeJS.ProcessEnv = process.env, platform: NodeJS.Platform = process.platform): { executable: string; args: string[]; verbatim: boolean } {
+  const runtime = env.CANVAS_RUNTIME?.trim();
+  if (runtime) {
+    const python = path.join(runtime, 'python', platform === 'win32' ? 'python.exe' : 'bin/python3');
+    const script = path.join(runtime, 'ocr', 'ocr_fast.py');
+    const bundled = path.join(runtime, 'ocr', platform === 'win32' ? 'ocr.cmd' : 'ocr');
+    if (existsSync(python) && existsSync(script) && path.resolve(command) === path.resolve(bundled)) {
+      return { executable: python, args: ['-X', 'utf8', script, folder, folder, '--fast'], verbatim: false };
+    }
+  }
+  if (platform === 'win32') {
+    const quote = (value: string) => `"${value.replaceAll('"', '')}"`;
+    const line = `${quote(command)} ${quote(folder)} ${quote(folder)} --fast`;
+    return { executable: env.ComSpec || 'cmd.exe', args: ['/d', '/s', '/c', `"${line}"`], verbatim: true };
+  }
+  return { executable: command, args: [folder, folder, '--fast'], verbatim: false };
+}
 
 /** Read the words printed on each saved picture. Missing local OCR still leaves the pictures importable. */
 export async function recognizeImages(files: string[], signal?: AbortSignal): Promise<{ available: boolean; texts: string[] }> {
   const empty = { available: false, texts: files.map(() => '') };
   if (!files.length) return { available: true, texts: [] };
-  const command = process.platform === 'win32' ? path.join(process.env.USERPROFILE || '', '.local', 'bin', 'ocr.cmd') : 'ocr';
+  const command = ocrCommand();
   const folder = path.dirname(path.resolve(files[0]));
-  if (!existsSync(command) || files.some(file => path.dirname(path.resolve(file)) !== folder)) return empty;
+  const ready = command && (path.isAbsolute(command) ? existsSync(command) : true);
+  if (!ready || files.some(file => path.dirname(path.resolve(file)) !== folder)) return empty;
   if (signal?.aborted) throw abortError();
   let code = 1;
   try {
     code = await new Promise<number>((resolve, reject) => {
-      const executable = process.platform === 'win32' ? (process.env.ComSpec || 'cmd.exe') : command;
-      const args = process.platform === 'win32'
-        ? ['/d', '/s', '/c', `"${command}" "${folder}" "${folder}" --fast`]
-        : [folder, folder, '--fast'];
-      const child = spawn(executable, args, { windowsHide: true });
+      const launch = ocrLaunch(command, folder);
+      const child = spawn(launch.executable, launch.args, { windowsHide: true, windowsVerbatimArguments: launch.verbatim });
       const stop = () => { child.kill(); };
       signal?.addEventListener('abort', stop, { once: true });
       const timer = setTimeout(() => { child.kill(); reject(new Error('识别图片文字超过 4 分钟，已停止。')); }, 4 * 60_000);

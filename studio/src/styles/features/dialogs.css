@@ -262,6 +262,13 @@
   .translation-settings__secret { display: flex; align-items: center; gap: var(--space-3); }
   .translation-settings__secret input { flex: 1 1 auto; width: auto; min-width: 0; }
   .translation-settings__error { margin: 0; color: var(--status-danger-fg); font: var(--type-meta); }
+  .media-tools { display: grid; gap: var(--space-5); }
+  .media-tools__checks { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+  .media-tools__checks li { display: grid; gap: 2px; font: var(--type-meta); }
+  .media-tools__checks .is-ok { color: var(--fg-2); }
+  .media-tools__checks .is-missing { color: var(--status-danger-fg); }
+  .media-tools__checks small { color: var(--fg-3); overflow-wrap: anywhere; }
+  .media-tools__error { margin: 0; color: var(--status-danger-fg); font: var(--type-meta); }
   @media (max-width: 620px) {
     .nb-templates, .modal .template-grid.nb-templates { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .new-board-location.is-compact { grid-template-columns: minmax(0, 1fr); }

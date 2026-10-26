@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight, CircleHelp, KeyRound, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CircleHelp, KeyRound, Search, Wrench } from 'lucide-react';
 import { requestTranslationSettings } from '../app/translation-settings-open';
+import { requestMediaTools } from '../app/media-tools-open';
 import type { Board, Workspace } from '../model';
 import BoardLibrary from '../BoardLibrary';
 import ThemeControl from '../ThemeControl';
@@ -102,6 +103,9 @@ export default function Sidebar({ open, workspace, board, readOnly, busy, select
           <button type="button" className="icon-btn" aria-label="翻译密钥" title="翻译密钥" onClick={() => requestTranslationSettings()}>
             <KeyRound size={16} strokeWidth={1.75} />
           </button>
+          <button type="button" className="icon-btn" aria-label="本机工具" title="本机工具" onClick={() => requestMediaTools()}>
+            <Wrench size={16} strokeWidth={1.75} />
+          </button>
           <button type="button" className="icon-btn" aria-label="使用指南" title="使用指南 (?)" onClick={() => onHelp()}>
             <CircleHelp size={16} strokeWidth={1.75} />
           </button>
@@ -129,6 +133,9 @@ export default function Sidebar({ open, workspace, board, readOnly, busy, select
           <ThemeControl />
           <button type="button" className="icon-btn" aria-label="翻译密钥" title="翻译密钥" onClick={() => requestTranslationSettings()}>
             <KeyRound size={16} strokeWidth={1.75} />
+          </button>
+          <button type="button" className="icon-btn" aria-label="本机工具" title="本机工具" onClick={() => requestMediaTools()}>
+            <Wrench size={16} strokeWidth={1.75} />
           </button>
           <button type="button" className="icon-btn" aria-label="使用指南" title="使用指南 (?)" onClick={() => onHelp()}>
             <CircleHelp size={16} strokeWidth={1.75} />

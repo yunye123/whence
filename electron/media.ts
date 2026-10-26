@@ -9,20 +9,43 @@ import { pipeline } from 'node:stream/promises';
 import type { Asset, Diagnostics, Segment, Source, Transcript } from '../shared/types';
 
 export interface ToolPaths { python: string; ffmpeg: string; ffprobe: string; model: string }
+const EMPTY_SAVED: ToolPaths = { python: '', ffmpeg: '', ffprobe: '', model: '' };
+let savedToolPaths: ToolPaths = { ...EMPTY_SAVED };
+
+/** Paths chosen in 本机工具. Blank fields fall through to the environment, then the platform default. */
+export function setSavedToolPaths(saved: Partial<ToolPaths> | null): void {
+  savedToolPaths = {
+    python: saved?.python?.trim() || '',
+    ffmpeg: saved?.ffmpeg?.trim() || '',
+    ffprobe: saved?.ffprobe?.trim() || '',
+    model: saved?.model?.trim() || '',
+  };
+}
 export interface MediaOptions { signal?: AbortSignal; onProgress?: (n: number, message: string) => void }
 type Imported = Omit<Asset, 'id' | 'createdAt' | 'sourceId'>;
 const abort = () => Object.assign(new Error('任务已取消'), { name: 'AbortError' });
 function checkAbort(signal?: AbortSignal) { if (signal?.aborted) throw abort(); }
 const relative = (root: string, file: string) => path.relative(root, file).split(path.sep).join('/');
 
-/** Windows keeps the AppData defaults. macOS and Linux use python3, ffmpeg and ffprobe. CANVAS_* wins. Does not launch anything. */
-export function toolPaths(env: NodeJS.ProcessEnv = process.env, platform: NodeJS.Platform = process.platform, home: string = homedir()): ToolPaths {
+/** A path saved in 本机工具 wins, then CANVAS_PYTHON and the other CANVAS_* variables, then the installer runtime, then the platform default. Does not launch anything. */
+/** A file inside CANVAS_RUNTIME, when the installer placed it there. */
+export function bundledRuntimeFile(env: NodeJS.ProcessEnv, ...parts: string[]): string {
+  const root = env.CANVAS_RUNTIME?.trim();
+  if (!root || parts.some(part => !part || part === '.' || part === '..')) return '';
+  const file = path.join(root, ...parts);
+  return existsSync(file) ? file : '';
+}
+
+export function toolPaths(env: NodeJS.ProcessEnv = process.env, platform: NodeJS.Platform = process.platform, home: string = homedir(), ignoreSaved = false): ToolPaths {
   const windows = platform === 'win32';
+  const saved = ignoreSaved ? EMPTY_SAVED : savedToolPaths;
+  const pick = (chosen: string, fromEnv: string | undefined, bundled: string, fallback: string) => chosen.trim() || fromEnv?.trim() || bundled || fallback;
+  const bundledModel = bundledRuntimeFile(env, 'models', 'faster-whisper', 'large-v3', 'model.bin');
   return {
-    python: env.CANVAS_PYTHON || (windows ? path.join(home, 'AppData/Local/Programs/Python/Python312/python.exe') : 'python3'),
-    ffmpeg: env.CANVAS_FFMPEG || (windows ? path.join(home, 'AppData/Local/Programs/ffmpeg/bin/ffmpeg.exe') : 'ffmpeg'),
-    ffprobe: env.CANVAS_FFPROBE || (windows ? path.join(home, 'AppData/Local/Programs/ffmpeg/bin/ffprobe.exe') : 'ffprobe'),
-    model: env.CANVAS_MODEL || path.join(home, '.cache/faster-whisper/large-v3'),
+    python: pick(saved.python, env.CANVAS_PYTHON, bundledRuntimeFile(env, 'python', windows ? 'python.exe' : 'bin/python3'), windows ? path.join(home, 'AppData/Local/Programs/Python/Python312/python.exe') : 'python3'),
+    ffmpeg: pick(saved.ffmpeg, env.CANVAS_FFMPEG, bundledRuntimeFile(env, 'ffmpeg', windows ? 'ffmpeg.exe' : 'ffmpeg'), windows ? path.join(home, 'AppData/Local/Programs/ffmpeg/bin/ffmpeg.exe') : 'ffmpeg'),
+    ffprobe: pick(saved.ffprobe, env.CANVAS_FFPROBE, bundledRuntimeFile(env, 'ffmpeg', windows ? 'ffprobe.exe' : 'ffprobe'), windows ? path.join(home, 'AppData/Local/Programs/ffmpeg/bin/ffprobe.exe') : 'ffprobe'),
+    model: pick(saved.model, env.CANVAS_MODEL, bundledModel ? path.dirname(bundledModel) : '', path.join(home, '.cache/faster-whisper/large-v3')),
   };
 }
 

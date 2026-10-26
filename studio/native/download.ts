@@ -217,7 +217,7 @@ async function downloadPublicImage(url: string, tmp: string, options: MediaOptio
 export function downloadErrorMessage(error: unknown, platform: string): string {
   const message = error instanceof Error ? error.message : String(error);
   if (/任务已取消|abort/i.test(message)) return '任务已取消';
-  if (/No module named yt_dlp|ENOENT|EPERM|EACCES/.test(message)) return '本机视频下载工具未能启动，请检查本机处理工具后重试。';
+  if (/No module named yt_dlp|ENOENT|EPERM|EACCES/.test(message)) return '本机视频下载工具未能启动。请打开侧栏「本机工具」，确认 Python 的位置后再试。';
   if (/max.filesize|larger than|2 GB/.test(message)) return '单条视频超过 2 GB，当前无法自动导入。';
   if (/Fresh cookies|sign.in|login|cookies|captcha|HTTP Error 403|HTTP Error 412|HTTP Error 429|verify|验证/i.test(message)) return `${platform}暂未允许自动获取该视频。请在原平台确认视频可播放后重新复制完整分享链接，再点重试。`;
   if (/No video formats|Unsupported URL|not available|not found|HTTP Error 404|initial state|视频画面/.test(message)) return `${platform}链接没有返回可用视频，可能已失效、需要登录或是图文内容。请重新复制视频的完整分享链接后重试。`;

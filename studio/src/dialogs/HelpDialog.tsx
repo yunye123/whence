@@ -87,6 +87,7 @@ export default function HelpDialog({ storagePath }: { storagePath?: string } = {
             <p className="help-about">无限画布基于 React Flow 构建（MIT 许可），感谢 xyflow 团队。</p>
             <p className="help-about">其他开源组件及其许可，见程序目录里的 THIRD_PARTY_NOTICES.txt。</p>
             <p className="help-about">2026-10-07 起由“原野”改名为“来处”。原来的画布、设置和导出的便携画布文件都照常可用。</p>
+            <p className="help-about">画布、笔记、文稿、摘录、本地图片和视频、导出都已经包含在来处里。用安装程序装好后，语音转文字和识图也已备好，先双击安装目录里的「安装并检查」。把英语译成中文可以稍后在侧栏「翻译密钥」填写。程序不在默认位置时，用侧栏「本机工具」改。</p>
           </div>
         </section>
       </div>

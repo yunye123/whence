@@ -292,7 +292,7 @@ export class VideoImportService {
     const body = imageNoteText({ ...(author ? { author } : {}), ...(description ? { description } : {}), pages });
     const recognizedCount = pages.filter(page => page.trim()).length;
     const message = !recognized.available
-      ? `已导入 ${files.length} 张图片。本机识字工具未就绪，图片上的文字还没有识别。`
+      ? `已导入 ${files.length} 张图片。识图程序没找到，图片上的文字还没有识别。请重新运行安装目录里的「安装并检查」。`
       : recognizedCount ? `已导入 ${files.length} 张图片，并识别了其中 ${recognizedCount} 张上的文字。` : `已导入 ${files.length} 张图片。没有识别到图片上的文字。`;
     const library = this.store.state;
     const carried = {
@@ -472,7 +472,7 @@ export class VideoImportService {
     const tools = await (this.options.detectTools || detectTools)();
     this.checkAbort(signal);
     const missing = tools.checks.filter(check => ['Python', 'FFmpeg', 'ffprobe', '转写依赖', '本地模型'].includes(check.name) && !check.ok);
-    if (missing.length) throw new Error(`本机转写环境尚未就绪：${missing.map(check => `${check.name.replace('本地', '本机')}（${check.detail}）`).join('；')}`);
+    if (missing.length) throw new Error(`本机转写还没准备好：${missing.map(check => check.name.replace('本地', '本机')).join('、')}。请打开侧栏「本机工具」填写位置并检查。`);
     const result = await (this.options.transcribeMedia || transcribeMedia)(asset, this.store.directory, tools, {
       // CORE-12: “转写中 0:12 / 2:41”, never the device, batch size or a raw GPU error.
       signal, onProgress: (progress, message) => this.progress(task, 'transcribing', progress, transcribeProgressMessage(message, asset.durationMs / 1000)),

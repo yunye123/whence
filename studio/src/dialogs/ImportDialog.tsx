@@ -126,7 +126,7 @@ export default function ImportDialog({ mode, onModeChange, value, onTextChange, 
               <div className="imp-submit">
                 {/* 快捷键提示与按钮同一个动词；用不了的方式不写按不出来的快捷键（DLG-15）。 */}
                 <span className="dialog-hint">
-                  {linkUnavailable ? null : mode === 'video' ? `每次最多 ${VIDEO_BATCH_LIMIT} 个。下载好就能播放，逐字稿在后台继续。` : <><kbd>{isMacPlatform() ? '⌘' : 'Ctrl'}</kbd> <kbd>Enter</kbd> 保存</>}
+                  {linkUnavailable ? null : mode === 'video' ? <>每次最多 {VIDEO_BATCH_LIMIT} 个。下载好就能播放，逐字稿在后台继续。程序不在默认位置时，打开侧栏「本机工具」。</> : <><kbd>{isMacPlatform() ? '⌘' : 'Ctrl'}</kbd> <kbd>Enter</kbd> 保存</>}
                 </span>
                 {linkUnavailable
                   ? <button type="button" className="btn btn--line" disabled={readOnly} onClick={() => onModeChange('web')}><Link2 size={15} aria-hidden="true"/>改存为网页资料</button>

@@ -30,5 +30,6 @@ test('rejects private network, credentials, hostname spoofing, multiple links an
 test('uses actionable language for upstream access restrictions', () => {
   assert.match(downloadErrorMessage(new Error('Fresh cookies (not necessarily logged in) are needed'), '抖音'), /重新复制完整分享链接/);
   assert.match(downloadErrorMessage(new Error('No video formats found'), '小红书'), /需要登录或是图文/);
+  assert.match(downloadErrorMessage(new Error('spawn python ENOENT'), '抖音'), /侧栏「本机工具」/);
   assert.equal(normalizeVideoInput('https://cdn.example.org/clip.mp4?signature=123').platform, '视频直链');
 });

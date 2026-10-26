@@ -73,6 +73,11 @@ test('English-to-Chinese is one IPC on the desktop shell', () => {
   assert.match(bridge, /studio:translate-english/);
   assert.match(bridge, /fieldTranslationSettings/);
   assert.match(bridge, /studio:translation-settings-save/);
+  assert.match(desktop, /handle\('media-tools-save'/);
+  assert.match(desktop, /setSavedToolPaths/);
+  assert.match(main, /CANVAS_RUNTIME/);
+  assert.match(bridge, /fieldMediaTools/);
+  assert.match(bridge, /studio:media-tools-check/);
   assert.match(desktop, /handle\('fetch-web-page'/);
   assert.match(bridge, /studio:fetch-web-page/);
 });

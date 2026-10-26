@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { FieldAgentBoardAPI, FieldTranslateAPI, FieldTranslationSettingsAPI, FieldVideoImportsAPI, FieldBoardStorageAPI, FieldFileExportAPI, FieldPdfAPI, FieldWebPageAPI, FieldXImportsAPI, VideoImportTask } from './contracts';
+import type { FieldAgentBoardAPI, FieldMediaToolsAPI, FieldTranslateAPI, FieldTranslationSettingsAPI, FieldVideoImportsAPI, FieldBoardStorageAPI, FieldFileExportAPI, FieldPdfAPI, FieldWebPageAPI, FieldXImportsAPI, VideoImportTask } from './contracts';
 
 export function exposeVideoImports(): void {
   const request = (channel: string, ...args: unknown[]) => ipcRenderer.invoke(channel, ...args).catch(error => {
@@ -39,6 +39,13 @@ export function exposeVideoImports(): void {
     clear: () => request('studio:translation-settings-clear') as ReturnType<FieldTranslationSettingsAPI['clear']>,
   };
   contextBridge.exposeInMainWorld('fieldTranslationSettings', translationSettings);
+  const mediaTools: FieldMediaToolsAPI = {
+    read: () => request('studio:media-tools-read') as ReturnType<FieldMediaToolsAPI['read']>,
+    save: input => request('studio:media-tools-save', input) as ReturnType<FieldMediaToolsAPI['save']>,
+    clear: () => request('studio:media-tools-clear') as ReturnType<FieldMediaToolsAPI['clear']>,
+    check: input => request('studio:media-tools-check', input) as ReturnType<FieldMediaToolsAPI['check']>,
+  };
+  contextBridge.exposeInMainWorld('fieldMediaTools', mediaTools);
   const webPage: FieldWebPageAPI = { fetch: url => request('studio:fetch-web-page', url) as ReturnType<FieldWebPageAPI['fetch']> };
   contextBridge.exposeInMainWorld('fieldWebPage', webPage);
   const agentBoard: FieldAgentBoardAPI = {

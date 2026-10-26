@@ -1,7 +1,7 @@
 import type { Board, BoardNode, VideoImportState } from '../model';
 
 export type SaveStatus = 'loading' | 'saving' | 'saved' | 'error' | 'readonly';
-export type Modal = 'new' | 'search' | 'export' | 'help' | 'import' | 'imports' | 'translation' | null;
+export type Modal = 'new' | 'search' | 'export' | 'help' | 'import' | 'imports' | 'translation' | 'tools' | null;
 export type CanvasView = 'canvas' | 'outline';
 export type CanvasTool = 'select' | 'hand';
 export type LibraryFilter = 'all' | 'video' | 'image' | 'note' | 'quote' | 'draft' | 'link';
