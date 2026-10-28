@@ -507,6 +507,7 @@ export default function TranscriptPanel({
   const localRun = transcriptProcessing && !videoImport;
   const importRun = transcriptProcessing && !!videoImport;
   const runMessage = board.transcriptionMessage?.(nodeId) || '正在准备本机转写…';
+  const toolGap = !localRun ? (board.transcriptionNotice?.(nodeId) || '') : '';
 
   return <section ref={sectionRef} className="inspector-section inspector-transcript-section" aria-label="逐字稿">
     <p className="sr-only" role="status" aria-live="polite">{announcement}</p>
@@ -561,7 +562,8 @@ export default function TranscriptPanel({
         {!transcript.length && !data.nativeAssetId && !data.mediaId && !videoImport && <p className="watch-tools__hint">先粘贴视频链接或导入本机视频，再点“生成逐字稿”。</p>}
       </div>
     </details>
-    {localRun && transcript.length > 0 && <div className="watch-tr-progress" role="group" aria-label="本机转写状态" aria-busy="true">
+      {toolGap && <p className="transcription-gap" role="status">{toolGap}</p>}
+      {localRun && transcript.length > 0 && <div className="watch-tr-progress" role="group" aria-label="本机转写状态" aria-busy="true">
       <LoaderCircle size={14} className="inspector-is-processing" aria-hidden="true" />
       <strong>正在重新生成逐字稿</strong>
       <span role="status" className="tabular">{runMessage}</span>

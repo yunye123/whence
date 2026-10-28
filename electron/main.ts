@@ -8,6 +8,7 @@ import { randomUUID } from 'node:crypto';
 import { ProjectStore } from './store';
 import { exportDocument, exportProject, restoreProject } from './export';
 import { detectTools, importMedia, transcribeMedia, captureFrame, resolveLink } from './media';
+import { missingToolsMessage, TRANSCRIPTION_GATES } from '../studio/native/transcription-readiness';
 import { followAppearance, savedAppearance, windowGround } from '../studio/native/window-appearance';
 import { registerAgentPort, startAgentBoardServer } from '../studio/native/agent-board-server';
 import * as canvasDesktop from '../studio/native/canvas-desktop';
@@ -100,14 +101,18 @@ async function importPaths(paths: string[], sourceId?: string) {
     }, { sourceId });
   }
 }
-function startTranscript(id: string, cpu = false) {
+async function startTranscript(id: string, cpu = false) {
   assertWritable();
   const target = current(); const asset = target.state.assets.find(a => a.id === id);
   if (!asset || asset.kind !== 'video') throw new Error('找不到视频');
   if (!asset.hasAudio) throw new Error('这条视频没有音轨，可以使用手动选段和截图');
   if (target.state.jobs.some(j => j.assetId === id && j.kind === 'transcribe' && ['queued', 'running'].includes(j.status))) throw new Error('该视频已在转写队列中');
+  let tools;
+  try { tools = await detectTools(); }
+  catch { throw new Error('没有检查成本机的转写工具。请打开侧栏「本机工具」再检查一次。'); }
+  const gap = missingToolsMessage(tools.checks, TRANSCRIPTION_GATES);
+  if (gap) throw new Error(gap);
   enqueue(target, 'transcribe', id, async (signal, onProgress) => {
-    const tools = await detectTools();
     const result = await transcribeMedia(asset, target.state.directory, tools, { signal, cpu, onProgress });
     if (!signal.aborted) commit(target, state => state.transcripts.push({ ...result, id: uuid(), assetId: id, createdAt: now() }));
   }, { assetId: id });
@@ -259,7 +264,7 @@ function registerIpc() {
     if (index >= 0) { const [entry] = queue.splice(index, 1); commit(entry.store, s => { const job = s.jobs.find(j => j.id === id)!; job.status = 'cancelled'; job.message = '已取消'; }); }
     controllers.get(id)?.abort();
   });
-  handle('retry', async (id: string) => { const job = current().state.jobs.find(j => j.id === id); if (!job || !['failed','cancelled','interrupted'].includes(job.status)) throw new Error('此任务不能重试'); if (job.kind === 'transcribe') startTranscript(job.assetId!); else if (job.kind === 'link') startLink(job.input!, job.sourceId); else if (job.kind === 'import') await importPaths([job.input!], job.sourceId); else throw new Error('请重新执行截图'); });
+  handle('retry', async (id: string) => { const job = current().state.jobs.find(j => j.id === id); if (!job || !['failed','cancelled','interrupted'].includes(job.status)) throw new Error('此任务不能重试'); if (job.kind === 'transcribe') await startTranscript(job.assetId!); else if (job.kind === 'link') startLink(job.input!, job.sourceId); else if (job.kind === 'import') await importPaths([job.input!], job.sourceId); else throw new Error('请重新执行截图'); });
   handle('screenshot', (id: string, time: number) => {
     assertWritable();
     const target = current(); const asset = target.state.assets.find(a => a.id === id);

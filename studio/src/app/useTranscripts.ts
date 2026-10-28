@@ -6,6 +6,7 @@ import { TRANSCRIBE_STARTING, transcribeProgressMessage } from '../../native/tra
 import type { ToastOptions } from '../shell/Toasts';
 import { pendingImport } from './video-links';
 import { transcriptTarget, prepareTranscriptReplacement, type TranscriptReplacementTarget } from './transcript-replacement';
+import { desktopTranscriptionGap, toolGapToast } from './transcription-gap';
 import { errorMessage } from './utils';
 
 /**
@@ -25,6 +26,8 @@ export function useTranscripts({boardRef,workspaceRef,readOnlyRef,notify,pushHis
   subtitleFile:RefObject<HTMLInputElement|null>;
 }) {
   const [transcriptionMessages,setTranscriptionMessages]=useState<Record<string,string>>({});
+  const [transcriptionNotices,setTranscriptionNotices]=useState<Record<string,string>>({});
+  const checkingTools=useRef(new Set<string>());
   const subtitleTarget=useRef<TranscriptReplacementTarget|null>(null);
   const commitTranscriptReplacement=useCallback((target:TranscriptReplacementTarget,lines:TranscriptLine[],media?:Partial<CardData>)=>{
     if(readOnlyRef.current)throw new Error('另一个窗口正在编辑，本次字幕尚未保存。');
@@ -56,9 +59,24 @@ export function useTranscripts({boardRef,workspaceRef,readOnlyRef,notify,pushHis
     if(readOnlyRef.current){notify('这是只读窗口，请在正在编辑的窗口生成逐字稿。');return;}
     const original=boardRef.current;const node=original?.nodes.find(n=>n.id===id);if(!node||!original)return;
     if(node.data.nativeHasAudio===false){notifyNoAudio(id,node.data.title);return;}
-    if(pendingImport(node.data.videoImport?.status)||videoActions.current.has(id)){notify('这条视频正在自动提取逐字稿，请等待当前任务结束。');return;}
+    if(pendingImport(node.data.videoImport?.status)||videoActions.current.has(id)||checkingTools.current.has(id)){notify('这条视频正在自动提取逐字稿，请等待当前任务结束。');return;}
+    checkingTools.current.add(id);
+    setTranscriptionMessages(current=>({...current,[id]:'正在检查这台电脑上的转写工具…'}));
+    try{
+      const gap=await desktopTranscriptionGap();
+      if(gap){
+        setTranscriptionNotices(current=>({...current,[id]:gap}));
+        notify(gap,toolGapToast(gap,`transcribe-gap:${id}`)??{tone:'error',key:`transcribe-gap:${id}`});
+        return;
+      }
+    }finally{
+      checkingTools.current.delete(id);
+      setTranscriptionMessages(current=>{if(!current[id])return current;const next={...current};delete next[id];return next;});
+    }
+    setTranscriptionNotices(current=>{if(!current[id])return current;const next={...current};delete next[id];return next;});
     const target=transcriptTarget(original,node);setVideoAction(id,true);
-    const progress=(message:string)=>setTranscriptionMessages(current=>({...current,[id]:transcribeProgressMessage(message,node.data.duration)}));progress(TRANSCRIBE_STARTING);
+    const progress=(message:string)=>setTranscriptionMessages(current=>({...current,[id]:transcribeProgressMessage(message,node.data.duration)}));
+    progress(TRANSCRIBE_STARTING);
     try{
       if(node.data.nativeAssetId){const lines=await transcribeNative(node,progress);commitTranscriptReplacement(target,lines);notify(`「${node.data.title.trim()||'未命名视频'}」的逐字稿已生成，共 ${lines.length} 句`);}
       else {
@@ -72,9 +90,12 @@ export function useTranscripts({boardRef,workspaceRef,readOnlyRef,notify,pushHis
         notify(`「${node.data.title.trim()||'未命名视频'}」的逐字稿已生成，共 ${patch.transcript?.length??0} 句`);
       }
     }catch(error){
-      if(/没有音轨/.test(errorMessage(error))){notifyNoAudio(id,node.data.title);return;}
-      notify(`「${node.data.title.trim()||'未命名视频'}」的逐字稿未完成：${errorMessage(error)}`);
+      const text=errorMessage(error);
+      if(/没有音轨/.test(text)){notifyNoAudio(id,node.data.title);return;}
+      const toast=toolGapToast(text,`transcribe-gap:${id}`);
+      if(toast){setTranscriptionNotices(current=>({...current,[id]:text}));notify(text,toast);return;}
+      notify(`「${node.data.title.trim()||'未命名视频'}」的逐字稿未完成：${text}`);
     }finally{setVideoAction(id,false);setTranscriptionMessages(current=>{const next={...current};delete next[id];return next;});}
   },[changeBoard,commitTranscriptReplacement,notify,notifyNoAudio,setVideoAction]);
-  return {chooseSubtitles,loadSubtitle,transcribe,transcriptionMessages};
+  return {chooseSubtitles,loadSubtitle,transcribe,transcriptionMessages,transcriptionNotices};
 }

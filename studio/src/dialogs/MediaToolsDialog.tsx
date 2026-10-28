@@ -1,4 +1,5 @@
 import { useEffect, useId, useState } from 'react';
+import { toolCheckLabel, toolRemedy } from '../../native/transcription-readiness';
 import { useModalControls } from '../shell/ModalShell';
 
 type ToolKey = 'python' | 'ffmpeg' | 'ffprobe' | 'model';
@@ -144,12 +145,15 @@ export default function MediaToolsDialog() {
         ))}
         {checks && (
           <ul className="media-tools__checks" aria-label="检查结果">
-            {checks.map(item => (
+            {checks.map(item => {
+              const note = item.ok ? item.detail : (toolRemedy(item.name) || '在侧栏「本机工具」里改这一项的位置，保存后再检查。');
+              return (
               <li key={item.name} className={item.ok ? 'is-ok' : 'is-missing'}>
-                <span>{item.ok ? '已找到' : '没找到'} {item.name}</span>
-                {item.detail && <small>{item.detail}</small>}
+                <span>{item.ok ? '已找到' : '没找到'} {toolCheckLabel(item.name)}</span>
+                {note && <small>{note}</small>}
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
         {notice && <p className="dialog-hint" role="status">{notice}</p>}

@@ -588,6 +588,7 @@
   .watch-tools > p { margin: 0; font: var(--type-meta); color: var(--fg-2); }
   .watch-tools__actions { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-4); }
   .watch-tools .watch-tools__hint { margin-top: var(--space-4); color: var(--fg-3); }
+  .inspector--video .transcription-gap { flex: none; margin: var(--space-4) var(--space-7) 0; font: var(--type-meta); color: var(--status-danger-fg); overflow-wrap: anywhere; }
 
   /* 列表区是尺寸容器：句末留出半屏空白，最后几句也能停在正中（PV-B1“当前句居中”） */
   .watch-tr-body { position: relative; flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; container: watch-list / size; }
