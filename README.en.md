@@ -1,16 +1,20 @@
 # 来处 whence
 
-**Turn what you collect into work of your own.**
+[简体中文](README.md)
 
-[简体中文](README.md) · [Getting started](docs/GETTING_STARTED.en.md) · [Changelog](CHANGELOG.md)
-
-whence is a local creative canvas for writers, video creators, and creative professionals. Keep text, images, and video together, extract useful passages, connect ideas, and develop a draft. Excerpts retain their sources so you can return to the original text or video timestamp while writing.
-
-The current version is **MVP 0.1.0**. The application UI is in **Simplified Chinese**. English documentation does not imply an English interface.
+whence is a local canvas for writers, video creators, and creative professionals: excerpts keep their source, so you can return to the original text or a video timestamp while writing, with no account and no cloud sync.
 
 ![whence in light mode: sources, excerpts, and drafts in one workspace](docs/images/canvas-light.png)
 
+1. **Open an example canvas.** On the welcome screen, open “我写文章” (I write), “我做视频” (I make videos), or “我做创意” (I do creative work).
+2. **Excerpt from a card and see the source.** Select text in the reading panel or video transcript, then use “摘录到画布” (Add excerpt to canvas). The excerpt keeps the original text or video time, and the card shows its source.
+3. **Return to the original text or a video timestamp from the draft.** Follow a citation in the draft or “本稿来源” (Sources in this draft) back to the source. A video reference seeks to that time.
+
 ## What you can do
+
+[Getting started](docs/GETTING_STARTED.en.md) · [Changelog](CHANGELOG.md)
+
+The current version is **MVP 0.1.0**. The application UI is in **Simplified Chinese**. English documentation does not imply an English interface.
 
 | Your work | What the canvas supports |
 | --- | --- |
@@ -48,13 +52,16 @@ npm test
 
 The application has been run and checked on Windows 11. macOS and Linux have not yet been verified. These instructions run the source; the build command does not produce a signed installer. See [Getting started](docs/GETTING_STARTED.en.md) for setup and your first canvas.
 
+## Not yet verified on a new machine
+
+- Video link downloads and automatic speech recognition are optional advanced workflows. They require Python 3.12, `yt-dlp`, `faster-whisper`, FFmpeg, ffprobe, and a local model. Basic canvas use does not require these tools.
+- Advanced workflows have not been verified end to end on a fresh machine. Site login requirements, access restrictions, and link availability can prevent downloads. Not every site or link is guaranteed to work.
+
 ## Local use and MVP limitations
 
 - Content is stored on your computer. No account is required. Cloud sync and collaboration are not included. English-to-Chinese translation is optional and calls an external API only after the desktop app is given an API key. See the [getting started guide](docs/GETTING_STARTED.en.md#optional-translate-english-into-chinese).
 - Local saving is not an independent backup. Check the save status, export your canvas regularly, and verify that the export includes your media.
 - Starting the desktop app again returns to the window that is already open. Read-only applies only to a second page from the same origin, such as two browser tabs on one workspace. Portable canvas files have size limits; use the desktop app's “另存完整画布目录” (Save a complete canvas directory) for large videos.
-- Video link downloads and automatic speech recognition are optional advanced workflows. They require Python 3.12, `yt-dlp`, `faster-whisper`, FFmpeg, ffprobe, and a local model. Basic canvas use does not require these tools.
-- Advanced workflows have not been verified end to end on a fresh machine. Site login requirements, access restrictions, and link availability can prevent downloads. Not every site or link is guaranteed to work.
 
 See [MVP limits](docs/GETTING_STARTED.en.md#mvp-limits) for capacity and workflow details.
 
