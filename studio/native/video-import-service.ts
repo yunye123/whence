@@ -12,6 +12,7 @@ import { normalizeXLink, type XPost } from '../shared/x-import';
 import { VIDEO_IMPORT_TERMINAL, type VideoImportInput, type VideoImportStage, type VideoImportTask } from './contracts';
 import { readingLines } from './transcript-sentences';
 import { TRANSCRIBE_STARTING, transcribeProgressMessage } from './transcribe-progress';
+import { IMPORT_MEDIA_GATES, missingToolsMessage, TRANSCRIPTION_GATES, YT_DLP_DOWNLOAD_GATES } from './transcription-readiness';
 
 interface TaskRecord extends VideoImportTask { key: string; localFile?: string; sourceOnly?: boolean }
 export interface VideoImportServiceOptions {
@@ -238,6 +239,18 @@ export class VideoImportService {
     this.queue = [];
   }
   private checkAbort(signal: AbortSignal) { if (signal.aborted) throw Object.assign(new Error('任务已取消'), { name: 'AbortError' }); }
+  private async checkedTools(signal: AbortSignal) {
+    this.checkAbort(signal);
+    try { return await (this.options.detectTools || detectTools)(); }
+    catch (error) {
+      if (signal.aborted) throw error;
+      throw new Error('没有检查成本机的转写工具。请打开侧栏「本机工具」再检查一次。');
+    }
+  }
+  private async gap(signal: AbortSignal, names: readonly string[], cache: { tools?: Awaited<ReturnType<typeof detectTools>> }): Promise<string | null> {
+    if (!cache.tools) cache.tools = await this.checkedTools(signal);
+    return missingToolsMessage(cache.tools.checks, names);
+  }
   private progress(task: TaskRecord, status: VideoImportStage, progress: number, message: string) {
     if (this.closing || this.controllers.get(task.id)?.signal.aborted) return;
     const rounded = Math.max(0, Math.min(99, Math.round(progress)));
@@ -400,6 +413,7 @@ export class VideoImportService {
   private async run(task: TaskRecord, signal: AbortSignal) {
     let asset = await this.reusableAsset(task);
     let sourceWarning: string | undefined;
+    const cache: { tools?: Awaited<ReturnType<typeof detectTools>> } = {};
     this.checkAbort(signal);
     if (task.sourceOnly && !asset) throw new Error('已下载的视频文件已缺失，暂不能只补正文；未重新下载视频。');
     if (asset) {
@@ -411,6 +425,8 @@ export class VideoImportService {
         return;
       }
     } else if (task.localFile) {
+      const prep = await this.gap(signal, IMPORT_MEDIA_GATES, cache);
+      if (prep) { this.update(task, { status: 'failed', message: prep, error: prep }); return; }
       const file = path.resolve(task.localFile), directory = path.resolve(this.store.directory, 'cache', 'local-inputs');
       if (path.dirname(file) !== directory || !/^[a-f0-9]{64}\.(mp4|webm|mov|m4v|ogv)$/.test(path.basename(file))) throw new Error('本机视频记录无效，请重新粘贴视频。');
       this.progress(task, 'processing', 0, '正在准备本机视频');
@@ -419,6 +435,12 @@ export class VideoImportService {
       asset = { ...imported, name: task.originalText, id: randomUUID(), createdAt: now() };
       this.store.commit(state => { state.assets.push(asset!); }); this.update(task, { assetId: asset.id });
     } else {
+      // Bilibili and YouTube fail inside yt-dlp when a tool is missing. Say which one first.
+      // Douyin and Xiaohongshu keep their hidden-window download and the error text that path already uses.
+      if (task.platform === 'B站' || task.platform === 'YouTube') {
+        const gap = await this.gap(signal, YT_DLP_DOWNLOAD_GATES, cache);
+        if (gap) { this.update(task, { status: 'failed', message: gap, error: gap }); return; }
+      }
       this.progress(task, 'downloading', 0, '正在解析视频链接');
       let source = this.store.state.sources.find(item => { try { return normalizeVideoInput(item.url).key === task.key; } catch { return false; } });
       if (!source) {
@@ -437,6 +459,8 @@ export class VideoImportService {
           return;
         }
         this.progress(task, 'processing', 0, '视频已下载，正在准备播放画面');
+        const prep = await this.gap(signal, IMPORT_MEDIA_GATES, cache);
+        if (prep) { this.update(task, { status: 'failed', message: prep, error: prep }); return; }
         const imported = await (this.options.importMedia || importMedia)(downloaded.filePath, this.store.directory, {
           signal, onProgress: (progress, message) => this.progress(task, 'processing', progress, message),
         });
@@ -468,11 +492,14 @@ export class VideoImportService {
     if (existing) {
       this.update(task, { status: 'completed', progress: 100, message: withSourceWarning('已复用本机视频与逐字稿。'), card: this.card(task, asset), asr: { engine: existing.engine, device: existing.device, elapsedSeconds: existing.elapsedSeconds } }); return;
     }
+    const tools = cache.tools ?? await this.checkedTools(signal);
+    const gap = missingToolsMessage(tools.checks, TRANSCRIPTION_GATES);
+    if (gap) {
+      const message = `视频已在画布上，还不能转写。${gap}`;
+      this.update(task, { status: 'failed', progress: 100, message, error: message, card: this.card(task, asset) });
+      return;
+    }
     this.progress(task, 'transcribing', 0, TRANSCRIBE_STARTING);
-    const tools = await (this.options.detectTools || detectTools)();
-    this.checkAbort(signal);
-    const missing = tools.checks.filter(check => ['Python', 'FFmpeg', 'ffprobe', '转写依赖', '本地模型'].includes(check.name) && !check.ok);
-    if (missing.length) throw new Error(`本机转写还没准备好：${missing.map(check => check.name.replace('本地', '本机')).join('、')}。请打开侧栏「本机工具」填写位置并检查。`);
     const result = await (this.options.transcribeMedia || transcribeMedia)(asset, this.store.directory, tools, {
       // CORE-12: “转写中 0:12 / 2:41”, never the device, batch size or a raw GPU error.
       signal, onProgress: (progress, message) => this.progress(task, 'transcribing', progress, transcribeProgressMessage(message, asset.durationMs / 1000)),

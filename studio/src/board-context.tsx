@@ -41,6 +41,8 @@ export interface BoardActions {
   videoImportActionPending(id: string): boolean;
   transcribeVideo?(id: string): void;
   transcriptionMessage?(id: string): string;
+  /** Why this card cannot start transcription yet: which tool is missing, and how to supply it. */
+  transcriptionNotice?(id: string): string;
   nativeTranscribeAvailable?: boolean;
   readOnly?: boolean;
   tool?: 'select' | 'hand';

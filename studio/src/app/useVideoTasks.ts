@@ -7,6 +7,7 @@ import { importVideoLink, isVideoImportAvailable, listVideoImports, subscribeVid
 import type { ToastOptions } from '../shell/Toasts';
 import { pendingImport, importStageStatus } from './video-links';
 import { differentNativeAsset, keepCachedImportMedia, needsImportPosterRestore, placeImageNote, prepareVideoImportUpdate } from './import-merge';
+import { toolGapToast } from './transcription-gap';
 import { clone, errorMessage } from './utils';
 import { translateFreshAttempt } from './fresh-translation';
 
@@ -99,7 +100,10 @@ export function useVideoTasks({workspaceRef,readOnlyRef,notify,setNext,persist,s
       if(saved){notify('视频已加入原画布，可播放与阅读逐字稿');translateFreshAttempt(boardId,nodeId,attemptId);}
     }).catch(error=>{
       const cancelled=controller.signal.aborted||(error instanceof Error&&error.name==='AbortError');
-      updateImportCard(boardId,nodeId,attemptId,{},cancelled?{status:'cancelled',message:'已取消，下载好的视频会保留',error:undefined}:{status:'failed',message:'导入未完成，可重试',error:errorMessage(error).slice(0,4096)});
+      const detail=errorMessage(error).slice(0,4096);
+      const toast=!cancelled?toolGapToast(detail,`tool-gap:${nodeId}`):null;
+      updateImportCard(boardId,nodeId,attemptId,{},cancelled?{status:'cancelled',message:'已取消，下载好的视频会保留',error:undefined}:toast?{status:'failed',message:detail,error:detail}:{status:'failed',message:'导入未完成，可重试',error:detail});
+      if(toast)notify(detail,toast);
     }).finally(()=>{if(videoRuns.current.get(nodeId)?.attemptId===attemptId)videoRuns.current.delete(nodeId);});
   },[notify,placeNote,updateImportCard]);
   const cancelVideoImportAction=useCallback((id:string)=>{
